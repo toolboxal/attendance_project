@@ -1,0 +1,16 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { LoginForm } from "#/components/login-form";
+
+export const Route = createFileRoute("/(public)/(auth)/signin")({
+	component: RouteComponent,
+});
+
+function RouteComponent() {
+	return (
+		<div className=" min-h-dvh bg-neutral-900">
+			<div className="spine flex items-center justify-center min-h-screen">
+				<LoginForm />
+			</div>
+		</div>
+	);
+}

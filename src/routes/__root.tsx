@@ -42,12 +42,13 @@ export const Route = createRootRouteWithContext<{
 		],
 	}),
 	beforeLoad: async (ctx) => {
-		const token = await getAuth();
-		// all queries, mutations and actions through TanStack Query will be
-		// authenticated during SSR if we have a valid token
+		// Only fetch the token during SSR — on the server, `serverHttpClient` exists.
+		// Client-side navigations skip this round trip entirely; auth state is
+		// managed reactively by ConvexBetterAuthProvider after the initial hydration.
+		const isSSR = !!ctx.context.convexQueryClient.serverHttpClient;
+		const token = isSSR ? await getAuth() : null;
+
 		if (token) {
-			// During SSR only (the only time serverHttpClient exists),
-			// set the auth token to make HTTP queries with.
 			ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
 		}
 		return {
@@ -90,7 +91,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 						},
 					]}
 				/>
-				;
 				<Scripts />
 			</body>
 		</html>
