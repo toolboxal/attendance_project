@@ -96,6 +96,7 @@ export function LoginForm({
 					setAuthError(error.message || "An unknown error occurred");
 				} else {
 					setStep("otp");
+					toast.success("Verification code sent to your email.");
 				}
 			} else {
 				// Step 2: Verify OTP
@@ -108,7 +109,6 @@ export function LoginForm({
 				} else {
 					// Redirect to protected dashboard on success
 					router.navigate({ to: "/app/dashboard" });
-					toast.success("Successfully logged in.");
 				}
 			}
 		},
@@ -302,7 +302,17 @@ export function LoginForm({
 								Or
 							</FieldSeparator>
 							<Field>
-								<Button variant="outline" type="button" size={"xl"}>
+								<Button
+									variant="outline"
+									type="button"
+									size={"xl"}
+									onClick={async () => {
+										await authClient.signIn.social({
+											provider: "google",
+											callbackURL: "/app/dashboard",
+										});
+									}}
+								>
 									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 										<title>Google logo</title>
 										<path
