@@ -55,7 +55,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       // The Convex plugin is required for Convex compatibility
       convex({ authConfig }),
       emailOTP({ 
-        expiresIn: 120,
+        expiresIn: 300,
         allowedAttempts: 3,
         async sendVerificationOTP({ email, otp }) {
           console.log(`[Better Auth] Sending OTP to ${email}`);

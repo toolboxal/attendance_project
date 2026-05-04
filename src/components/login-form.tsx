@@ -28,12 +28,12 @@ export function LoginForm({
 	const router = useRouter();
 	const [step, setStep] = useState<"email" | "otp">("email");
 	const [authError, setAuthError] = useState<string | null>(null);
-	const [timeLeft, setTimeLeft] = useState(120);
+	const [timeLeft, setTimeLeft] = useState(300);
 	const [isResending, setIsResending] = useState(false);
 	const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
 	const startTimer = useCallback(() => {
-		setTimeLeft(120);
+		setTimeLeft(300);
 		if (timerRef.current) clearInterval(timerRef.current);
 		const id = setInterval(() => {
 			setTimeLeft((prev) => {
