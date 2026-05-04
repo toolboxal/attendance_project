@@ -85,10 +85,11 @@ export function SignupForm({
 		},
 		onSubmit: async ({ value }) => {
 			setAuthError(null);
+			const email = value.email.trim().toLowerCase();
 			if (step === "email") {
 				// Step 1: Request OTP
 				const { error } = await authClient.emailOtp.sendVerificationOtp({
-					email: value.email,
+					email,
 					type: "sign-in", // Works for both login and signup
 				});
 				if (error) {
@@ -99,14 +100,15 @@ export function SignupForm({
 			} else {
 				// Step 2: Verify OTP
 				const { error } = await authClient.signIn.emailOtp({
-					email: value.email,
+					email,
 					otp: value.otp,
 				});
 				if (error) {
 					setAuthError(error.message || "An unknown error occurred");
 				} else {
 					// Redirect to protected dashboard on success
-					router.navigate({ to: "/dashboard" });
+					router.navigate({ to: "/app/dashboard" });
+					toast.success("Successfully logged in.");
 				}
 			}
 		},
@@ -162,9 +164,15 @@ export function SignupForm({
 									{field.state.meta.errors.length > 0 ? (
 										<FieldDescription className="text-red-500">
 											<em>
-												{field.state.meta.errors.map((err: any) => 
-													typeof err === "string" ? err : err?.message || err?.issue?.message || "Invalid input"
-												).join(", ")}
+												{field.state.meta.errors
+													.map((err: any) =>
+														typeof err === "string"
+															? err
+															: err?.message ||
+																err?.issue?.message ||
+																"Invalid input",
+													)
+													.join(", ")}
 											</em>
 										</FieldDescription>
 									) : (
@@ -224,9 +232,15 @@ export function SignupForm({
 									{field.state.meta.errors.length > 0 ? (
 										<FieldDescription className="text-red-500">
 											<em>
-												{field.state.meta.errors.map((err: any) => 
-													typeof err === "string" ? err : err?.message || err?.issue?.message || "Invalid input"
-												).join(", ")}
+												{field.state.meta.errors
+													.map((err: any) =>
+														typeof err === "string"
+															? err
+															: err?.message ||
+																err?.issue?.message ||
+																"Invalid input",
+													)
+													.join(", ")}
 											</em>
 										</FieldDescription>
 									) : null}

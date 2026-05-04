@@ -39,6 +39,11 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
     baseURL: siteUrl,
     database: authComponent.adapter(ctx),
+    trustedOrigins: [
+      siteUrl,
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ],
 
     // Configure simple, non-verified email/password to get started
     // emailAndPassword: {
