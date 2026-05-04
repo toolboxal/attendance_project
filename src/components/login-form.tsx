@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@tanstack/react-router";
-import { GalleryVerticalEndIcon } from "lucide-react";
+
 import { Button } from "#/components/ui/button";
 import {
 	Field,

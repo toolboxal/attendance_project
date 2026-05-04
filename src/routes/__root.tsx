@@ -16,6 +16,7 @@ import { createServerFn } from "@tanstack/react-start";
 import type * as React from "react";
 import { authClient } from "#/lib/auth-client";
 import { getToken } from "#/lib/auth-server";
+import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
 // Get auth information for SSR using available cookies
@@ -80,6 +81,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			</head>
 			<body className="bg-neutral-950 text-neutral-50">
 				{children}
+				<Toaster />
 				<TanStackDevtools
 					config={{
 						position: "bottom-right",
