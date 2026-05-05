@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { CircleCheck } from "lucide-react";
 import { tv } from "tailwind-variants";
 import { Button } from "#/components/ui/button";
@@ -19,6 +19,12 @@ const pricingCard = tv({
 function Home() {
 	const { base, cardTitle, price, featureList, featureItem, button } =
 		pricingCard();
+	const router = useRouter();
+
+	const handleCheckout = (slug: string) => {
+		router.navigate({ to: "/signup", search: { checkoutSlug: slug } });
+	};
+
 	return (
 		<div className="w-full bg-zinc-950">
 			{/* Hero Section */}
@@ -44,78 +50,120 @@ function Home() {
 					</span>
 				</p>
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-24">
+					{/* Single Pass */}
 					<div className={base()}>
-						<h3 className={cardTitle()}>Free</h3>
-
+						<h3 className={cardTitle()}>Single Pass</h3>
 						<div className={featureList()}>
 							<div className="flex items-center gap-2">
 								<CircleCheck
 									size={18}
 									className="fill-zinc-400 stroke-zinc-950"
 								/>
-								<p className={featureItem()}>1 free event</p>
+								<p className={featureItem()}>1 Pro Event Credit</p>
 							</div>
 							<div className="flex items-center gap-2">
 								<CircleCheck
 									size={18}
 									className="fill-zinc-400 stroke-zinc-950"
 								/>
-								<p className={featureItem()}>Up to 5 users</p>
+								<p className={featureItem()}>Indefinite expiration</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<CircleCheck
+									size={18}
+									className="fill-zinc-400 stroke-zinc-950"
+								/>
+								<p className={featureItem()}>Full Pro Features</p>
 							</div>
 						</div>
-						<p className={price()}>$0</p>
-						<Button size={"xl"} className={button()} variant={"outline"}>
-							Get started
+						<p className={price()}>$9</p>
+						<Button
+							size={"xl"}
+							className={button()}
+							variant={"outline"}
+							onClick={() => handleCheckout("single")}
+						>
+							Buy 1 Credit
 						</Button>
 					</div>
-					<div className={base()}>
-						<h3 className={cardTitle()}>7 Days Pass</h3>
 
+					{/* Weekend Bundle */}
+					<div
+						className={base({
+							className:
+								"border-emerald-300/20 bg-zinc-900/50 shadow-emerald-300/10",
+						})}
+					>
+						<h3 className={cardTitle()}>Weekend Bundle</h3>
 						<div className={featureList()}>
 							<div className="flex items-center gap-2">
 								<CircleCheck
 									size={18}
 									className="fill-zinc-400 stroke-zinc-950"
 								/>
-								<p className={featureItem()}>3 live events</p>
+								<p className={featureItem()}>3 Pro Event Credits</p>
 							</div>
 							<div className="flex items-center gap-2">
 								<CircleCheck
 									size={18}
 									className="fill-zinc-400 stroke-zinc-950"
 								/>
-								<p className={featureItem()}>Up to 5 users</p>
+								<p className={featureItem()}>Perfect for festivals</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<CircleCheck
+									size={18}
+									className="fill-zinc-400 stroke-zinc-950"
+								/>
+								<p className={featureItem()}>Save 10%</p>
 							</div>
 						</div>
-						<p className={price()}>$29</p>
-						<Button size={"xl"} className={button()} variant={"outline"}>
-							Get started
+						<p className={price()}>$25</p>
+						<Button
+							size={"xl"}
+							className={button()}
+							onClick={() => handleCheckout("weekend")}
+						>
+							Get 3 Credits
 						</Button>
 					</div>
-					<div className={base()}>
-						<h3 className={cardTitle()}>Monthly Subscription</h3>
 
+					{/* Pro Monthly */}
+					<div className={base()}>
+						<h3 className={cardTitle()}>Pro Monthly</h3>
 						<div className={featureList()}>
 							<div className="flex items-center gap-2">
 								<CircleCheck
 									size={18}
 									className="fill-zinc-400 stroke-zinc-950"
 								/>
-								<p className={featureItem()}>3 live events</p>
+								<p className={featureItem()}>Unlimited Pro Events</p>
 							</div>
 							<div className="flex items-center gap-2">
 								<CircleCheck
 									size={18}
 									className="fill-zinc-400 stroke-zinc-950"
 								/>
-								<p className={featureItem()}>Up to 5 users</p>
+								<p className={featureItem()}>Priority Support</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<CircleCheck
+									size={18}
+									className="fill-zinc-400 stroke-zinc-950"
+								/>
+								<p className={featureItem()}>Custom Discord Integration</p>
 							</div>
 						</div>
 						<p className={price()}>
-							$49<span className="text-base text-zinc-500 mx-0.5">/month</span>
+							$39<span className="text-base text-zinc-500 mx-0.5">/month</span>
 						</p>
-						<Button size={"xl"} className={button()} variant={"outline"}>
-							Get started
+						<Button
+							size={"xl"}
+							className={button()}
+							variant={"outline"}
+							onClick={() => handleCheckout("monthly")}
+						>
+							Subscribe
 						</Button>
 					</div>
 				</div>

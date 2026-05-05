@@ -1,13 +1,35 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { CheckCircle2Icon } from "lucide-react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
 import { authClient } from "#/lib/auth-client";
 
 export const Route = createFileRoute("/_authenticated/app/dashboard")({
+	validateSearch: (search: Record<string, unknown>) => ({
+		checkout_success: search.checkout_success as boolean | undefined,
+	}),
 	component: DashboardComponent,
 });
 
 function DashboardComponent() {
+	const { checkout_success } = Route.useSearch();
+	const router = useRouter();
+
+	useEffect(() => {
+		if (checkout_success) {
+			toast.success("Payment Successful! Your credits have been added.", {
+				icon: <CheckCircle2Icon className="fill-green-500" />,
+			});
+			// Clean up the URL
+			router.navigate({
+				to: "/app/dashboard",
+				search: { checkout_success: undefined },
+				replace: true,
+			});
+		}
+	}, [checkout_success, router]);
+
 	const handleSignOut = async () => {
 		try {
 			await authClient.signOut({

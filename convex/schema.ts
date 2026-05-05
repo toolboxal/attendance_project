@@ -4,19 +4,23 @@ import { v } from "convex/values";
 export default defineSchema({
   // Your main application user table
   users: defineTable({
-    // This is the string ID that links directly to the Better Auth user
     authUserId: v.string(),
-    // Core profile fields you might want to mirror or add
     email: v.string(),
     name: v.optional(v.string()),
-    // App-specific fields
     role: v.optional(v.union(v.literal("admin"), v.literal("member"))),
-    tier: v.optional(v.union(v.literal("free"), v.literal("pass_7d"), v.literal("monthly"))),
+    
+    // MONETIZATION FIELDS
+    // 1. Subscription based (Time-limited unlimited access)
+    subscriptionTier: v.optional(v.union(v.literal("free"), v.literal("pro_monthly"))),
+    subscriptionExpiresAt: v.optional(v.number()), // Unix timestamp for sub end
+    
+    // 2. Credit based (One-time purchase per event)
+    eventCredits: v.optional(v.number()), // Number of "Pro Event" credits available
+    
     polarCustomerId: v.optional(v.string()),
     polarSubscriptionId: v.optional(v.string()),
     createdAt: v.number(),
   })
-  // Create an index to quickly look up your app user by their Better Auth ID
   .index("by_authUserId", ["authUserId"])
   .index("by_email", ["email"]),
 
@@ -24,11 +28,21 @@ export default defineSchema({
   events: defineTable({
     adminId: v.id("users"),
     title: v.string(),
-    joinCode: v.string(), // e.g., "ABCD-1234"
-    maxStaff: v.number(),  // e.g., 20
-    tier: v.union(v.literal("free"), v.literal("pass_7d"), v.literal("monthly")),
-    expiresAt: v.optional(v.number()), // Unix timestamp for when the event expires
-    isActive: v.boolean(),
+    joinCode: v.string(), 
+    maxStaff: v.number(), 
+    
+    // THE LIFECYCLE
+    // draft: Setup mode (Pro features configured but not active)
+    // live: Active mode (Pro features running, timer is ticking)
+    // archived: Read-only mode (Timer expired)
+    status: v.union(v.literal("draft"), v.literal("live"), v.literal("archived")),
+    
+    // TIERING
+    tier: v.union(v.literal("free"), v.literal("pro")),
+    
+    liveAt: v.optional(v.number()),    // When they clicked "Go Live"
+    expiresAt: v.optional(v.number()), // liveAt + 24 hours (or duration)
+    
     createdAt: v.number(),
   }).index("by_joinCode", ["joinCode"]),
 

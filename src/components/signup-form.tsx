@@ -23,8 +23,9 @@ import { cn } from "#/lib/utils";
 
 export function SignupForm({
 	className,
+	checkoutSlug,
 	...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { checkoutSlug?: string }) {
 	const router = useRouter();
 	const [step, setStep] = useState<"email" | "otp">("email");
 	const [authError, setAuthError] = useState<string | null>(null);
@@ -107,7 +108,15 @@ export function SignupForm({
 				if (error) {
 					setAuthError(error.message || "An unknown error occurred");
 				} else {
-					// Redirect to protected dashboard on success
+					// OTP success — go to checkout or dashboard
+					if (checkoutSlug) {
+						const { data, error } = await authClient.checkout({ slug: checkoutSlug });
+						console.log("[Checkout] slug:", checkoutSlug, "data:", data, "error:", error);
+						if (data?.url) {
+							window.location.href = data.url;
+							return;
+						}
+					}
 					router.navigate({ to: "/app/dashboard" });
 				}
 			}
