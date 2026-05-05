@@ -1,13 +1,125 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CircleCheck } from "lucide-react";
+import { tv } from "tailwind-variants";
+import { Button } from "#/components/ui/button";
 
 export const Route = createFileRoute("/(public)/")({ component: Home });
 
+const pricingCard = tv({
+	slots: {
+		base: "flex flex-col gap-6 bg-zinc-900 border border-zinc-950/15 h-96 rounded-2xl p-8 shadow-xl bg-radial-[at_100%_-50%] from-zinc-500/10 to-zinc-950 to-100% md:p-6",
+		cardTitle: "font-heading text-2xl text-zinc-100",
+		price: "font-medium text-3xl text-zinc-100",
+		featureList: "flex flex-col grow gap-4",
+		featureItem: "font-light text-base text-zinc-400",
+		button: "mt-auto w-full",
+	},
+});
+
 function Home() {
+	const { base, cardTitle, price, featureList, featureItem, button } =
+		pricingCard();
 	return (
-		<div className="spine pt-24">
-			<p className="text-base text-amber-100 pt-4">
-				Public Page - Only for guest users
-			</p>
+		<div className="w-full bg-zinc-950">
+			{/* Hero Section */}
+			<section className="spine min-h-screen flex flex-col justify-center py-24 pb-12">
+				<h1 className="text-5xl md:text-7xl font-heading text-white tracking-tight">
+					Hero View
+				</h1>
+				<p className="text-lg text-amber-100 pt-4 max-w-xl">
+					Public Page - Only for guest users. This section takes up the full
+					height of the viewport.
+				</p>
+			</section>
+
+			{/* Pricing Section */}
+			<section className="spine min-h-screen py-32">
+				<h2 className="text-4xl md:text-5xl font-heading text-zinc-100 tracking-tight">
+					Pricing
+				</h2>
+				<p className="text-lg md:text-xl text-zinc-400 mt-6 mb-12 max-w-2xl font-light leading-relaxed">
+					Simple, transparent pricing for every stage.
+					<span className="block text-zinc-100 font-normal mt-1">
+						Start for free, scale as you grow.
+					</span>
+				</p>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-24">
+					<div className={base()}>
+						<h3 className={cardTitle()}>Free</h3>
+
+						<div className={featureList()}>
+							<div className="flex items-center gap-2">
+								<CircleCheck
+									size={18}
+									className="fill-zinc-400 stroke-zinc-950"
+								/>
+								<p className={featureItem()}>1 free event</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<CircleCheck
+									size={18}
+									className="fill-zinc-400 stroke-zinc-950"
+								/>
+								<p className={featureItem()}>Up to 5 users</p>
+							</div>
+						</div>
+						<p className={price()}>$0</p>
+						<Button size={"xl"} className={button()} variant={"outline"}>
+							Get started
+						</Button>
+					</div>
+					<div className={base()}>
+						<h3 className={cardTitle()}>7 Days Pass</h3>
+
+						<div className={featureList()}>
+							<div className="flex items-center gap-2">
+								<CircleCheck
+									size={18}
+									className="fill-zinc-400 stroke-zinc-950"
+								/>
+								<p className={featureItem()}>3 live events</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<CircleCheck
+									size={18}
+									className="fill-zinc-400 stroke-zinc-950"
+								/>
+								<p className={featureItem()}>Up to 5 users</p>
+							</div>
+						</div>
+						<p className={price()}>$29</p>
+						<Button size={"xl"} className={button()} variant={"outline"}>
+							Get started
+						</Button>
+					</div>
+					<div className={base()}>
+						<h3 className={cardTitle()}>Monthly Subscription</h3>
+
+						<div className={featureList()}>
+							<div className="flex items-center gap-2">
+								<CircleCheck
+									size={18}
+									className="fill-zinc-400 stroke-zinc-950"
+								/>
+								<p className={featureItem()}>3 live events</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<CircleCheck
+									size={18}
+									className="fill-zinc-400 stroke-zinc-950"
+								/>
+								<p className={featureItem()}>Up to 5 users</p>
+							</div>
+						</div>
+						<p className={price()}>
+							$49<span className="text-base text-zinc-500 mx-0.5">/month</span>
+						</p>
+						<Button size={"xl"} className={button()} variant={"outline"}>
+							Get started
+						</Button>
+					</div>
+				</div>
+			</section>
 		</div>
 	);
 }

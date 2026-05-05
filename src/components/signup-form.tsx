@@ -301,7 +301,7 @@ export function SignupForm({
 
 					{step === "email" && (
 						<>
-							<FieldSeparator className="**:data-[slot=field-separator-content]:bg-zinc-900">
+							<FieldSeparator className="**:data-[slot=field-separator-content]:bg-zinc-950">
 								Or
 							</FieldSeparator>
 							<Field>

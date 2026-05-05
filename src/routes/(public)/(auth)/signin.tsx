@@ -7,7 +7,7 @@ export const Route = createFileRoute("/(public)/(auth)/signin")({
 
 function RouteComponent() {
 	return (
-		<div className=" min-h-dvh bg-neutral-900">
+		<div className=" min-h-dvh bg-zinc-950">
 			<div className="spine flex items-center justify-center min-h-screen">
 				<LoginForm />
 			</div>

@@ -140,7 +140,25 @@ body {
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
+    @apply font-sans scroll-smooth;
+    scrollbar-gutter: stable;
+  }
+
+  /* Custom Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-zinc-800 rounded-full border-2 border-transparent bg-clip-content;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-zinc-700;
   }
 }
 
@@ -149,6 +167,6 @@ body {
     @apply max-w-7xl mx-auto px-4;
   }
   .logo {
-    @apply text-2xl font-extrabold text-emerald-300 tracking-tight;
+    @apply text-2xl font-extrabold text-zinc-100 tracking-tight;
   }
 }
