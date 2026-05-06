@@ -1,3 +1,8 @@
+import { Buffer } from "buffer/";
+if (typeof (globalThis as any).Buffer === "undefined") {
+    (globalThis as any).Buffer = Buffer;
+}
+
 import { betterAuth } from 'better-auth/minimal'
 import { createClient } from '@convex-dev/better-auth'
 import { convex } from '@convex-dev/better-auth/plugins'
@@ -121,6 +126,37 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 
                         const actionCtx = ctx as unknown as GenericActionCtx<DataModel>;
 
+                        // 1. Record the payment in permanent database history
+                        const checkoutId = order.checkoutId ?? (order as any).checkout?.id;
+                      
+                        if (checkoutId) {
+                            await actionCtx.runMutation(internal.payments.recordPayment, {
+                                authUserId,
+                                checkoutId,
+                                timestamp: event.timestamp.toISOString(),
+                                orderId: order.id,
+                                invoiceNo: order.invoiceNumber,
+                                totalAmount: order.totalAmount,
+                                netAmount: order.netAmount,
+                                currency: order.currency,
+                                discountAmount: order.discountAmount,
+                                productName: order.description,
+                                status: order.status,
+                            });
+                        }
+
+                        // 2. Link Polar Identifiers to user record
+                        const polarCustomerId = order.customerId ?? (order as any).customer?.id;
+                        const polarSubscriptionId = order.subscriptionId ?? (order as any).subscription_id;
+                        if (polarCustomerId) {
+                            await actionCtx.runMutation(internal.payments.updatePolarBillingIds, {
+                                authUserId,
+                                polarCustomerId,
+                                polarSubscriptionId: polarSubscriptionId ?? undefined,
+                            });
+                        }
+
+                        // 3. Grant credits/subscriptions
                         if (creditsToAdd > 0) {
                             await actionCtx.runMutation(internal.payments.grantEventCredits, {
                                 authUserId,
@@ -134,6 +170,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
                             });
                         }
                     },
+                    
                 }) 
             ], 
         }) 

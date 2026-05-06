@@ -31,6 +31,7 @@
     "@tanstack/router-plugin": "^1.132.0",
     "@tanstack/zod-form-adapter": "^0.42.1",
     "better-auth": "^1.6.9",
+    "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "^1.37.0",

@@ -78,4 +78,20 @@ export default defineSchema({
     channel: v.string(),             // e.g., "general", "section-a", "door-attendants"
     createdAt: v.number(),
   }).index("by_event", ["eventId"]),
+
+  // Permanent Transaction History
+  payments: defineTable({
+    authUserId: v.string(),
+    checkoutId: v.string(),
+    timestamp: v.string(),
+    orderId: v.string(),
+    invoiceNo: v.string(),
+    totalAmount: v.number(),
+    currency: v.string(),
+    discountAmount: v.number(),
+    netAmount: v.number(),
+    productName: v.string(),
+    status: v.string(),
+    createdAt: v.number(),
+  }).index("by_checkoutId", ["checkoutId"]),
 });
