@@ -36,14 +36,15 @@ export const authComponent: any = createClient<DataModel>(components.betterAuth,
   triggers: {
     user: {
       onCreate: async (ctx: any, user: any) => {
-        console.log("[Trigger] Creating user in 'users' table:", user);
+        // console.log("[Trigger] Creating user in 'users' table:", user);
         await ctx.db.insert("users", {
           authUserId: user._id, 
           email: user.email,
           name: user.name,
           role: "admin",
-          eventCredits: 0,
-          subscriptionTier: "free",
+          oneTimeCredits: 0,
+          monthlyCredits: 0,
+          billingPlan: "free",
           createdAt: Date.now(),
         });
       },
@@ -158,15 +159,18 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 
                         // 3. Grant credits/subscriptions
                         if (creditsToAdd > 0) {
-                            await actionCtx.runMutation(internal.payments.grantEventCredits, {
+                            await actionCtx.runMutation(internal.payments.grantOneTimeCredits, {
                                 authUserId,
                                 creditsToAdd,
                             });
                         }
 
                         if (order.productId === process.env.POLAR_PRODUCT_ID_MONTHLY) {
+                            const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
                             await actionCtx.runMutation(internal.payments.grantSubscription, {
                                 authUserId,
+                                initialMonthlyCredits: 8,
+                                subscriptionExpiresAt: Date.now() + thirtyDaysInMs,
                             });
                         }
                     },

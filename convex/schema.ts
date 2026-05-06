@@ -10,12 +10,13 @@ export default defineSchema({
     role: v.optional(v.union(v.literal("admin"), v.literal("member"))),
     
     // MONETIZATION FIELDS
-    // 1. Subscription based (Time-limited unlimited access)
-    subscriptionTier: v.optional(v.union(v.literal("free"), v.literal("pro_monthly"))),
+    billingPlan: v.optional(v.union(v.literal("free"), v.literal("pay_as_you_go"), v.literal("pro_monthly"))),
     subscriptionExpiresAt: v.optional(v.number()), // Unix timestamp for sub end
     
-    // 2. Credit based (One-time purchase per event)
-    eventCredits: v.optional(v.number()), // Number of "Pro Event" credits available
+    // Separated Credit Pools (Model A)
+    oneTimeCredits: v.optional(v.number()), // Lifetime credits (Single Pass & Weekend Bundle)
+    monthlyCredits: v.optional(v.number()), // Subscription credits (resets monthly, no rollover)
+    monthlyCreditsResetAt: v.optional(v.number()), // Timestamp for next monthly credit reset
     
     polarCustomerId: v.optional(v.string()),
     polarSubscriptionId: v.optional(v.string()),

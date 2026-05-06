@@ -1,7 +1,8 @@
 import { v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { internalMutation, mutation } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 
-export const grantEventCredits = internalMutation({
+export const grantOneTimeCredits = internalMutation({
   args: {
     authUserId: v.string(),
     creditsToAdd: v.number(),
@@ -15,7 +16,8 @@ export const grantEventCredits = internalMutation({
     if (!user) return;
 
     await ctx.db.patch(user._id, {
-      eventCredits: (user.eventCredits ?? 0) + args.creditsToAdd,
+      oneTimeCredits: (user.oneTimeCredits ?? 0) + args.creditsToAdd,
+      billingPlan: "pay_as_you_go",
     });
   },
 });
@@ -23,6 +25,8 @@ export const grantEventCredits = internalMutation({
 export const grantSubscription = internalMutation({
   args: {
     authUserId: v.string(),
+    initialMonthlyCredits: v.number(),
+    subscriptionExpiresAt: v.number(),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db
@@ -33,8 +37,72 @@ export const grantSubscription = internalMutation({
     if (!user) return;
 
     await ctx.db.patch(user._id, {
-      subscriptionTier: "pro_monthly",
+      billingPlan: "pro_monthly",
+      subscriptionExpiresAt: args.subscriptionExpiresAt,
+      monthlyCredits: args.initialMonthlyCredits,
+      monthlyCreditsResetAt: args.subscriptionExpiresAt, // Resets aligned with the next renewal date
     });
+  },
+});
+
+async function lazyResetOrDowngradeUserLogic(ctx: MutationCtx, authUserId: string) {
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_authUserId", (q) => q.eq("authUserId", authUserId))
+    .first();
+
+  if (!user) return null;
+
+  const now = Date.now();
+  let patched = false;
+  const patchObj: any = {};
+
+  // 1. Handle Subscription Expiration (Downgrade to Free or Pay-as-you-go)
+  if (
+    user.billingPlan === "pro_monthly" &&
+    user.subscriptionExpiresAt &&
+    now >= user.subscriptionExpiresAt
+  ) {
+    const hasOneTimeLeft = (user.oneTimeCredits ?? 0) > 0;
+    patchObj.billingPlan = hasOneTimeLeft ? "pay_as_you_go" : "free";
+    patchObj.monthlyCredits = 0;
+    patched = true;
+  }
+  // 2. Handle Monthly Subscription Credit Reset (New Billing Period)
+  else if (
+    user.billingPlan === "pro_monthly" &&
+    user.monthlyCreditsResetAt &&
+    now >= user.monthlyCreditsResetAt
+  ) {
+    patchObj.monthlyCredits = 8;
+    // Advance reset date by 30 days
+    patchObj.monthlyCreditsResetAt = user.monthlyCreditsResetAt + 30 * 24 * 60 * 60 * 1000;
+    patched = true;
+  }
+
+  if (patched) {
+    await ctx.db.patch(user._id, patchObj);
+    return { ...user, ...patchObj };
+  }
+
+  return user;
+}
+
+export const lazyResetOrDowngradeUser = internalMutation({
+  args: {
+    authUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await lazyResetOrDowngradeUserLogic(ctx, args.authUserId);
+  },
+});
+
+export const evaluateUserStatus = mutation({
+  args: {
+    authUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await lazyResetOrDowngradeUserLogic(ctx, args.authUserId);
   },
 });
 

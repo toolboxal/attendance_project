@@ -62,7 +62,49 @@ function Home() {
 						Start for free, scale as you grow.
 					</span>
 				</p>
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-24">
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-24">
+					{/* Free Tier */}
+					<div className={base()}>
+						<h3 className={cardTitle()}>Free</h3>
+						<div className={featureList()}>
+							<div className="flex items-center gap-2">
+								<CircleCheck
+									size={18}
+									className="fill-zinc-400 stroke-zinc-950"
+								/>
+								<p className={featureItem()}>1 Active Event Draft</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<CircleCheck
+									size={18}
+									className="fill-zinc-400 stroke-zinc-950"
+								/>
+								<p className={featureItem()}>Basic attendee tracking</p>
+							</div>
+							<div className="flex items-center gap-2">
+								<CircleCheck
+									size={18}
+									className="fill-zinc-400 stroke-zinc-950"
+								/>
+								<p className={featureItem()}>Up to 5 staff seats</p>
+							</div>
+						</div>
+						<p className={price()}>$0</p>
+						<Button
+							size={"xl"}
+							className={button()}
+							variant={"outline"}
+							onClick={() =>
+								router.navigate({
+									to: "/signup",
+									search: { checkoutSlug: undefined },
+								})
+							}
+						>
+							Get Started
+						</Button>
+					</div>
+
 					{/* Single Pass */}
 					<div className={base()}>
 						<h3 className={cardTitle()}>Single Pass</h3>
