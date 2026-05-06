@@ -14,6 +14,7 @@ import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as AuthenticatedAppRouteRouteImport } from './routes/_authenticated/app/route'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthenticatedAppSuccessRouteImport } from './routes/_authenticated/app/success'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/app/dashboard'
 import { Route as publicauthSignupRouteImport } from './routes/(public)/(auth)/signup'
 import { Route as publicauthSigninRouteImport } from './routes/(public)/(auth)/signin'
@@ -42,6 +43,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAppSuccessRoute = AuthenticatedAppSuccessRouteImport.update({
+  id: '/success',
+  path: '/success',
+  getParentRoute: () => AuthenticatedAppRouteRoute,
+} as any)
 const AuthenticatedAppDashboardRoute =
   AuthenticatedAppDashboardRouteImport.update({
     id: '/dashboard',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/signin': typeof publicauthSigninRoute
   '/signup': typeof publicauthSignupRoute
   '/app/dashboard': typeof AuthenticatedAppDashboardRoute
+  '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/': typeof AuthenticatedAppIndexRoute
 }
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/signin': typeof publicauthSigninRoute
   '/signup': typeof publicauthSignupRoute
   '/app/dashboard': typeof AuthenticatedAppDashboardRoute
+  '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app': typeof AuthenticatedAppIndexRoute
 }
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/(public)/(auth)/signin': typeof publicauthSigninRoute
   '/(public)/(auth)/signup': typeof publicauthSignupRoute
   '/_authenticated/app/dashboard': typeof AuthenticatedAppDashboardRoute
+  '/_authenticated/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
 }
@@ -95,10 +104,18 @@ export interface FileRouteTypes {
     | '/signin'
     | '/signup'
     | '/app/dashboard'
+    | '/app/success'
     | '/api/auth/$'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/signin' | '/signup' | '/app/dashboard' | '/api/auth/$' | '/app'
+  to:
+    | '/'
+    | '/signin'
+    | '/signup'
+    | '/app/dashboard'
+    | '/app/success'
+    | '/api/auth/$'
+    | '/app'
   id:
     | '__root__'
     | '/(public)'
@@ -107,6 +124,7 @@ export interface FileRouteTypes {
     | '/(public)/(auth)/signin'
     | '/(public)/(auth)/signup'
     | '/_authenticated/app/dashboard'
+    | '/_authenticated/app/success'
     | '/api/auth/$'
     | '/_authenticated/app/'
   fileRoutesById: FileRoutesById
@@ -154,6 +172,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/app/success': {
+      id: '/_authenticated/app/success'
+      path: '/success'
+      fullPath: '/app/success'
+      preLoaderRoute: typeof AuthenticatedAppSuccessRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
     '/_authenticated/app/dashboard': {
       id: '/_authenticated/app/dashboard'
       path: '/dashboard'
@@ -196,11 +221,13 @@ const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
 
 interface AuthenticatedAppRouteRouteChildren {
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
+  AuthenticatedAppSuccessRoute: typeof AuthenticatedAppSuccessRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
 }
 
 const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
+  AuthenticatedAppSuccessRoute: AuthenticatedAppSuccessRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
 }
 

@@ -57,6 +57,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       siteUrl,
       "http://localhost:3000",
       "http://127.0.0.1:3000",
+      "http://192.168.1.5:3000",
     ],
     socialProviders: {
       google: {
@@ -102,7 +103,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
                         { productId: process.env.POLAR_PRODUCT_ID_WEEKEND!, slug: "weekend" },
                         { productId: process.env.POLAR_PRODUCT_ID_MONTHLY!, slug: "monthly" },
                     ], 
-                    successUrl: `${process.env.SITE_URL}/app/dashboard?checkout_success=true&checkout_id={CHECKOUT_ID}`, 
+                    successUrl: `${process.env.SITE_URL}/app/success?checkout_id={CHECKOUT_ID}`, 
                     authenticatedUsersOnly: true
                 }), 
                 portal(), 

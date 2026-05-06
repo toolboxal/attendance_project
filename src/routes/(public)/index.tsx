@@ -1,4 +1,5 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter, Navigate } from "@tanstack/react-router";
+import { useConvexAuth } from "convex/react";
 import { CircleCheck } from "lucide-react";
 import { tv } from "tailwind-variants";
 import { Button } from "#/components/ui/button";
@@ -20,6 +21,18 @@ function Home() {
 	const { base, cardTitle, price, featureList, featureItem, button } =
 		pricingCard();
 	const router = useRouter();
+	const { isAuthenticated, isLoading } = useConvexAuth();
+
+	// Redirect authenticated users straight to the dashboard
+	if (!isLoading && isAuthenticated) {
+		return (
+			<Navigate
+				to="/app/dashboard"
+				search={{ checkoutSlug: undefined }}
+				replace
+			/>
+		);
+	}
 
 	const handleCheckout = (slug: string) => {
 		router.navigate({ to: "/signup", search: { checkoutSlug: slug } });

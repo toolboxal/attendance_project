@@ -117,7 +117,10 @@ export function SignupForm({
 							return;
 						}
 					}
-					router.navigate({ to: "/app/dashboard" });
+					router.navigate({
+						to: "/app/dashboard",
+						search: { checkoutSlug: undefined },
+					});
 				}
 			}
 		},
@@ -321,7 +324,9 @@ export function SignupForm({
 									onClick={async () => {
 										await authClient.signIn.social({
 											provider: "google",
-											callbackURL: "/app/dashboard",
+											callbackURL: checkoutSlug
+												? `/app/dashboard?checkoutSlug=${checkoutSlug}`
+												: "/app/dashboard",
 										});
 									}}
 								>

@@ -12,6 +12,7 @@ function navBar() {
 				<div className="flex space-x-4">
 					<Link
 						to="/signup"
+						search={{ checkoutSlug: undefined }}
 						className={cn(
 							buttonVariants({
 								variant: "default",

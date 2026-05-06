@@ -7,28 +7,34 @@ import { authClient } from "#/lib/auth-client";
 
 export const Route = createFileRoute("/_authenticated/app/dashboard")({
 	validateSearch: (search: Record<string, unknown>) => ({
-		checkout_success: search.checkout_success as boolean | undefined,
+		checkoutSlug: search.checkoutSlug as string | undefined,
 	}),
 	component: DashboardComponent,
 });
 
 function DashboardComponent() {
-	const { checkout_success } = Route.useSearch();
+	const { checkoutSlug } = Route.useSearch();
 	const router = useRouter();
 
 	useEffect(() => {
-		if (checkout_success) {
-			toast.success("Payment Successful! Your credits have been added.", {
-				icon: <CheckCircle2Icon className="fill-green-500" />,
-			});
-			// Clean up the URL
-			router.navigate({
-				to: "/app/dashboard",
-				search: { checkout_success: undefined },
-				replace: true,
-			});
+		// Handle automatic checkout redirect (e.g., after Google OAuth)
+		if (checkoutSlug) {
+			const initiateCheckout = async () => {
+				const { data } = await authClient.checkout({ slug: checkoutSlug });
+				if (data?.url) {
+					window.location.href = data.url;
+				} else {
+					// Fallback: clear the slug if checkout fails
+					router.navigate({
+						to: "/app/dashboard",
+						search: { checkoutSlug: undefined },
+						replace: true,
+					});
+				}
+			};
+			initiateCheckout();
 		}
-	}, [checkout_success, router]);
+	}, [checkoutSlug, router]);
 
 	const handleSignOut = async () => {
 		try {

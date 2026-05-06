@@ -3,7 +3,7 @@ import { SignupForm } from "#/components/signup-form";
 
 export const Route = createFileRoute("/(public)/(auth)/signup")({
 	validateSearch: (search: Record<string, unknown>) => ({
-		checkoutSlug: (search.checkoutSlug as string) ?? undefined,
+		checkoutSlug: search.checkoutSlug as string | undefined,
 	}),
 	component: RouteComponent,
 });
