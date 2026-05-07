@@ -108,7 +108,10 @@ export function LoginForm({
 					setAuthError(error.message || "An unknown error occurred");
 				} else {
 					// Redirect to protected dashboard on success
-					router.navigate({ to: "/app/dashboard" });
+					router.navigate({
+						to: "/app/dashboard",
+						search: { checkoutSlug: undefined },
+					});
 				}
 			}
 		},
@@ -129,7 +132,10 @@ export function LoginForm({
 						<div className="flex flex-col items-center gap-2 text-center">
 							<h1 className="text-xl font-bold">Login to your account</h1>
 							<FieldDescription>
-								Don&apos;t have an account? <Link to="/signup">Sign up</Link>
+								Don&apos;t have an account?{" "}
+								<Link to="/signup" search={{ checkoutSlug: undefined }}>
+									Sign up
+								</Link>
 							</FieldDescription>
 						</div>
 					) : (
@@ -264,7 +270,7 @@ export function LoginForm({
 										<button
 											type="button"
 											onClick={handleResend}
-											disabled={isResending || timeLeft > 60}
+											disabled={isResending || timeLeft > 240}
 											className="text-sm underline underline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed hover:text-foreground transition-colors"
 										>
 											{isResending ? "Sending..." : "Resend code"}

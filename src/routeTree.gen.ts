@@ -16,6 +16,7 @@ import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticat
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthenticatedAppSuccessRouteImport } from './routes/_authenticated/app/success'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/app/dashboard'
+import { Route as AuthenticatedAppBillingRouteImport } from './routes/_authenticated/app/billing'
 import { Route as publicauthSignupRouteImport } from './routes/(public)/(auth)/signup'
 import { Route as publicauthSigninRouteImport } from './routes/(public)/(auth)/signin'
 
@@ -54,6 +55,11 @@ const AuthenticatedAppDashboardRoute =
     path: '/dashboard',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
+const AuthenticatedAppBillingRoute = AuthenticatedAppBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AuthenticatedAppRouteRoute,
+} as any)
 const publicauthSignupRoute = publicauthSignupRouteImport.update({
   id: '/(auth)/signup',
   path: '/signup',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/': typeof publicIndexRoute
   '/signin': typeof publicauthSigninRoute
   '/signup': typeof publicauthSignupRoute
+  '/app/billing': typeof AuthenticatedAppBillingRoute
   '/app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/': typeof publicIndexRoute
   '/signin': typeof publicauthSigninRoute
   '/signup': typeof publicauthSignupRoute
+  '/app/billing': typeof AuthenticatedAppBillingRoute
   '/app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/(public)/': typeof publicIndexRoute
   '/(public)/(auth)/signin': typeof publicauthSigninRoute
   '/(public)/(auth)/signup': typeof publicauthSignupRoute
+  '/_authenticated/app/billing': typeof AuthenticatedAppBillingRoute
   '/_authenticated/app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
     | '/'
     | '/signin'
     | '/signup'
+    | '/app/billing'
     | '/app/dashboard'
     | '/app/success'
     | '/api/auth/$'
@@ -112,6 +122,7 @@ export interface FileRouteTypes {
     | '/'
     | '/signin'
     | '/signup'
+    | '/app/billing'
     | '/app/dashboard'
     | '/app/success'
     | '/api/auth/$'
@@ -123,6 +134,7 @@ export interface FileRouteTypes {
     | '/(public)/'
     | '/(public)/(auth)/signin'
     | '/(public)/(auth)/signup'
+    | '/_authenticated/app/billing'
     | '/_authenticated/app/dashboard'
     | '/_authenticated/app/success'
     | '/api/auth/$'
@@ -186,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppDashboardRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/_authenticated/app/billing': {
+      id: '/_authenticated/app/billing'
+      path: '/billing'
+      fullPath: '/app/billing'
+      preLoaderRoute: typeof AuthenticatedAppBillingRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
     '/(public)/(auth)/signup': {
       id: '/(public)/(auth)/signup'
       path: '/signup'
@@ -220,12 +239,14 @@ const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
 )
 
 interface AuthenticatedAppRouteRouteChildren {
+  AuthenticatedAppBillingRoute: typeof AuthenticatedAppBillingRoute
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppSuccessRoute: typeof AuthenticatedAppSuccessRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
 }
 
 const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
+  AuthenticatedAppBillingRoute: AuthenticatedAppBillingRoute,
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppSuccessRoute: AuthenticatedAppSuccessRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,

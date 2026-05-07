@@ -85,16 +85,9 @@ function SuccessPage() {
 				<div className="w-full rounded-xl bg-zinc-950/50 border border-zinc-800/50 p-5 text-left flex flex-col gap-4 font-mono text-xs text-zinc-400">
 					<div className="flex justify-between border-b border-zinc-800/60 pb-3">
 						<span className="flex items-center gap-1.5">
-							<Receipt size={14} /> RECEIPT
+							<Receipt size={14} /> INVOICE
 						</span>
-						<span className="text-zinc-500">
-							#
-							{payment?.orderId
-								? payment.orderId.slice(-8).toUpperCase()
-								: checkout_id
-									? checkout_id.slice(-8).toUpperCase()
-									: "PENDING"}
-						</span>
+						<span className="text-zinc-500">#{payment?.invoiceNo || ""}</span>
 					</div>
 
 					{isCheckoutLoading ? (
@@ -124,7 +117,7 @@ function SuccessPage() {
 							<div className="border-t border-dashed border-zinc-800/80 pt-3 flex justify-between text-sm font-semibold text-zinc-200">
 								<span>Total Charged</span>
 								<span className="text-emerald-400">
-									{formatAmount(payment.netAmount, payment.currency)}
+									{formatAmount(payment.totalAmount, payment.currency)}
 								</span>
 							</div>
 						</>

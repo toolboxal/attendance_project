@@ -41,11 +41,39 @@ export default defineSchema({
     // TIERING
     tier: v.union(v.literal("free"), v.literal("pro")),
     
+    // NEW EVENT PARAMETERS
+    location: v.optional(v.string()),         // Physical venue/address
+    eventDate: v.optional(v.number()),        // Epoch timestamp for event day
+    startTime: v.optional(v.string()),        // "16:00"
+    endTime: v.optional(v.string()),          // "23:00"
+    description: v.optional(v.string()),      // Notes, rules, guidelines
+    sections: v.optional(v.array(v.string())),// Preset list of sections/areas
+
     liveAt: v.optional(v.number()),    // When they clicked "Go Live"
     expiresAt: v.optional(v.number()), // liveAt + 24 hours (or duration)
     
     createdAt: v.number(),
   }).index("by_joinCode", ["joinCode"]),
+
+  // Job Scopes / Role Slots (Pre-created by Admins, claimed by liveStaff)
+  roleSlots: defineTable({
+    eventId: v.id("events"),
+    title: v.string(),                         // e.g., "Receptionist - Morning Shift"
+    role: v.union(v.literal("usher"), v.literal("attendant"), v.literal("supervisor")),
+    section: v.optional(v.string()),           // e.g., "Main Foyer"
+    timeSlot: v.optional(v.string()),          // e.g., "08:00 - 13:00"
+    description: v.optional(v.string()),       // Specific duties
+    
+    // EPHEMERAL INVITE SECURITY
+    inviteToken: v.optional(v.string()),       // Secure random token for WhatsApp/Email
+    inviteTokenExpiresAt: v.optional(v.number()), // Link expiration timestamp
+    
+    // CLAIMED STAFF
+    assignedStaffId: v.optional(v.id("liveStaff")), // Null if vacant/unclaimed
+  })
+  .index("by_event", ["eventId"])
+  .index("by_inviteToken", ["inviteToken"])
+  .index("by_assignedStaff", ["assignedStaffId"]),
 
   // Ephemeral Guest/Staff Users
   liveStaff: defineTable({
@@ -55,6 +83,7 @@ export default defineSchema({
     section: v.optional(v.string()), // e.g., "Section B" or "Door 1"
     token: v.string(),               // The secret token stored in localStorage
     lastActive: v.number(),
+    status: v.optional(v.union(v.literal("active"), v.literal("checked_out"))), // Support active shift rotation
     createdAt: v.number(),
   })
   .index("by_event", ["eventId"])

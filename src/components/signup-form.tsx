@@ -110,8 +110,17 @@ export function SignupForm({
 				} else {
 					// OTP success — go to checkout or dashboard
 					if (checkoutSlug) {
-						const { data, error } = await authClient.checkout({ slug: checkoutSlug });
-						console.log("[Checkout] slug:", checkoutSlug, "data:", data, "error:", error);
+						const { data, error } = await authClient.checkout({
+							slug: checkoutSlug,
+						});
+						console.log(
+							"[Checkout] slug:",
+							checkoutSlug,
+							"data:",
+							data,
+							"error:",
+							error,
+						);
 						if (data?.url) {
 							window.location.href = data.url;
 							return;
@@ -279,7 +288,7 @@ export function SignupForm({
 										<button
 											type="button"
 											onClick={handleResend}
-											disabled={isResending || timeLeft > 60}
+											disabled={isResending || timeLeft > 240}
 											className="text-sm underline underline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed hover:text-foreground transition-colors"
 										>
 											{isResending ? "Sending..." : "Resend code"}

@@ -1,6 +1,6 @@
-# Lifecycle Specification: Credits, Cancellations & Tier Status
+# Lifecycle Specification: Credits, Cancellations & JIT Name Onboarding
 
-This specification outlines exactly what a **Credit** represents in Asistir and defines how to handle subscription cancellations, grace periods, and tier transitions under Convex's serverless architecture.
+This specification outlines exactly what a **Credit** represents in Asistir, defines how to handle subscription cancellations, and documents the **Just-in-Time Name Onboarding** pattern on event launch.
 
 ---
 
@@ -28,12 +28,12 @@ When a customer cancels their subscription through Polar, they have paid for the
 *   **The Polar Webhook (`subscription.canceled` or `sub.canceled`):**
     When a cancellation event is received, **do not immediately revoke access or reset their credits**. Simply let the subscription run its course. Polar will let you know when the period officially ends, or you can rely on the `subscriptionExpiresAt` timestamp.
 *   **Checking Pro Tier Status:**
-    Instead of maintaining a hardcoded `tier = "pro"` field that you have to manually flip, evaluate Pro status dynamically using this logical formula:
+    Evaluate Pro status dynamically using this logical formula:
 
 ```typescript
 export function isUserPro(user: any): boolean {
   const now = Date.now();
-  const hasActiveSubscription = user.subscriptionTier === "pro_monthly" && 
+  const hasActiveSubscription = user.billingPlan === "pro_monthly" && 
                                 user.subscriptionExpiresAt && 
                                 now < user.subscriptionExpiresAt;
                                 
@@ -52,15 +52,27 @@ When `now >= user.subscriptionExpiresAt`, the subscription has officially ended.
 
 ```typescript
 // When evaluating user status or starting a new event:
-if (user.subscriptionTier === "pro_monthly" && Date.now() >= user.subscriptionExpiresAt) {
-  // Lazy Downgrade: The billing period has ended and was not renewed.
+if (user.billingPlan === "pro_monthly" && Date.now() >= user.subscriptionExpiresAt) {
+  const hasOneTimeLeft = (user.oneTimeCredits ?? 0) > 0;
+  
+  // Lazy Downgrade: The billing period has ended.
+  // Fall back to pay_as_you_go if they have lifetime credits, otherwise downgrade to free.
   await ctx.db.patch(user._id, {
-    subscriptionTier: "free",
+    billingPlan: hasOneTimeLeft ? "pay_as_you_go" : "free",
     monthlyCredits: 0, // Revoke remaining monthly credits
   });
 }
 ```
 
-### 💎 Why this is perfect:
-1.  **Canceling is risk-free:** If they cancel on day 15, `subscriptionExpiresAt` remains day 30. They keep their `monthlyCredits` and Pro access for the remaining 15 days.
-2.  **Automatic Downgrade:** On day 31, the lazy check automatically changes their tier back to `"free"`, clears any unused `monthlyCredits`, but **leaves their `oneTimeCredits` completely untouched** so they can still use those in the future!
+---
+
+## 4. Just-In-Time Name Onboarding
+
+To make sign-up and initial draft exploration completely frictionless, we do not force users to input a display name during registration. Instead, we perform a **Just-In-Time (JIT) name check** the moment they attempt to start a live event.
+
+### The Flow
+1.  **Clicking Go Live:** The admin clicks `"Go Live"` on a draft event.
+2.  **The Name Guard:** The client checks if `user.name` is empty or missing.
+    *   **If not empty:** Proceed directly to event launch.
+    *   **If empty:** Intercept the action and display a sleek modal asking them to set their name (e.g., *"To start this live event as its supervisor, please enter your display name so your crew can identify you in chat and tasks."*).
+3.  **Launch:** Once they submit their name inside the modal, a mutation updates `user.name` in the database, and the client proceeds to trigger the event launch mutation.
