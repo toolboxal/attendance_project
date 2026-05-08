@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SignupForm } from "#/components/signup-form";
+import { SignupForm } from "#/components/public/signup-form";
 
 export const Route = createFileRoute("/(public)/(auth)/signup")({
 	validateSearch: (search: Record<string, unknown>) => ({

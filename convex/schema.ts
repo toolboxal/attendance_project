@@ -81,13 +81,13 @@ export default defineSchema({
     name: v.string(),
     role: v.union(v.literal("usher"), v.literal("attendant"), v.literal("supervisor")),
     section: v.optional(v.string()), // e.g., "Section B" or "Door 1"
-    token: v.string(),               // The secret token stored in localStorage
+    accessToken: v.string(),         // The secret token stored in localStorage
     lastActive: v.number(),
     status: v.optional(v.union(v.literal("active"), v.literal("checked_out"))), // Support active shift rotation
     createdAt: v.number(),
   })
   .index("by_event", ["eventId"])
-  .index("by_token", ["token"]),
+  .index("by_accessToken", ["accessToken"]),
 
   // Job Queues
   jobs: defineTable({

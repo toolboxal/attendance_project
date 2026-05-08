@@ -14,6 +14,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
 import type * as React from "react";
+import { NotFoundComponent } from "#/components/not-found";
 import { authClient } from "#/lib/auth-client";
 import { getToken } from "#/lib/auth-server";
 import { Toaster } from "@/components/ui/sonner";
@@ -58,6 +59,7 @@ export const Route = createRootRouteWithContext<{
 		};
 	},
 	component: RootComponent,
+	notFoundComponent: NotFoundComponent,
 });
 function RootComponent() {
 	const context = useRouteContext({ from: Route.id });

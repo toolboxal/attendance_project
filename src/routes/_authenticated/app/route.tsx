@@ -1,6 +1,7 @@
 import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
-import { AppSidebar } from "#/components/app-sidebar";
+import { AppSidebar } from "#/components/authenticated/app-sidebar";
+import TopHeaderBar from "#/components/authenticated/topHeaderBar";
 import {
 	SidebarInset,
 	SidebarProvider,
@@ -30,7 +31,10 @@ function RouteComponent() {
 		<SidebarProvider>
 			<AppSidebar />
 			<SidebarInset>
-				<SidebarTrigger />
+				<div className="absolute top-20 left-2 z-999">
+					<SidebarTrigger className="text-white hover:bg-white/10" />
+				</div>
+				<TopHeaderBar />
 				<Outlet />
 			</SidebarInset>
 		</SidebarProvider>

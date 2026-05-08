@@ -2,9 +2,9 @@ import { Link } from "@tanstack/react-router";
 import { cn } from "#/lib/utils";
 import { buttonVariants } from "../ui/button";
 
-function navBar() {
+function NavBar() {
 	return (
-		<div className="fixed top-0 left-0 flex justify-between w-full z-50 border-b border-neutral-800">
+		<div className="sticky top-0 flex justify-between w-full z-30 border-b border-neutral-800 bg-zinc-950/80 backdrop-blur-md">
 			<div className="spine flex justify-between items-center py-4 w-full">
 				<Link to="/">
 					<p className="logo">Asistir</p>
@@ -43,4 +43,4 @@ function navBar() {
 	);
 }
 
-export default navBar;
+export default NavBar;

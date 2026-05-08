@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LiveRouteRouteImport } from './routes/live/route'
 import { Route as publicRouteRouteImport } from './routes/(public)/route'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as AuthenticatedAppRouteRouteImport } from './routes/_authenticated/app/route'
@@ -19,7 +20,14 @@ import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authent
 import { Route as AuthenticatedAppBillingRouteImport } from './routes/_authenticated/app/billing'
 import { Route as publicauthSignupRouteImport } from './routes/(public)/(auth)/signup'
 import { Route as publicauthSigninRouteImport } from './routes/(public)/(auth)/signin'
+import { Route as AuthenticatedAppEventsIndexRouteImport } from './routes/_authenticated/app/events/index'
+import { Route as AuthenticatedAppEventsCreateRouteImport } from './routes/_authenticated/app/events/create'
 
+const LiveRouteRoute = LiveRouteRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const publicRouteRoute = publicRouteRouteImport.update({
   id: '/(public)',
   getParentRoute: () => rootRouteImport,
@@ -70,8 +78,21 @@ const publicauthSigninRoute = publicauthSigninRouteImport.update({
   path: '/signin',
   getParentRoute: () => publicRouteRoute,
 } as any)
+const AuthenticatedAppEventsIndexRoute =
+  AuthenticatedAppEventsIndexRouteImport.update({
+    id: '/events/',
+    path: '/events/',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppEventsCreateRoute =
+  AuthenticatedAppEventsCreateRouteImport.update({
+    id: '/events/create',
+    path: '/events/create',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
+  '/live': typeof LiveRouteRoute
   '/app': typeof AuthenticatedAppRouteRouteWithChildren
   '/': typeof publicIndexRoute
   '/signin': typeof publicauthSigninRoute
@@ -81,8 +102,11 @@ export interface FileRoutesByFullPath {
   '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/events/create': typeof AuthenticatedAppEventsCreateRoute
+  '/app/events/': typeof AuthenticatedAppEventsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/live': typeof LiveRouteRoute
   '/': typeof publicIndexRoute
   '/signin': typeof publicauthSigninRoute
   '/signup': typeof publicauthSignupRoute
@@ -91,10 +115,13 @@ export interface FileRoutesByTo {
   '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/app/events/create': typeof AuthenticatedAppEventsCreateRoute
+  '/app/events': typeof AuthenticatedAppEventsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(public)': typeof publicRouteRouteWithChildren
+  '/live': typeof LiveRouteRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteRouteWithChildren
   '/(public)/': typeof publicIndexRoute
   '/(public)/(auth)/signin': typeof publicauthSigninRoute
@@ -104,10 +131,13 @@ export interface FileRoutesById {
   '/_authenticated/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/events/create': typeof AuthenticatedAppEventsCreateRoute
+  '/_authenticated/app/events/': typeof AuthenticatedAppEventsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/live'
     | '/app'
     | '/'
     | '/signin'
@@ -117,8 +147,11 @@ export interface FileRouteTypes {
     | '/app/success'
     | '/api/auth/$'
     | '/app/'
+    | '/app/events/create'
+    | '/app/events/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/live'
     | '/'
     | '/signin'
     | '/signup'
@@ -127,9 +160,12 @@ export interface FileRouteTypes {
     | '/app/success'
     | '/api/auth/$'
     | '/app'
+    | '/app/events/create'
+    | '/app/events'
   id:
     | '__root__'
     | '/(public)'
+    | '/live'
     | '/_authenticated/app'
     | '/(public)/'
     | '/(public)/(auth)/signin'
@@ -139,16 +175,26 @@ export interface FileRouteTypes {
     | '/_authenticated/app/success'
     | '/api/auth/$'
     | '/_authenticated/app/'
+    | '/_authenticated/app/events/create'
+    | '/_authenticated/app/events/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   publicRouteRoute: typeof publicRouteRouteWithChildren
+  LiveRouteRoute: typeof LiveRouteRoute
   AuthenticatedAppRouteRoute: typeof AuthenticatedAppRouteRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/live': {
+      id: '/live'
+      path: '/live'
+      fullPath: '/live'
+      preLoaderRoute: typeof LiveRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(public)': {
       id: '/(public)'
       path: ''
@@ -219,6 +265,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof publicauthSigninRouteImport
       parentRoute: typeof publicRouteRoute
     }
+    '/_authenticated/app/events/': {
+      id: '/_authenticated/app/events/'
+      path: '/events'
+      fullPath: '/app/events/'
+      preLoaderRoute: typeof AuthenticatedAppEventsIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/events/create': {
+      id: '/_authenticated/app/events/create'
+      path: '/events/create'
+      fullPath: '/app/events/create'
+      preLoaderRoute: typeof AuthenticatedAppEventsCreateRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
   }
 }
 
@@ -243,6 +303,8 @@ interface AuthenticatedAppRouteRouteChildren {
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppSuccessRoute: typeof AuthenticatedAppSuccessRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppEventsCreateRoute: typeof AuthenticatedAppEventsCreateRoute
+  AuthenticatedAppEventsIndexRoute: typeof AuthenticatedAppEventsIndexRoute
 }
 
 const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
@@ -250,6 +312,8 @@ const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppSuccessRoute: AuthenticatedAppSuccessRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppEventsCreateRoute: AuthenticatedAppEventsCreateRoute,
+  AuthenticatedAppEventsIndexRoute: AuthenticatedAppEventsIndexRoute,
 }
 
 const AuthenticatedAppRouteRouteWithChildren =
@@ -259,6 +323,7 @@ const AuthenticatedAppRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   publicRouteRoute: publicRouteRouteWithChildren,
+  LiveRouteRoute: LiveRouteRoute,
   AuthenticatedAppRouteRoute: AuthenticatedAppRouteRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
 	ArrowUpRight,
 	Calendar,
@@ -85,7 +85,7 @@ function BillingComponent() {
 				window.location.href = data.url;
 			}
 		} catch (err) {
-			toast.error("An unexpected error occurred. Please try again.");
+			toast.error(`An unexpected error occurred. Please try again. ${err}`);
 		} finally {
 			setActiveCheckoutSlug(null);
 		}
@@ -109,7 +109,7 @@ function BillingComponent() {
 				toast.error("Billing portal is currently unavailable.");
 			}
 		} catch (err) {
-			toast.error("Failed to redirect to billing portal.");
+			toast.error(`Failed to redirect to billing portal. ${err}`);
 		} finally {
 			setIsPortalLoading(false);
 		}
@@ -334,7 +334,7 @@ function BillingComponent() {
 					</div>
 
 					{/* Package 3: Pro Monthly */}
-					<div className="rounded-xl bg-gradient-to-b from-zinc-900/80 to-zinc-900/30 border border-emerald-500/30 p-6 flex flex-col justify-between gap-6 relative group hover:border-emerald-500/50 transition-all duration-300 shadow-lg shadow-emerald-500/5">
+					<div className="rounded-xl bg-linear-to-b from-zinc-900/80 to-zinc-900/30 border border-emerald-500/30 p-6 flex flex-col justify-between gap-6 relative group hover:border-emerald-500/50 transition-all duration-300 shadow-lg shadow-emerald-500/5">
 						<div className="absolute -top-3 right-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-3xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
 							Best Deal
 						</div>
