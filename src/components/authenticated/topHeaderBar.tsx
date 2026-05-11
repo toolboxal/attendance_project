@@ -16,7 +16,7 @@ function TopHeaderBar() {
 		}
 	};
 	return (
-		<div className="sticky top-0 flex justify-between w-full z-30 border-b border-neutral-800 bg-zinc-950/80 backdrop-blur-md">
+		<div className="sticky top-0 w-full flex justify-between z-30 border-b border-neutral-800 bg-zinc-950/80 backdrop-blur-md">
 			<div className="spine flex justify-between items-center py-4 w-full">
 				{/* Symmetrical Left Container (w-10) to prevent layout shift */}
 				<div className="w-10 flex justify-start items-center">

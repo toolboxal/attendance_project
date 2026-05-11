@@ -10,6 +10,9 @@ const config = defineConfig({
 	ssr: {
 		noExternal: ["@convex-dev/better-auth"],
 	},
+	// optimizeDeps: {
+	// 	holdUntilCrawlEnd: true,
+	// },
 	plugins: [
 		devtools(),
 		tailwindcss(),

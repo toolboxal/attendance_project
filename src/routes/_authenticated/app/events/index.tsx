@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_authenticated/app/events/")({
 function RouteComponent() {
 	return (
 		<div className="w-full min-h-dvh bg-amber-800">
-			<div className="spine flex flex-col bg-zinc-950 h-full">
+			<div className="spine flex flex-col bg-zinc-950 h-full justify-center items-center">
 				<Link to="/app/events/create">Create Event</Link>
 			</div>
 		</div>

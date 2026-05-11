@@ -45,9 +45,7 @@ export default defineSchema({
     location: v.optional(v.string()),         // Physical venue/address
     eventDate: v.optional(v.number()),        // Epoch timestamp for event day
     startTime: v.optional(v.string()),        // "16:00"
-    endTime: v.optional(v.string()),          // "23:00"
     description: v.optional(v.string()),      // Notes, rules, guidelines
-    sections: v.optional(v.array(v.string())),// Preset list of sections/areas
 
     liveAt: v.optional(v.number()),    // When they clicked "Go Live"
     expiresAt: v.optional(v.number()), // liveAt + 24 hours (or duration)
@@ -55,13 +53,35 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_joinCode", ["joinCode"]),
 
+  // 🔥 NEW TABLE: Sections belonging to an Event (Track real-time capacities here)
+  eventSections: defineTable({
+    eventId: v.id("events"),
+    name: v.string(),                 // e.g. "Main Foyer", "Gate A"
+    
+    // LIVE TRACKING PARAMETERS
+    capacity: v.optional(v.number()),  // Optional seating/standing limit
+    headcount: v.number(),            // Running live count report
+    
+    // Rapid reporting status
+    status: v.union(
+      v.literal("empty"), 
+      v.literal("filling"), 
+      v.literal("full"), 
+      v.literal("overflow")
+    ),
+    
+    lastUpdatedAt: v.optional(v.number()),
+    lastUpdatedBy: v.optional(v.id("liveStaff")), // Which usher last reported
+  }).index("by_event", ["eventId"]),
+
   // Job Scopes / Role Slots (Pre-created by Admins, claimed by liveStaff)
   roleSlots: defineTable({
     eventId: v.id("events"),
     title: v.string(),                         // e.g., "Receptionist - Morning Shift"
-    role: v.union(v.literal("usher"), v.literal("attendant"), v.literal("supervisor")),
-    section: v.optional(v.string()),           // e.g., "Main Foyer"
-    timeSlot: v.optional(v.string()),          // e.g., "08:00 - 13:00"
+    role: v.union(v.literal("supervisor"), v.literal("staff")),
+    sectionId: v.optional(v.id("eventSections")), // Linked relation instead of string
+    startTime: v.optional(v.string()),          // e.g., "08:00"
+    endTime: v.optional(v.string()),          // e.g., "13:00"
     description: v.optional(v.string()),       // Specific duties
     
     // EPHEMERAL INVITE SECURITY
@@ -79,8 +99,8 @@ export default defineSchema({
   liveStaff: defineTable({
     eventId: v.id("events"),
     name: v.string(),
-    role: v.union(v.literal("usher"), v.literal("attendant"), v.literal("supervisor")),
-    section: v.optional(v.string()), // e.g., "Section B" or "Door 1"
+    role: v.union(v.literal("supervisor"), v.literal("staff")),
+    sectionId: v.optional(v.id("eventSections")), // Tracks their active physical post
     accessToken: v.string(),         // The secret token stored in localStorage
     lastActive: v.number(),
     status: v.optional(v.union(v.literal("active"), v.literal("checked_out"))), // Support active shift rotation
