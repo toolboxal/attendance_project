@@ -26,21 +26,33 @@ async function getAuthenticatedUser(ctx: any) {
 
 /**
  * Create a new event (starts in 'draft' mode).
+ * Atomically creates the event shell, dedicated sections, and discrete job slots.
  */
 export const create = mutation({
   args: {
     title: v.string(),
-    location: v.optional(v.string()),
-    eventDate: v.optional(v.number()), // Unix timestamp for the day of the event
-    startTime: v.optional(v.string()), // "HH:MM" format
-    endTime: v.optional(v.string()),   // "HH:MM" format
+    location: v.string(),
+    eventDate: v.number(),
+    startTime: v.string(),
     description: v.optional(v.string()),
-    sections: v.optional(v.array(v.string())),
+    
+    // Arrays passed directly from our dynamic frontend state!
+    sections: v.array(v.string()),
+    jobScopes: v.array(
+      v.object({
+        section: v.string(), // We'll match this name to the IDs we create!
+        role: v.union(v.literal("staff"), v.literal("supervisor")),
+        startTime: v.string(),
+        endTime: v.string(),
+        title: v.string(),
+        description: v.string(),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
 
-    // 1. Generate a unique 6-character uppercase join code
+    // 1. Generate unique 6-character alphanumeric invite code
     let joinCode = "";
     let isUnique = false;
     while (!isUnique) {
@@ -49,16 +61,37 @@ export const create = mutation({
         .query("events")
         .withIndex("by_joinCode", (q) => q.eq("joinCode", joinCode))
         .first();
-      if (!existing) {
-        isUnique = true;
-      }
+      if (!existing) isUnique = true;
     }
 
-    // 2. Set default tier limits based on billing plan
-    const tier = user.billingPlan === "pro_monthly" ? "pro" : "free";
-    const maxStaff = tier === "pro" ? 100 : 20;
+    // 2. CREDIT CHECK: Ensure the user has at least 1 valid pass available.
+    const monthlyCredits = user.monthlyCredits ?? 0;
+    const oneTimeCredits = user.oneTimeCredits ?? 0;
+    const totalCredits = monthlyCredits + oneTimeCredits;
 
-    // 3. Create the event
+    if (totalCredits <= 0) {
+      throw new Error("Insufficient credits. Please top up or upgrade to create a new event.");
+    }
+
+    // 3. Determine user tier status and hard limits
+    const isPaidUser = 
+      user.billingPlan === "pro_monthly" || 
+      user.billingPlan === "pay_as_you_go";
+      
+    const tier = isPaidUser ? "pro" : "free";
+    
+    // 🚀 Safety: 50 staff is completely safe and will not impact operational costs!
+    const maxStaff = isPaidUser ? 50 : 5; 
+
+    // 4. DEDUCT CREDIT: Consume 1 pass atomically. 
+    // Prioritize Monthly subscription credits first, fall back to One-time credits.
+    if (monthlyCredits > 0) {
+      await ctx.db.patch(user._id, { monthlyCredits: monthlyCredits - 1 });
+    } else {
+      await ctx.db.patch(user._id, { oneTimeCredits: oneTimeCredits - 1 });
+    }
+
+    // 2. SAVE PARENT: Create the core event container
     const eventId = await ctx.db.insert("events", {
       adminId: user._id,
       title: args.title,
@@ -69,11 +102,38 @@ export const create = mutation({
       location: args.location,
       eventDate: args.eventDate,
       startTime: args.startTime,
-      endTime: args.endTime,
       description: args.description,
-      sections: args.sections ?? [],
       createdAt: Date.now(),
     });
+
+    // 3. SAVE CHILDREN: Insert each section and build a memory-map of their generated IDs
+    // Maps "Lobby" -> Id("abc123xyz")
+    const sectionMap = new Map(); 
+    
+    for (const name of args.sections) {
+      const sectionId = await ctx.db.insert("eventSections", {
+        eventId,
+        name,
+        headcount: 0,       // Starting population
+        status: "empty",     // Current occupancy logic status
+      });
+      sectionMap.set(name, sectionId);
+    }
+
+    // 4. SAVE GRANDCHILDREN: Insert each individual staff role slotted correctly!
+    for (const scope of args.jobScopes) {
+      const sectionId = sectionMap.get(scope.section);
+      
+      await ctx.db.insert("roleSlots", {
+        eventId,
+        sectionId, // Crucial dynamic linkage established here!
+        title: scope.title,
+        role: scope.role,
+        startTime: scope.startTime,
+        endTime: scope.endTime,
+        description: scope.description,
+      });
+    }
 
     return { eventId, joinCode };
   },

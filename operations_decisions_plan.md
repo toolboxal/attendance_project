@@ -247,3 +247,27 @@ To keep URLs clean and simple for mobile users, we avoid placing complex databas
 *   **Purpose:** Channel-based real-time communication.
 *   *   `#announcements`: Read-only for general ushers, broadcast-only for supervisors.
 *   *   `#general`: Open discussion for all active helpers.
+
+---
+
+## 7. Credit Consumption & Capacity Architecture
+
+To ensure high conversions and lean operations, Asistir executes a strictly enforced **Credit Ledger** for creation limits, and utilizes **Convex Deduplication** for infinite read scalability.
+
+### 💳 7.1 Credit Consumption Logic
+The database relies on immediate, atomic deductions during the `event:create` mutation to protect platform abuse.
+*   **The Onboarding Gift**: Every newly registered Admin is granted exactly **1 free One-Time Credit** automatically in [convex/auth.ts](file:///Users/alvinwong/attendance_project/convex/auth.ts).
+*   **The Master Gate**: Creating ANY event instantly triggers a credit deduction algorithm. 
+    *   Checks total credits (`monthly` + `oneTime`).
+    *   If balance hits 0, creation is permanently locked until top-up.
+*   **Waterfall Deduction**: Consumes `monthlyCredits` (expiring pool) first, before gracefully falling back to the persistent `oneTimeCredits` pool.
+
+### 📊 7.2 Access Tiers & Staff Capacity
+Operational limits are designed strategically to act as a Revenue Paywall, not a system limitation:
+1.  **Free Tier (Max 5 Staff)**: Deliberately set to 5 personnel. This provides a fully operational sandbox for testing with close colleagues, while preventing commercial organizers (weddings, concerts) from bypassing the paywall.
+2.  **Paid Tier (Max 50 Staff)**: Standardized at 50 slots for BOTH Monthly Subscribers and Pay-As-You-Go customers. Covers the vast majority of small-to-medium live venue operational needs.
+
+### 🏗️ 7.3 Scalability Rationale (Computational Costs)
+Concerns regarding the cost of 50+ concurrent websocket listeners are mitigated by fundamental Convex architecture:
+*   **Query Deduplication**: If 50 staff watch the exact same event board, Convex calculates the React state **exactly ONCE** server-side and clones the cached result instantly to all concurrent websockets. Compute cost is identical whether 5 users or 1,000 users are reading.
+*   **Zero Overhead Expansion**: Upgrading from 30 to 50 staff generates statistically zero difference in hosting overhead, encouraging generous limits for premium subscribers.

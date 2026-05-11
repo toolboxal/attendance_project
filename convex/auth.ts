@@ -42,7 +42,7 @@ export const authComponent: any = createClient<DataModel>(components.betterAuth,
           email: user.email,
           name: user.name,
           role: "admin",
-          oneTimeCredits: 0,
+          oneTimeCredits: 1, // 🔥 FREE STARTING CREDIT: Grants 1 sample event instantly on signup
           monthlyCredits: 0,
           billingPlan: "free",
           createdAt: Date.now(),

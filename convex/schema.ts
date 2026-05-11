@@ -42,9 +42,9 @@ export default defineSchema({
     tier: v.union(v.literal("free"), v.literal("pro")),
     
     // NEW EVENT PARAMETERS
-    location: v.optional(v.string()),         // Physical venue/address
-    eventDate: v.optional(v.number()),        // Epoch timestamp for event day
-    startTime: v.optional(v.string()),        // "16:00"
+    location: v.string(),         // Physical venue/address
+    eventDate: v.number(),        // Epoch timestamp for event day
+    startTime: v.string(),        // "16:00"
     description: v.optional(v.string()),      // Notes, rules, guidelines
 
     liveAt: v.optional(v.number()),    // When they clicked "Go Live"

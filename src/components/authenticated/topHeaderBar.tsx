@@ -6,21 +6,24 @@ import { Button, buttonVariants } from "../ui/button";
 import { Empty } from "../ui/empty";
 
 function TopHeaderBar() {
-	const { title, showBackButton, backAction } = useHeaderStore();
+	const { title, showBackButton, backAction, showLeftButton, leftButton } =
+		useHeaderStore();
 	const router = useRouter();
 	const handleBack = () => {
 		if (backAction) {
-			backAction(); // 👈 Runs custom step-back logic (e.g. previous form step)
+			backAction();
 		} else {
-			router.history.back(); // 👈 Defaults to normal browser back behavior
+			router.history.back();
 		}
 	};
 	return (
 		<div className="sticky top-0 w-full flex justify-between z-30 border-b border-neutral-800 bg-zinc-950/80 backdrop-blur-md">
 			<div className="spine flex justify-between items-center py-4 w-full">
-				{/* Symmetrical Left Container (w-10) to prevent layout shift */}
-				<div className="w-10 flex justify-start items-center">
-					{showBackButton ? (
+				{/* Unlocked Left Container to permit wider dynamic items like text buttons */}
+				<div className="min-w-10 w-fit flex justify-start items-center shrink-0">
+					{showLeftButton && leftButton ? (
+						leftButton
+					) : showBackButton ? (
 						<Button
 							onClick={handleBack}
 							variant="secondary"
