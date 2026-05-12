@@ -2,8 +2,9 @@ import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { format, parse } from "date-fns";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Button } from "#/components/ui/button";
+import { Spinner } from "#/components/ui/spinner";
 import { useHeaderStore } from "#/lib/store/topHeaderStore";
 import { api } from "../../../../../convex/_generated/api";
 
@@ -31,11 +32,11 @@ function EventDetailsView({ eventId }: { eventId: string }) {
 	);
 	if (!details) return null;
 
-	console.log(details);
+	// console.log(details);
 	const { event, sections, slots } = details;
 
 	return (
-		<div className="flex flex-col gap-8 p-6">
+		<div className="flex flex-col gap-8 px-2 py-4 md:p-6">
 			{/* header */}
 			<div className="flex flex-row justify-between items-center">
 				<span
@@ -44,28 +45,28 @@ function EventDetailsView({ eventId }: { eventId: string }) {
 					{event.status}
 				</span>
 				<div className="flex flex-col">
-					<p className="text-zinc-100 font-mono text-xs">
+					<p suppressHydrationWarning className="text-zinc-100 font-mono text-xs">
 						{format(new Date(event.eventDate), "PPPP")}
 					</p>
-					<p className="text-zinc-400 font-mono italic text-xs self-end">
+					<p suppressHydrationWarning className="text-zinc-400 font-mono italic text-xs self-end">
 						{formatTime12h(event.startTime)}
 					</p>
 				</div>
 			</div>
-			<div className="flex flex-col gap-4">
+			<div className="flex flex-col gap-2">
 				<h2 className="text-2xl font-bold text-zinc-100">{event.title}</h2>
 				<div className="flex flex-col">
-					<p className="text-zinc-100 font-mono text-xs">
+					<p suppressHydrationWarning className="text-zinc-100 font-mono text-xs">
 						{format(new Date(event.eventDate), "PPPP")}
 					</p>
-					<p className="text-zinc-400 font-mono italic text-xs">
+					<p suppressHydrationWarning className="text-zinc-400 font-mono italic text-xs">
 						{formatTime12h(event.startTime)}
 					</p>
 				</div>
 				<p className="text-zinc-100 font-bold">Location: {event.location}</p>
 				<p className="text-zinc-300 text-sm italic">{event.description}</p>
 
-				<div className="mt-8 space-y-6">
+				<div className="mt-6 space-y-6">
 					<h3 className="text-zinc-500 font-semibold text-xs uppercase tracking-widest">
 						Event Schedule & Sections
 					</h3>
@@ -89,7 +90,7 @@ function EventDetailsView({ eventId }: { eventId: string }) {
 									return (
 										<div
 											key={section._id}
-											className="bg-zinc-950/20  rounded-xl p-4 space-y-4"
+											className="bg-zinc-950/20  rounded-xl p-1 md:p-4 space-y-4"
 										>
 											{/* Section Header */}
 											<div className="flex items-center justify-between border-b border-zinc-800/50 pb-3">
@@ -177,25 +178,25 @@ function RouteComponent() {
 		return () => resetHeader();
 	}, [setPageHeader, resetHeader, navigate]);
 	return (
-		<div className="w-full min-h-dvh ">
-			<div className="spine flex flex-row bg-zinc-950 h-full py-2 gap-2">
-				<section className="flex-1 bg-zinc-800/20 border border-zinc-800/50 rounded-xl">
-					<div className="p-1 flex flex-col gap-1">
+		<div className="w-full min-h-dvh bg-zinc-950">
+			<div className="spine flex flex-col md:flex-row h-full py-2 gap-2">
+				<section className="flex-none md:w-60 bg-zinc-800/20 border border-zinc-800/50 rounded-xl">
+					<div className="p-2 flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-x-visible md:overflow-y-auto scrollbar-hide">
 						{events.map((event) => (
 							<button
 								type="button"
 								key={event._id}
 								onClick={() => setSelectedEvent(event._id)}
-								className={`w-full text-left p-3 rounded-lg transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 relative ${
+								className={`w-56 md:w-full shrink-0 text-left p-3 rounded-lg transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 relative ${
 									selectedEvent === event._id
-										? "bg-zinc-800/80 shadow-inner"
+										? "bg-zinc-700/70 shadow-inner"
 										: "hover:bg-zinc-800/50 bg-transparent"
 								}`}
 							>
-								<p className="text-zinc-100 font-mono text-xs">
+								<p suppressHydrationWarning className="text-zinc-100 font-mono text-xs">
 									{format(new Date(event.eventDate), "PP")}
 								</p>
-								<p className="text-zinc-400 font-mono italic text-xs">
+								<p suppressHydrationWarning className="text-zinc-400 font-mono italic text-xs">
 									{formatTime12h(event.startTime)}
 								</p>
 								<p className="text-zinc-300 font-medium text-[13px] overflow-hidden line-clamp-1">
@@ -216,9 +217,17 @@ function RouteComponent() {
 						))}
 					</div>
 				</section>
-				<section className="flex-3 bg-zinc-800/20 border border-zinc-800/50 rounded-xl overflow-hidden">
+				<section className="flex-1 bg-zinc-800/20 border border-zinc-800/50 rounded-xl overflow-hidden">
 					{selectedEvent ? (
-						<EventDetailsView eventId={selectedEvent} />
+						<Suspense
+							fallback={
+								<div className="w-full h-full flex items-center justify-center">
+									<Spinner className="size-8 text-zinc-700" />
+								</div>
+							}
+						>
+							<EventDetailsView eventId={selectedEvent} />
+						</Suspense>
 					) : (
 						<div className="w-full h-full flex items-center justify-center text-xs">
 							<div className="flex flex-col gap-2">

@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ChevronDownIcon, MinusIcon, PlusIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { tv } from "tailwind-variants";
+import { toast } from "sonner";
 import z from "zod";
 import { Button } from "#/components/ui/button";
 import { Calendar } from "#/components/ui/calendar";
@@ -236,8 +237,37 @@ export function EventEditor({
 		setSectionInput("");
 	};
 	// console.log(sections);
-	const handleRemoveSection = (sectionName: string) => {
-		setSections(sections.filter((s) => s.name !== sectionName));
+	const handleRemoveSection = (
+		targetName: string,
+		start: string,
+		end: string,
+	) => {
+		// 🚨 SAFETY LOCK: Prevent orphaning existing job scopes!
+		const hasAttachedJobs = jobScopes.some(
+			(job) =>
+				job.section === targetName &&
+				job.startTime === start &&
+				job.endTime === end,
+		);
+
+		if (hasAttachedJobs) {
+			toast.error("Unable to delete.", {
+				description: `There is at least one job scope attached to this section. Remove them first before deleting this section.`,
+			});
+			return; // Hard exit - abort deletion!
+		}
+
+		// Use composite lock to only remove the ONE specific iteration!
+		setSections((prev) =>
+			prev.filter(
+				(s) =>
+					!(
+						s.name === targetName &&
+						s.startTime === start &&
+						s.endTime === end
+					),
+			),
+		);
 	};
 
 	const handleAddJobScope = (count: number) => {
@@ -249,7 +279,9 @@ export function EventEditor({
 		const newJobs: JobScope[] = [];
 		for (let i = 0; i < count; i++) {
 			newJobs.push({
-				id: crypto.randomUUID(),
+				// 🛡️ FIX: Do NOT use crypto.randomUUID() here as it crashes on insecure IP testing!
+				id:
+					Math.random().toString(36).substring(2, 15) + Date.now().toString(36),
 				section: targetName,
 				role: jobRole,
 				startTime: targetStart,
@@ -539,7 +571,13 @@ export function EventEditor({
 												</div>
 												<button
 													type="button"
-													onClick={() => handleRemoveSection(section.name)}
+													onClick={() =>
+														handleRemoveSection(
+															section.name,
+															section.startTime,
+															section.endTime,
+														)
+													}
 													className="text-zinc-500 hover:text-zinc-100 p-0.5 rounded-full hover:bg-zinc-800 transition-colors ml-2"
 												>
 													<XIcon className="h-3 w-3" />
