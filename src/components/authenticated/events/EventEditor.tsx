@@ -89,7 +89,7 @@ export function EventEditor({
 	const [open, setOpen] = useState(false);
 	const [sections, setSections] = useState<
 		Array<{ name: string; startTime: string; endTime: string }>
-	>(initialData?.sections ? [] : []); // We'll refine this later to support loading initialData properly!
+	>(initialData?.sections ?? []);
 	const [sectionInput, setSectionInput] = useState("");
 	const [jobRole, setJobRole] = useState<"staff" | "supervisor">("staff");
 	const [duplicateRoles, setDuplicateRoles] = useState(1);

@@ -1,6 +1,6 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { format, parse } from "date-fns";
 import { Suspense, useEffect, useState } from "react";
 import { Button } from "#/components/ui/button";
@@ -27,6 +27,7 @@ function formatTime12h(timeStr: string) {
 
 // Subcomponent that isolates the conditional suspense query securely
 function EventDetailsView({ eventId }: { eventId: string }) {
+	const navigate = useNavigate();
 	const { data: details } = useSuspenseQuery(
 		convexQuery(api.events.getDetails, { eventId: eventId as any }),
 	);
@@ -44,22 +45,40 @@ function EventDetailsView({ eventId }: { eventId: string }) {
 				>
 					{event.status}
 				</span>
-				<div className="flex flex-col">
+				{/* <div className="flex flex-col">
 					<p suppressHydrationWarning className="text-zinc-100 font-mono text-xs">
 						{format(new Date(event.eventDate), "PPPP")}
 					</p>
 					<p suppressHydrationWarning className="text-zinc-400 font-mono italic text-xs self-end">
 						{formatTime12h(event.startTime)}
 					</p>
-				</div>
+				</div> */}
+				<Button
+					onClick={() => {
+						navigate({
+							to: "/app/events/$eventId",
+							params: { eventId: eventId as string },
+						});
+					}}
+					variant={"secondary"}
+					size={"lg"}
+				>
+					Edit Event
+				</Button>
 			</div>
 			<div className="flex flex-col gap-2">
 				<h2 className="text-2xl font-bold text-zinc-100">{event.title}</h2>
 				<div className="flex flex-col">
-					<p suppressHydrationWarning className="text-zinc-100 font-mono text-xs">
+					<p
+						suppressHydrationWarning
+						className="text-zinc-100 font-mono text-xs"
+					>
 						{format(new Date(event.eventDate), "PPPP")}
 					</p>
-					<p suppressHydrationWarning className="text-zinc-400 font-mono italic text-xs">
+					<p
+						suppressHydrationWarning
+						className="text-zinc-400 font-mono italic text-xs"
+					>
 						{formatTime12h(event.startTime)}
 					</p>
 				</div>
@@ -193,10 +212,16 @@ function RouteComponent() {
 										: "hover:bg-zinc-800/50 bg-transparent"
 								}`}
 							>
-								<p suppressHydrationWarning className="text-zinc-100 font-mono text-xs">
+								<p
+									suppressHydrationWarning
+									className="text-zinc-100 font-mono text-xs"
+								>
 									{format(new Date(event.eventDate), "PP")}
 								</p>
-								<p suppressHydrationWarning className="text-zinc-400 font-mono italic text-xs">
+								<p
+									suppressHydrationWarning
+									className="text-zinc-400 font-mono italic text-xs"
+								>
 									{formatTime12h(event.startTime)}
 								</p>
 								<p className="text-zinc-300 font-medium text-[13px] overflow-hidden line-clamp-1">

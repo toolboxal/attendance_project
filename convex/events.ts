@@ -241,48 +241,91 @@ export const getDetails = query({
 export const update = mutation({
   args: {
     eventId: v.id("events"),
-    title: v.optional(v.string()),
-    location: v.optional(v.string()),
-    eventDate: v.optional(v.number()),
-    startTime: v.optional(v.string()),
-    endTime: v.optional(v.string()),
+    title: v.string(),
+    location: v.string(),
+    eventDate: v.number(),
+    startTime: v.string(),
     description: v.optional(v.string()),
-    sections: v.optional(v.array(v.string())),
-    status: v.optional(v.union(v.literal("draft"), v.literal("live"), v.literal("archived"))),
+    
+    sections: v.array(
+      v.object({
+        name: v.string(),
+        startTime: v.string(),
+        endTime: v.string(),
+      })
+    ),
+    jobScopes: v.array(
+      v.object({
+        section: v.string(), 
+        role: v.union(v.literal("staff"), v.literal("supervisor")),
+        startTime: v.string(),
+        endTime: v.string(),
+        title: v.string(),
+        description: v.optional(v.string()),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
     const event = await ctx.db.get(args.eventId);
 
-    if (!event) {
-      throw new Error("Event not found");
-    }
-
+    if (!event) throw new Error("Event not found");
     if (event.adminId !== user._id) {
       throw new Error("Unauthorized to modify this event");
     }
 
-    // Build the updates object
-    const updates: any = {};
-    if (args.title !== undefined) updates.title = args.title;
-    if (args.location !== undefined) updates.location = args.location;
-    if (args.eventDate !== undefined) updates.eventDate = args.eventDate;
-    if (args.startTime !== undefined) updates.startTime = args.startTime;
-    if (args.endTime !== undefined) updates.endTime = args.endTime;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.sections !== undefined) updates.sections = args.sections;
+    // 1. Update the core event container
+    await ctx.db.patch(args.eventId, {
+      title: args.title,
+      location: args.location,
+      eventDate: args.eventDate,
+      startTime: args.startTime,
+      description: args.description,
+    });
 
-    // Handle lifecycle status transitions
-    if (args.status !== undefined && args.status !== event.status) {
-      updates.status = args.status;
-      if (args.status === "live" && !event.liveAt) {
-        updates.liveAt = Date.now();
-        // 24 hours duration for active tracking sessions
-        updates.expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-      }
+    // 2. CLEAR EXISTING CONFIG: Delete existing sections and slots to perform clean replacement
+    const existingSections = await ctx.db
+      .query("eventSections")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+    for (const sec of existingSections) {
+      await ctx.db.delete(sec._id);
     }
 
-    await ctx.db.patch(args.eventId, updates);
+    const existingSlots = await ctx.db
+      .query("roleSlots")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+    for (const slot of existingSlots) {
+      await ctx.db.delete(slot._id);
+    }
+
+    // 3. WRITE NEW CONFIGURATION (Mirror logic of create mutation)
+    const sectionMap = new Map();
+
+    for (const sec of args.sections) {
+      const sectionId = await ctx.db.insert("eventSections", {
+        eventId: args.eventId,
+        name: sec.name,
+        headcount: 0, 
+        status: "empty", 
+        startTime: sec.startTime,
+        endTime: sec.endTime,
+      });
+      sectionMap.set(`${sec.name}|${sec.startTime}|${sec.endTime}`, sectionId);
+    }
+
+    for (const scope of args.jobScopes) {
+      const sectionId = sectionMap.get(`${scope.section}|${scope.startTime}|${scope.endTime}`);
+      await ctx.db.insert("roleSlots", {
+        eventId: args.eventId,
+        sectionId, 
+        title: scope.title,
+        role: scope.role,
+        description: scope.description,
+      });
+    }
+
     return { success: true };
   },
 });
