@@ -31,45 +31,119 @@ function EventDetailsView({ eventId }: { eventId: string }) {
 	);
 	if (!details) return null;
 
+	console.log(details);
+	const { event, sections, slots } = details;
+
 	return (
 		<div className="flex flex-col gap-8 p-6">
 			{/* header */}
 			<div className="flex flex-row justify-between items-center">
 				<span
-					className={`flex flex-row items-center justify-center p-2 rounded-lg text-xs font-mono border ${details.event.status === "live" ? "bg-green-500/70 border-green-500/70" : details.event.status === "draft" ? "bg-yellow-500/70 border-yellow- border-green-500/70500/70" : "bg-red-500/70"}`}
+					className={`flex flex-row items-center justify-center p-2 rounded-lg text-xs font-mono border ${event.status === "live" ? "bg-green-500/70 border-green-500/70" : event.status === "draft" ? "bg-yellow-500/70 border-yellow- border-green-500/70500/70" : "bg-red-500/70"}`}
 				>
-					{details.event.status}
+					{event.status}
 				</span>
 				<div className="flex flex-col">
 					<p className="text-zinc-100 font-mono text-xs">
-						{format(new Date(details.event.eventDate), "PPPP")}
+						{format(new Date(event.eventDate), "PPPP")}
 					</p>
 					<p className="text-zinc-400 font-mono italic text-xs self-end">
-						{formatTime12h(details.event.startTime)}
+						{formatTime12h(event.startTime)}
 					</p>
 				</div>
 			</div>
 			<div className="flex flex-col gap-4">
-				<h2 className="text-2xl font-bold text-zinc-100">
-					{details.event.title}
-				</h2>
+				<h2 className="text-2xl font-bold text-zinc-100">{event.title}</h2>
 				<div className="flex flex-col">
 					<p className="text-zinc-100 font-mono text-xs">
-						{format(new Date(details.event.eventDate), "PPPP")}
+						{format(new Date(event.eventDate), "PPPP")}
 					</p>
 					<p className="text-zinc-400 font-mono italic text-xs">
-						{formatTime12h(details.event.startTime)}
+						{formatTime12h(event.startTime)}
 					</p>
 				</div>
-				<p className="text-zinc-100 font-bold">
-					Location: {details.event.location}
-				</p>
-				<p className="text-zinc-300 text-sm italic">{details.event.description}</p>
+				<p className="text-zinc-100 font-bold">Location: {event.location}</p>
+				<p className="text-zinc-300 text-sm italic">{event.description}</p>
 
-				{/* Display Nested Info! */}
-				<div className="mt-4 border-t border-zinc-800/50 pt-4 text-xs text-zinc-500">
-					Configuration contains {details.sections.length} layout sections with{" "}
-					{details.slots.length} staffing roles defined.
+				<div className="mt-8 space-y-6">
+					<h3 className="text-zinc-500 font-semibold text-xs uppercase tracking-widest">
+						Event Schedule & Sections
+					</h3>
+
+					{sections.length === 0 ? (
+						<p className="text-zinc-600 text-sm italic">
+							No sections created yet.
+						</p>
+					) : (
+						<div className="grid gap-4">
+							{[...sections]
+								.sort((a, b) =>
+									(a.startTime || "").localeCompare(b.startTime || ""),
+								)
+								.map((section) => {
+									// 🎯 Find slots belonging to this specific section instance!
+									const sectionSlots = slots.filter(
+										(s) => s.sectionId === section._id,
+									);
+
+									return (
+										<div
+											key={section._id}
+											className="bg-zinc-950/20  rounded-xl p-4 space-y-4"
+										>
+											{/* Section Header */}
+											<div className="flex items-center justify-between border-b border-zinc-800/50 pb-3">
+												<div>
+													<p className="text-zinc-500 font-mono text-xs flex gap-2 my-0.5">
+														<span className="text-yellow-100 font-medium">
+															{formatTime12h(section.startTime || "")}
+														</span>
+														<span>→</span>
+														<span className="text-yellow-100 font-medium">
+															{formatTime12h(section.endTime || "")}
+														</span>
+													</p>
+													<h4 className="text-zinc-100 font-bold text-md capitalize">
+														{section.name}
+													</h4>
+												</div>
+												<div className="bg-zinc-800 px-2 py-1 rounded text-[10px] text-zinc-400 font-medium uppercase">
+													{sectionSlots.length} Roles
+												</div>
+											</div>
+
+											{/* Role Slots Grid */}
+											{sectionSlots.length === 0 ? (
+												<p className="text-zinc-700 text-xs italic">
+													No roles assigned to this shift yet.
+												</p>
+											) : (
+												<div className="grid grid-cols-1 gap-2">
+													{sectionSlots.map((slot) => (
+														<div
+															key={slot._id}
+															className="flex items-center gap-3 bg-zinc-900  p-2.5 rounded-lg hover:bg-zinc-800/70 transition-colors"
+														>
+															<div
+																className={`w-1.5 h-8 rounded-full ${slot.role === "supervisor" ? "bg-indigo-500/50" : "bg-emerald-500/50"}`}
+															/>
+															<div>
+																<p className="text-zinc-200 font-medium text-sm">
+																	{slot.title}
+																</p>
+																<p className="text-zinc-500 text-[10px] uppercase tracking-wider font-semibold">
+																	{slot.role}
+																</p>
+															</div>
+														</div>
+													))}
+												</div>
+											)}
+										</div>
+									);
+								})}
+						</div>
+					)}
 				</div>
 			</div>
 		</div>
@@ -146,8 +220,19 @@ function RouteComponent() {
 					{selectedEvent ? (
 						<EventDetailsView eventId={selectedEvent} />
 					) : (
-						<div className="w-full h-full flex items-center justify-center text-zinc-500 text-sm">
-							Select an event from the sidebar to begin
+						<div className="w-full h-full flex items-center justify-center text-xs">
+							<div className="flex flex-col gap-2">
+								<p className="text-zinc-400 text-sm ">Events</p>
+								<p className="text-zinc-500 whitespace-pre-line font-light mb-1">
+									{`Start a new draft event,\nyou can add sections, jobs later.\nWhen you are ready, you can go live.`}
+								</p>
+								<Button
+									variant={"link"}
+									onClick={() => navigate({ to: "/app/events/create" })}
+								>
+									Create Event
+								</Button>
+							</div>
 						</div>
 					)}
 				</section>

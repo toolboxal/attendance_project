@@ -117,26 +117,33 @@ export function EventEditor({
 			time: initialData?.startTime ?? "10:30:00",
 		},
 		onSubmit: async ({ value }) => {
-			// Hand execution power to the parent wrapper (Create Route or Edit Route)
-			await onSubmit({
-				title: value.title,
-				location: value.location,
-				description: value.description || undefined,
-				eventDate: value.date.getTime(),
-				startTime: value.time,
-				sections: sections,
-				jobScopes: jobScopes.map((job) => ({
-					section: job.section,
-					role: job.role,
-					startTime: job.startTime,
-					endTime: job.endTime,
-					title: job.title,
-					description: job.description,
-				})),
-			});
-
-			// Lifting security gate now that async submit is successful
+			// 1. Unlock the gate PROACTIVELY before firing the network call,
+			// since successful completion will instantly trigger the navigation!
 			isNavigationAllowedRef.current = true;
+
+			try {
+				// Hand execution power to the parent wrapper (Create Route or Edit Route)
+				await onSubmit({
+					title: value.title,
+					location: value.location,
+					description: value.description || undefined,
+					eventDate: value.date.getTime(),
+					startTime: value.time,
+					sections: sections,
+					jobScopes: jobScopes.map((job) => ({
+						section: job.section,
+						role: job.role,
+						startTime: job.startTime,
+						endTime: job.endTime,
+						title: job.title,
+						description: job.description,
+					})),
+				});
+			} catch (error) {
+				// 2. RELOCK the gate if it failed, so the user stays protected!
+				isNavigationAllowedRef.current = false;
+				throw error;
+			}
 		},
 	});
 
@@ -200,14 +207,17 @@ export function EventEditor({
 
 	const handleAddSection = (e?: React.FormEvent) => {
 		e?.preventDefault();
-		const trimmedName = sectionInput.trim();
-		if (!trimmedName) return;
+		const rawName = sectionInput.trim();
+		if (!rawName) return;
+
+		// Enforce strict lowercasing for absolute bulletproof comparisons and db storage!
+		const finalName = rawName.toLowerCase();
 
 		// Use Functional Updater to guarantee serial execution and lock out race conditions!
 		setSections((prev) => {
 			const exists = prev.some(
 				(s) =>
-					s.name === trimmedName &&
+					s.name === finalName &&
 					s.startTime === startTime &&
 					s.endTime === endTime,
 			);
@@ -216,7 +226,7 @@ export function EventEditor({
 			return [
 				...prev,
 				{
-					name: trimmedName,
+					name: finalName,
 					startTime: startTime,
 					endTime: endTime,
 				},
@@ -225,7 +235,7 @@ export function EventEditor({
 
 		setSectionInput("");
 	};
-	console.log(sections);
+	// console.log(sections);
 	const handleRemoveSection = (sectionName: string) => {
 		setSections(sections.filter((s) => s.name !== sectionName));
 	};
@@ -419,7 +429,9 @@ export function EventEditor({
 							<form.Field name="time">
 								{(field) => (
 									<Field className="w-32">
-										<FieldLabel htmlFor="time-picker-optional">Time</FieldLabel>
+										<FieldLabel htmlFor="time-picker-optional">
+											Start Time
+										</FieldLabel>
 										<Input
 											type="time"
 											id="time-picker-optional"
@@ -444,9 +456,7 @@ export function EventEditor({
 							</div>
 							<div className="flex flex-row gap-6 flex-wrap">
 								<Field className="w-32">
-									<FieldLabel htmlFor="duty-start-time">
-										Shift Start Time
-									</FieldLabel>
+									<FieldLabel htmlFor="duty-start-time">Shift Start</FieldLabel>
 									<Input
 										type="time"
 										id="duty-start-time"
@@ -456,9 +466,7 @@ export function EventEditor({
 									/>
 								</Field>
 								<Field className="w-32">
-									<FieldLabel htmlFor="duty-end-time">
-										Shift End Time
-									</FieldLabel>
+									<FieldLabel htmlFor="duty-end-time">Shift End</FieldLabel>
 									<Input
 										type="time"
 										id="duty-end-time"
