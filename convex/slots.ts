@@ -30,7 +30,7 @@ export const createSlot = mutation({
     title: v.string(),
     role: v.union(v.literal("usher"), v.literal("attendant"), v.literal("supervisor")),
     section: v.optional(v.string()),
-    timeSlot: v.optional(v.string()), // e.g. "08:00 - 13:00"
+
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -57,7 +57,6 @@ export const createSlot = mutation({
       title: args.title,
       role: args.role,
       section: args.section,
-      timeSlot: args.timeSlot,
       description: args.description,
       inviteToken,
       inviteTokenExpiresAt,
@@ -91,7 +90,6 @@ export const updateSlot = mutation({
     title: v.optional(v.string()),
     role: v.optional(v.union(v.literal("usher"), v.literal("attendant"), v.literal("supervisor"))),
     section: v.optional(v.string()),
-    timeSlot: v.optional(v.string()),
     description: v.optional(v.string()),
     regenerateToken: v.optional(v.boolean()),
   },
@@ -111,7 +109,6 @@ export const updateSlot = mutation({
     if (args.title !== undefined) updates.title = args.title;
     if (args.role !== undefined) updates.role = args.role;
     if (args.section !== undefined) updates.section = args.section;
-    if (args.timeSlot !== undefined) updates.timeSlot = args.timeSlot;
     if (args.description !== undefined) updates.description = args.description;
 
     if (args.regenerateToken) {

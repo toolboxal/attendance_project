@@ -37,7 +37,13 @@ export const create = mutation({
     description: v.optional(v.string()),
     
     // Arrays passed directly from our dynamic frontend state!
-    sections: v.array(v.string()),
+    sections: v.array(
+      v.object({
+        name: v.string(),
+        startTime: v.string(),
+        endTime: v.string(),
+      })
+    ),
     jobScopes: v.array(
       v.object({
         section: v.string(), // We'll match this name to the IDs we create!
@@ -45,7 +51,7 @@ export const create = mutation({
         startTime: v.string(),
         endTime: v.string(),
         title: v.string(),
-        description: v.string(),
+        description: v.optional(v.string()),
       })
     ),
   },
@@ -106,32 +112,35 @@ export const create = mutation({
       createdAt: Date.now(),
     });
 
-    // 3. SAVE CHILDREN: Insert each section and build a memory-map of their generated IDs
-    // Maps "Lobby" -> Id("abc123xyz")
-    const sectionMap = new Map(); 
-    
-    for (const name of args.sections) {
+    // 3. SAVE CHILDREN: Insert each section using provided explicit scheduling!
+    const sectionMap = new Map();
+
+    for (const sec of args.sections) {
       const sectionId = await ctx.db.insert("eventSections", {
         eventId,
-        name,
-        headcount: 0,       // Starting population
-        status: "empty",     // Current occupancy logic status
+        name: sec.name,
+        headcount: 0, // Starting population
+        status: "empty", // Current occupancy logic status
+        startTime: sec.startTime,
+        endTime: sec.endTime,
       });
-      sectionMap.set(name, sectionId);
+      // Create a composite key to uniquely identify duplicate location names with separate times!
+      sectionMap.set(`${sec.name}|${sec.startTime}|${sec.endTime}`, sectionId);
     }
 
     // 4. SAVE GRANDCHILDREN: Insert each individual staff role slotted correctly!
     for (const scope of args.jobScopes) {
-      const sectionId = sectionMap.get(scope.section);
-      
+      // Retrieve sectionId by matching the exact composite identity!
+      const sectionId = sectionMap.get(`${scope.section}|${scope.startTime}|${scope.endTime}`);
+
       await ctx.db.insert("roleSlots", {
         eventId,
         sectionId, // Crucial dynamic linkage established here!
         title: scope.title,
         role: scope.role,
-        startTime: scope.startTime,
-        endTime: scope.endTime,
         description: scope.description,
+        // ✨ NOTICE: We no longer insert startTime/endTime here! 
+        // They are now stored correctly upstream on the Parent Section.
       });
     }
 
@@ -149,7 +158,8 @@ export const list = query({
 
     return await ctx.db
       .query("events")
-      .filter((q) => q.eq(q.field("adminId"), user._id))
+      .withIndex("by_admin", (q) => q.eq("adminId", user._id))
+      .order("asc") // Show closest events first!
       .collect();
   },
 });
@@ -184,6 +194,44 @@ export const get = query({
     }
 
     return event;
+  },
+});
+
+/**
+ * Full hierarchical fetcher retrieving the Event, its discrete Sections, and all active Role Slots.
+ * Optimized to restore complete view models in a single network fetch.
+ */
+export const getDetails = query({
+  args: {
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    
+    // 1. Load Event Shell & Verify Admin Authorization
+    const event = await ctx.db.get(args.eventId);
+    if (!event) return null;
+    if (event.adminId !== user._id) {
+      throw new Error("Unauthorized access to this event");
+    }
+
+    // 2. Fetch All Sections tied to this event
+    const sections = await ctx.db
+      .query("eventSections")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+
+    // 3. Fetch All discrete RoleSlots
+    const slots = await ctx.db
+      .query("roleSlots")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+
+    return {
+      event,
+      sections,
+      slots,
+    };
   },
 });
 

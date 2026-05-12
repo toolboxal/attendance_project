@@ -22,6 +22,7 @@ import { Route as publicauthSignupRouteImport } from './routes/(public)/(auth)/s
 import { Route as publicauthSigninRouteImport } from './routes/(public)/(auth)/signin'
 import { Route as AuthenticatedAppEventsIndexRouteImport } from './routes/_authenticated/app/events/index'
 import { Route as AuthenticatedAppEventsCreateRouteImport } from './routes/_authenticated/app/events/create'
+import { Route as AuthenticatedAppEventsEventIdRouteImport } from './routes/_authenticated/app/events/$eventId'
 
 const LiveRouteRoute = LiveRouteRouteImport.update({
   id: '/live',
@@ -90,6 +91,12 @@ const AuthenticatedAppEventsCreateRoute =
     path: '/events/create',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
+const AuthenticatedAppEventsEventIdRoute =
+  AuthenticatedAppEventsEventIdRouteImport.update({
+    id: '/events/$eventId',
+    path: '/events/$eventId',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/live': typeof LiveRouteRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/events/$eventId': typeof AuthenticatedAppEventsEventIdRoute
   '/app/events/create': typeof AuthenticatedAppEventsCreateRoute
   '/app/events/': typeof AuthenticatedAppEventsIndexRoute
 }
@@ -115,6 +123,7 @@ export interface FileRoutesByTo {
   '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/app/events/$eventId': typeof AuthenticatedAppEventsEventIdRoute
   '/app/events/create': typeof AuthenticatedAppEventsCreateRoute
   '/app/events': typeof AuthenticatedAppEventsIndexRoute
 }
@@ -131,6 +140,7 @@ export interface FileRoutesById {
   '/_authenticated/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/events/$eventId': typeof AuthenticatedAppEventsEventIdRoute
   '/_authenticated/app/events/create': typeof AuthenticatedAppEventsCreateRoute
   '/_authenticated/app/events/': typeof AuthenticatedAppEventsIndexRoute
 }
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/app/success'
     | '/api/auth/$'
     | '/app/'
+    | '/app/events/$eventId'
     | '/app/events/create'
     | '/app/events/'
   fileRoutesByTo: FileRoutesByTo
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/app/success'
     | '/api/auth/$'
     | '/app'
+    | '/app/events/$eventId'
     | '/app/events/create'
     | '/app/events'
   id:
@@ -175,6 +187,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/success'
     | '/api/auth/$'
     | '/_authenticated/app/'
+    | '/_authenticated/app/events/$eventId'
     | '/_authenticated/app/events/create'
     | '/_authenticated/app/events/'
   fileRoutesById: FileRoutesById
@@ -279,6 +292,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppEventsCreateRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/_authenticated/app/events/$eventId': {
+      id: '/_authenticated/app/events/$eventId'
+      path: '/events/$eventId'
+      fullPath: '/app/events/$eventId'
+      preLoaderRoute: typeof AuthenticatedAppEventsEventIdRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
   }
 }
 
@@ -303,6 +323,7 @@ interface AuthenticatedAppRouteRouteChildren {
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppSuccessRoute: typeof AuthenticatedAppSuccessRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppEventsEventIdRoute: typeof AuthenticatedAppEventsEventIdRoute
   AuthenticatedAppEventsCreateRoute: typeof AuthenticatedAppEventsCreateRoute
   AuthenticatedAppEventsIndexRoute: typeof AuthenticatedAppEventsIndexRoute
 }
@@ -312,6 +333,7 @@ const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppSuccessRoute: AuthenticatedAppSuccessRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppEventsEventIdRoute: AuthenticatedAppEventsEventIdRoute,
   AuthenticatedAppEventsCreateRoute: AuthenticatedAppEventsCreateRoute,
   AuthenticatedAppEventsIndexRoute: AuthenticatedAppEventsIndexRoute,
 }

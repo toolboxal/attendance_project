@@ -51,7 +51,9 @@ export default defineSchema({
     expiresAt: v.optional(v.number()), // liveAt + 24 hours (or duration)
     
     createdAt: v.number(),
-  }).index("by_joinCode", ["joinCode"]),
+  })
+  .index("by_joinCode", ["joinCode"])
+  .index("by_admin", ["adminId", "eventDate"]),
 
   // 🔥 NEW TABLE: Sections belonging to an Event (Track real-time capacities here)
   eventSections: defineTable({
@@ -70,6 +72,10 @@ export default defineSchema({
       v.literal("overflow")
     ),
     
+    // Shift Times for the entire group
+    startTime: v.optional(v.string()),  // "08:00"
+    endTime: v.optional(v.string()),    // "13:00"
+
     lastUpdatedAt: v.optional(v.number()),
     lastUpdatedBy: v.optional(v.id("liveStaff")), // Which usher last reported
   }).index("by_event", ["eventId"]),
@@ -80,8 +86,6 @@ export default defineSchema({
     title: v.string(),                         // e.g., "Receptionist - Morning Shift"
     role: v.union(v.literal("supervisor"), v.literal("staff")),
     sectionId: v.optional(v.id("eventSections")), // Linked relation instead of string
-    startTime: v.optional(v.string()),          // e.g., "08:00"
-    endTime: v.optional(v.string()),          // e.g., "13:00"
     description: v.optional(v.string()),       // Specific duties
     
     // EPHEMERAL INVITE SECURITY

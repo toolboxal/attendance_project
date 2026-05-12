@@ -59,7 +59,7 @@ export type EventSubmitData = {
 	description?: string;
 	eventDate: number;
 	startTime: string;
-	sections: string[];
+	sections: Array<{ name: string; startTime: string; endTime: string }>;
 	jobScopes: Array<Omit<JobScope, "id">>;
 };
 
@@ -71,7 +71,7 @@ type EventEditorProps = {
 		description?: string;
 		eventDate: number; // unix ms
 		startTime: string;
-		sections: string[];
+		sections: Array<{ name: string; startTime: string; endTime: string }>;
 		jobScopes: Array<JobScope>;
 	};
 	onSubmit: (data: EventSubmitData) => Promise<void>;
@@ -86,9 +86,9 @@ export function EventEditor({
 	const isNavigationAllowedRef = useRef(false);
 
 	const [open, setOpen] = useState(false);
-	const [sections, setSections] = useState<string[]>(
-		initialData?.sections ?? [],
-	);
+	const [sections, setSections] = useState<
+		Array<{ name: string; startTime: string; endTime: string }>
+	>(initialData?.sections ? [] : []); // We'll refine this later to support loading initialData properly!
 	const [sectionInput, setSectionInput] = useState("");
 	const [jobRole, setJobRole] = useState<"staff" | "supervisor">("staff");
 	const [duplicateRoles, setDuplicateRoles] = useState(1);
@@ -96,8 +96,10 @@ export function EventEditor({
 	const [jobScopes, setJobScopes] = useState<Array<JobScope>>(
 		initialData?.jobScopes ?? [],
 	);
-	const [selectedSection, setSelectedSection] = useState(
-		initialData?.sections?.[0] ?? "",
+	const [selectedSection, setSelectedSection] = useState<string>(
+		initialData?.sections?.[0]
+			? `${initialData.sections[0].name}|${initialData.sections[0].startTime}|${initialData.sections[0].endTime}`
+			: "",
 	);
 	const [startTime, setStartTime] = useState("08:00");
 	const [endTime, setEndTime] = useState("12:00");
@@ -189,7 +191,8 @@ export function EventEditor({
 
 	useEffect(() => {
 		if (sections.length > 0 && !selectedSection) {
-			setSelectedSection(sections[0]);
+			const sec = sections[0];
+			setSelectedSection(`${sec.name}|${sec.startTime}|${sec.endTime}`);
 		}
 	}, [sections, selectedSection]);
 
@@ -197,26 +200,50 @@ export function EventEditor({
 
 	const handleAddSection = (e?: React.FormEvent) => {
 		e?.preventDefault();
-		const trimmed = sectionInput.trim();
-		if (!trimmed || sections.includes(trimmed)) return;
-		setSections([...sections, trimmed]);
+		const trimmedName = sectionInput.trim();
+		if (!trimmedName) return;
+
+		// Use Functional Updater to guarantee serial execution and lock out race conditions!
+		setSections((prev) => {
+			const exists = prev.some(
+				(s) =>
+					s.name === trimmedName &&
+					s.startTime === startTime &&
+					s.endTime === endTime,
+			);
+			if (exists) return prev; // Safely abort if already present in current state!
+
+			return [
+				...prev,
+				{
+					name: trimmedName,
+					startTime: startTime,
+					endTime: endTime,
+				},
+			];
+		});
+
 		setSectionInput("");
 	};
-
-	const handleRemoveSection = (sectionToRemove: string) => {
-		setSections(sections.filter((s) => s !== sectionToRemove));
+	console.log(sections);
+	const handleRemoveSection = (sectionName: string) => {
+		setSections(sections.filter((s) => s.name !== sectionName));
 	};
 
 	const handleAddJobScope = (count: number) => {
 		if (!jobTitle.trim() || !selectedSection) return;
+
+		// Parse the composite section selection to extract target values
+		const [targetName, targetStart, targetEnd] = selectedSection.split("|");
+
 		const newJobs: JobScope[] = [];
 		for (let i = 0; i < count; i++) {
 			newJobs.push({
 				id: crypto.randomUUID(),
-				section: selectedSection,
+				section: targetName,
 				role: jobRole,
-				startTime,
-				endTime,
+				startTime: targetStart,
+				endTime: targetEnd,
 				title: jobTitle.trim(),
 				description: jobDescription.trim(),
 			});
@@ -409,11 +436,37 @@ export function EventEditor({
 						{/* Sections */}
 						<div className=" flex flex-col gap-6">
 							<div>
-								<h2 className={sectionHeader()}>Event Sections & Spaces</h2>
+								<h2 className={sectionHeader()}>Event Sections & Shifts</h2>
 								<p className="text-sm text-zinc-400 mt-1">
 									Define the specific areas, doors, or zones where your helpers
 									will be stationed.
 								</p>
+							</div>
+							<div className="flex flex-row gap-6 flex-wrap">
+								<Field className="w-32">
+									<FieldLabel htmlFor="duty-start-time">
+										Shift Start Time
+									</FieldLabel>
+									<Input
+										type="time"
+										id="duty-start-time"
+										value={startTime}
+										onChange={(e) => setStartTime(e.target.value)}
+										className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+									/>
+								</Field>
+								<Field className="w-32">
+									<FieldLabel htmlFor="duty-end-time">
+										Shift End Time
+									</FieldLabel>
+									<Input
+										type="time"
+										id="duty-end-time"
+										value={endTime}
+										onChange={(e) => setEndTime(e.target.value)}
+										className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+									/>
+								</Field>
 							</div>
 							<Field>
 								<FieldLabel htmlFor="section-input">Add New Section</FieldLabel>
@@ -443,6 +496,7 @@ export function EventEditor({
 									</InputGroupAddon>
 								</InputGroup>
 							</Field>
+
 							<div className="space-y-3">
 								<h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
 									Active Sections ({sections.length})
@@ -457,23 +511,28 @@ export function EventEditor({
 									<div className="flex flex-wrap gap-2 rounded-lg min-h-12 items-center">
 										{sections.map((section) => (
 											<div
-												key={section}
+												key={`${section.name}|${section.startTime}|${section.endTime}`}
 												className="group flex items-center gap-1.5 bg-zinc-50 hover:bg-yellow-850 px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-200 transition-all shadow-sm"
 											>
-												<span className="font-medium text-zinc-950 text-md">
-													{section
-														.split(" ")
-														.map((word, index) =>
-															index === 0
-																? word.charAt(0).toUpperCase() + word.slice(1)
-																: word,
-														)
-														.join(" ")}
-												</span>
+												<div className="flex flex-col leading-tight">
+													<span className="font-medium text-zinc-950 text-md">
+														{section.name
+															.split(" ")
+															.map((word, index) =>
+																index === 0
+																	? word.charAt(0).toUpperCase() + word.slice(1)
+																	: word,
+															)
+															.join(" ")}
+													</span>
+													<span className="text-[10px] text-zinc-500 font-mono">
+														{section.startTime} - {section.endTime}
+													</span>
+												</div>
 												<button
 													type="button"
-													onClick={() => handleRemoveSection(section)}
-													className="text-zinc-500 hover:text-zinc-100 p-0.5 rounded-full hover:bg-zinc-800 transition-colors"
+													onClick={() => handleRemoveSection(section.name)}
+													className="text-zinc-500 hover:text-zinc-100 p-0.5 rounded-full hover:bg-zinc-800 transition-colors ml-2"
 												>
 													<XIcon className="h-3 w-3" />
 												</button>
@@ -505,8 +564,12 @@ export function EventEditor({
 													onChange={(e) => setSelectedSection(e.target.value)}
 												>
 													{sections.map((section) => (
-														<NativeSelectOption key={section} value={section}>
-															{section}
+														<NativeSelectOption
+															key={`${section.name}|${section.startTime}|${section.endTime}`}
+															value={`${section.name}|${section.startTime}|${section.endTime}`}
+														>
+															{section.name} ({section.startTime} -{" "}
+															{section.endTime})
 														</NativeSelectOption>
 													))}
 												</NativeSelect>
@@ -543,32 +606,7 @@ export function EventEditor({
 											</Field>
 										</div>
 									</div>
-									<div className="flex flex-row gap-6 flex-wrap">
-										<Field className="w-32">
-											<FieldLabel htmlFor="duty-start-time">
-												Duty Start Time
-											</FieldLabel>
-											<Input
-												type="time"
-												id="duty-start-time"
-												value={startTime}
-												onChange={(e) => setStartTime(e.target.value)}
-												className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
-											/>
-										</Field>
-										<Field className="w-32">
-											<FieldLabel htmlFor="duty-end-time">
-												Duty End Time
-											</FieldLabel>
-											<Input
-												type="time"
-												id="duty-end-time"
-												value={endTime}
-												onChange={(e) => setEndTime(e.target.value)}
-												className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
-											/>
-										</Field>
-									</div>
+
 									<Field>
 										<FieldLabel>Job Title</FieldLabel>
 										<Input
@@ -657,60 +695,60 @@ export function EventEditor({
 													</span>
 												</div>
 												{Object.entries(sectionsMap).map(
-															([sectionName, jobs]) => (
-																<div
-																	key={sectionName}
-																	className="flex flex-col gap-2"
-																>
-																	<div className="flex items-center justify-center mb-2">
-																		<h4 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider ">
-																			{sectionName}
-																		</h4>
-																	</div>
-																	<div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950/20">
-																		<Table>
-																			<TableBody>
-																				{jobs.map((job) => (
-																					<TableRow
-																						key={job.id}
-																						className="border-zinc-800/50 hover:bg-zinc-800/20"
+													([sectionName, jobs]) => (
+														<div
+															key={sectionName}
+															className="flex flex-col gap-2"
+														>
+															<div className="flex items-center justify-center mb-2">
+																<h4 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider ">
+																	{sectionName}
+																</h4>
+															</div>
+															<div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950/20">
+																<Table>
+																	<TableBody>
+																		{jobs.map((job) => (
+																			<TableRow
+																				key={job.id}
+																				className="border-zinc-800/50 hover:bg-zinc-800/20"
+																			>
+																				<TableCell>
+																					<span
+																						className={`text-[9px] font-bold px-2 py-1 rounded border ${
+																							job.role === "supervisor"
+																								? "bg-indigo-700/30 text-white border-indigo-800/50"
+																								: "bg-zinc-800 text-zinc-300 border-zinc-700"
+																						} uppercase tracking-widest`}
 																					>
-																						<TableCell>
-																							<span
-																								className={`text-[9px] font-bold px-2 py-1 rounded border ${
-																									job.role === "supervisor"
-																										? "bg-indigo-700/30 text-white border-indigo-800/50"
-																										: "bg-zinc-800 text-zinc-300 border-zinc-700"
-																								} uppercase tracking-widest`}
-																							>
-																								{job.role}
-																							</span>
-																						</TableCell>
-																						<TableCell className="font-medium text-zinc-200 py-3">
-																							{job.title}
-																						</TableCell>
-																						<TableCell className="text-zinc-400 text-xs hidden md:table-cell italic">
-																							{job.description || "—"}
-																						</TableCell>
-																						<TableCell className="text-right">
-																							<button
-																								type="button"
-																								onClick={() =>
-																									handleRemoveJobScope(job.id)
-																								}
-																								className="text-zinc-600 hover:text-red-400 p-2 transition-colors rounded-md hover:bg-red-400/10"
-																							>
-																								<XIcon className="h-4 w-4" />
-																							</button>
-																						</TableCell>
-																					</TableRow>
-																				))}
-																			</TableBody>
-																		</Table>
-																	</div>
-																</div>
-															),
-														)}
+																						{job.role}
+																					</span>
+																				</TableCell>
+																				<TableCell className="font-medium text-zinc-200 py-3">
+																					{job.title}
+																				</TableCell>
+																				<TableCell className="text-zinc-400 text-xs hidden md:table-cell italic">
+																					{job.description || "—"}
+																				</TableCell>
+																				<TableCell className="text-right">
+																					<button
+																						type="button"
+																						onClick={() =>
+																							handleRemoveJobScope(job.id)
+																						}
+																						className="text-zinc-600 hover:text-red-400 p-2 transition-colors rounded-md hover:bg-red-400/10"
+																					>
+																						<XIcon className="h-4 w-4" />
+																					</button>
+																				</TableCell>
+																			</TableRow>
+																		))}
+																	</TableBody>
+																</Table>
+															</div>
+														</div>
+													),
+												)}
 											</div>
 										),
 									)}
