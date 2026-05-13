@@ -107,8 +107,7 @@ export default defineSchema({
     sectionId: v.optional(v.id("eventSections")), // Tracks their active physical post
     accessToken: v.string(),         // The secret token stored in localStorage
     lastActive: v.number(),
-    status: v.optional(v.union(v.literal("active"), v.literal("checked_out"))), // Support active shift rotation
-    createdAt: v.number(),
+    status: v.optional(v.union(v.literal("unclaimed"), v.literal("active"), v.literal("checked_out"))), // Support active shift rotation
   })
   .index("by_event", ["eventId"])
   .index("by_accessToken", ["accessToken"]),
