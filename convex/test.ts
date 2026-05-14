@@ -70,7 +70,6 @@ export const generateTestInvite = mutation({
 		await ctx.db.patch(targetSlot._id, {
 			assignedStaffId: liveStaffId,
 			inviteToken: inviteToken,
-			inviteTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // Good for 24 hours
 		});
 
 		const localLink = `http://localhost:5173/live/${inviteToken}`;

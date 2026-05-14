@@ -67,7 +67,6 @@ export const createStaffInvitation = mutation({
 		await ctx.db.patch(args.slotId, {
 			assignedStaffId: liveStaffId,
 			inviteToken: token,
-			inviteTokenExpiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // Good for 7 days
 		});
 
 		return {
@@ -91,13 +90,16 @@ export const validateInvite = query({
 
 		if (!slot) return { valid: false, message: "Invalid invite link." };
 
-		// Check expiration
-		if (slot.inviteTokenExpiresAt && slot.inviteTokenExpiresAt < Date.now()) {
-			return { valid: false, message: "This invite link has expired." };
-		}
-
 		const event = await ctx.db.get(slot.eventId);
 		if (!event) return { valid: false, message: "Event no longer exists." };
+
+		// 🏰 Smart Domain Gate: Check if the event is already concluded/archived
+		if (event.status === "archived") {
+			return {
+				valid: false,
+				message: "This event has concluded and the invite portal is closed.",
+			};
+		}
 
 		const liveStaff = slot.assignedStaffId ? await ctx.db.get(slot.assignedStaffId) : null;
 
@@ -142,7 +144,6 @@ export const claimStaffInvite = mutation({
 		// 2. 🛡️ Destroy the ticket permanently so it cannot be reused!
 		await ctx.db.patch(slot._id, {
 			inviteToken: undefined,
-			inviteTokenExpiresAt: undefined,
 		});
 
 		// Return the permanent session key to store in localstorage

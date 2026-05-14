@@ -90,7 +90,6 @@ export default defineSchema({
     
     // EPHEMERAL INVITE SECURITY
     inviteToken: v.optional(v.string()),       // Secure random token for WhatsApp/Email
-    inviteTokenExpiresAt: v.optional(v.number()), // Link expiration timestamp
     
     // CLAIMED STAFF
     assignedStaffId: v.optional(v.id("liveStaff")), // Null if vacant/unclaimed
