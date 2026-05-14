@@ -12,8 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LiveRouteRouteImport } from './routes/live/route'
 import { Route as publicRouteRouteImport } from './routes/(public)/route'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
+import { Route as LiveInviteTokenRouteImport } from './routes/live/$inviteToken'
+import { Route as LiveDashboardRouteRouteImport } from './routes/live/_dashboard/route'
 import { Route as AuthenticatedAppRouteRouteImport } from './routes/_authenticated/app/route'
+import { Route as LiveDashboardIndexRouteImport } from './routes/live/_dashboard/index'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
+import { Route as LiveDashboardRosterRouteImport } from './routes/live/_dashboard/roster'
+import { Route as LiveDashboardJobsRouteImport } from './routes/live/_dashboard/jobs'
+import { Route as LiveDashboardChatRouteImport } from './routes/live/_dashboard/chat'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthenticatedAppSuccessRouteImport } from './routes/_authenticated/app/success'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/app/dashboard'
@@ -38,15 +44,44 @@ const publicIndexRoute = publicIndexRouteImport.update({
   path: '/',
   getParentRoute: () => publicRouteRoute,
 } as any)
+const LiveInviteTokenRoute = LiveInviteTokenRouteImport.update({
+  id: '/$inviteToken',
+  path: '/$inviteToken',
+  getParentRoute: () => LiveRouteRoute,
+} as any)
+const LiveDashboardRouteRoute = LiveDashboardRouteRouteImport.update({
+  id: '/_dashboard',
+  getParentRoute: () => LiveRouteRoute,
+} as any)
 const AuthenticatedAppRouteRoute = AuthenticatedAppRouteRouteImport.update({
   id: '/_authenticated/app',
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LiveDashboardIndexRoute = LiveDashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LiveDashboardRouteRoute,
+} as any)
 const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedAppRouteRoute,
+} as any)
+const LiveDashboardRosterRoute = LiveDashboardRosterRouteImport.update({
+  id: '/roster',
+  path: '/roster',
+  getParentRoute: () => LiveDashboardRouteRoute,
+} as any)
+const LiveDashboardJobsRoute = LiveDashboardJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => LiveDashboardRouteRoute,
+} as any)
+const LiveDashboardChatRoute = LiveDashboardChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => LiveDashboardRouteRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -99,8 +134,9 @@ const AuthenticatedAppEventsEventIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/live': typeof LiveRouteRoute
+  '/live': typeof LiveDashboardRouteRouteWithChildren
   '/app': typeof AuthenticatedAppRouteRouteWithChildren
+  '/live/$inviteToken': typeof LiveInviteTokenRoute
   '/': typeof publicIndexRoute
   '/signin': typeof publicauthSigninRoute
   '/signup': typeof publicauthSignupRoute
@@ -108,13 +144,18 @@ export interface FileRoutesByFullPath {
   '/app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/live/chat': typeof LiveDashboardChatRoute
+  '/live/jobs': typeof LiveDashboardJobsRoute
+  '/live/roster': typeof LiveDashboardRosterRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/live/': typeof LiveDashboardIndexRoute
   '/app/events/$eventId': typeof AuthenticatedAppEventsEventIdRoute
   '/app/events/create': typeof AuthenticatedAppEventsCreateRoute
   '/app/events/': typeof AuthenticatedAppEventsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/live': typeof LiveRouteRoute
+  '/live': typeof LiveDashboardIndexRoute
+  '/live/$inviteToken': typeof LiveInviteTokenRoute
   '/': typeof publicIndexRoute
   '/signin': typeof publicauthSigninRoute
   '/signup': typeof publicauthSignupRoute
@@ -122,6 +163,9 @@ export interface FileRoutesByTo {
   '/app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/live/chat': typeof LiveDashboardChatRoute
+  '/live/jobs': typeof LiveDashboardJobsRoute
+  '/live/roster': typeof LiveDashboardRosterRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/events/$eventId': typeof AuthenticatedAppEventsEventIdRoute
   '/app/events/create': typeof AuthenticatedAppEventsCreateRoute
@@ -130,8 +174,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(public)': typeof publicRouteRouteWithChildren
-  '/live': typeof LiveRouteRoute
+  '/live': typeof LiveRouteRouteWithChildren
   '/_authenticated/app': typeof AuthenticatedAppRouteRouteWithChildren
+  '/live/_dashboard': typeof LiveDashboardRouteRouteWithChildren
+  '/live/$inviteToken': typeof LiveInviteTokenRoute
   '/(public)/': typeof publicIndexRoute
   '/(public)/(auth)/signin': typeof publicauthSigninRoute
   '/(public)/(auth)/signup': typeof publicauthSignupRoute
@@ -139,7 +185,11 @@ export interface FileRoutesById {
   '/_authenticated/app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/live/_dashboard/chat': typeof LiveDashboardChatRoute
+  '/live/_dashboard/jobs': typeof LiveDashboardJobsRoute
+  '/live/_dashboard/roster': typeof LiveDashboardRosterRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/live/_dashboard/': typeof LiveDashboardIndexRoute
   '/_authenticated/app/events/$eventId': typeof AuthenticatedAppEventsEventIdRoute
   '/_authenticated/app/events/create': typeof AuthenticatedAppEventsCreateRoute
   '/_authenticated/app/events/': typeof AuthenticatedAppEventsIndexRoute
@@ -149,6 +199,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/live'
     | '/app'
+    | '/live/$inviteToken'
     | '/'
     | '/signin'
     | '/signup'
@@ -156,13 +207,18 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/success'
     | '/api/auth/$'
+    | '/live/chat'
+    | '/live/jobs'
+    | '/live/roster'
     | '/app/'
+    | '/live/'
     | '/app/events/$eventId'
     | '/app/events/create'
     | '/app/events/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/live'
+    | '/live/$inviteToken'
     | '/'
     | '/signin'
     | '/signup'
@@ -170,6 +226,9 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/success'
     | '/api/auth/$'
+    | '/live/chat'
+    | '/live/jobs'
+    | '/live/roster'
     | '/app'
     | '/app/events/$eventId'
     | '/app/events/create'
@@ -179,6 +238,8 @@ export interface FileRouteTypes {
     | '/(public)'
     | '/live'
     | '/_authenticated/app'
+    | '/live/_dashboard'
+    | '/live/$inviteToken'
     | '/(public)/'
     | '/(public)/(auth)/signin'
     | '/(public)/(auth)/signup'
@@ -186,7 +247,11 @@ export interface FileRouteTypes {
     | '/_authenticated/app/dashboard'
     | '/_authenticated/app/success'
     | '/api/auth/$'
+    | '/live/_dashboard/chat'
+    | '/live/_dashboard/jobs'
+    | '/live/_dashboard/roster'
     | '/_authenticated/app/'
+    | '/live/_dashboard/'
     | '/_authenticated/app/events/$eventId'
     | '/_authenticated/app/events/create'
     | '/_authenticated/app/events/'
@@ -194,7 +259,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   publicRouteRoute: typeof publicRouteRouteWithChildren
-  LiveRouteRoute: typeof LiveRouteRoute
+  LiveRouteRoute: typeof LiveRouteRouteWithChildren
   AuthenticatedAppRouteRoute: typeof AuthenticatedAppRouteRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -222,6 +287,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof publicIndexRouteImport
       parentRoute: typeof publicRouteRoute
     }
+    '/live/$inviteToken': {
+      id: '/live/$inviteToken'
+      path: '/$inviteToken'
+      fullPath: '/live/$inviteToken'
+      preLoaderRoute: typeof LiveInviteTokenRouteImport
+      parentRoute: typeof LiveRouteRoute
+    }
+    '/live/_dashboard': {
+      id: '/live/_dashboard'
+      path: ''
+      fullPath: '/live'
+      preLoaderRoute: typeof LiveDashboardRouteRouteImport
+      parentRoute: typeof LiveRouteRoute
+    }
     '/_authenticated/app': {
       id: '/_authenticated/app'
       path: '/app'
@@ -229,12 +308,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/live/_dashboard/': {
+      id: '/live/_dashboard/'
+      path: '/'
+      fullPath: '/live/'
+      preLoaderRoute: typeof LiveDashboardIndexRouteImport
+      parentRoute: typeof LiveDashboardRouteRoute
+    }
     '/_authenticated/app/': {
       id: '/_authenticated/app/'
       path: '/'
       fullPath: '/app/'
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/live/_dashboard/roster': {
+      id: '/live/_dashboard/roster'
+      path: '/roster'
+      fullPath: '/live/roster'
+      preLoaderRoute: typeof LiveDashboardRosterRouteImport
+      parentRoute: typeof LiveDashboardRouteRoute
+    }
+    '/live/_dashboard/jobs': {
+      id: '/live/_dashboard/jobs'
+      path: '/jobs'
+      fullPath: '/live/jobs'
+      preLoaderRoute: typeof LiveDashboardJobsRouteImport
+      parentRoute: typeof LiveDashboardRouteRoute
+    }
+    '/live/_dashboard/chat': {
+      id: '/live/_dashboard/chat'
+      path: '/chat'
+      fullPath: '/live/chat'
+      preLoaderRoute: typeof LiveDashboardChatRouteImport
+      parentRoute: typeof LiveDashboardRouteRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -318,6 +425,37 @@ const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
   publicRouteRouteChildren,
 )
 
+interface LiveDashboardRouteRouteChildren {
+  LiveDashboardChatRoute: typeof LiveDashboardChatRoute
+  LiveDashboardJobsRoute: typeof LiveDashboardJobsRoute
+  LiveDashboardRosterRoute: typeof LiveDashboardRosterRoute
+  LiveDashboardIndexRoute: typeof LiveDashboardIndexRoute
+}
+
+const LiveDashboardRouteRouteChildren: LiveDashboardRouteRouteChildren = {
+  LiveDashboardChatRoute: LiveDashboardChatRoute,
+  LiveDashboardJobsRoute: LiveDashboardJobsRoute,
+  LiveDashboardRosterRoute: LiveDashboardRosterRoute,
+  LiveDashboardIndexRoute: LiveDashboardIndexRoute,
+}
+
+const LiveDashboardRouteRouteWithChildren =
+  LiveDashboardRouteRoute._addFileChildren(LiveDashboardRouteRouteChildren)
+
+interface LiveRouteRouteChildren {
+  LiveDashboardRouteRoute: typeof LiveDashboardRouteRouteWithChildren
+  LiveInviteTokenRoute: typeof LiveInviteTokenRoute
+}
+
+const LiveRouteRouteChildren: LiveRouteRouteChildren = {
+  LiveDashboardRouteRoute: LiveDashboardRouteRouteWithChildren,
+  LiveInviteTokenRoute: LiveInviteTokenRoute,
+}
+
+const LiveRouteRouteWithChildren = LiveRouteRoute._addFileChildren(
+  LiveRouteRouteChildren,
+)
+
 interface AuthenticatedAppRouteRouteChildren {
   AuthenticatedAppBillingRoute: typeof AuthenticatedAppBillingRoute
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
@@ -345,7 +483,7 @@ const AuthenticatedAppRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   publicRouteRoute: publicRouteRouteWithChildren,
-  LiveRouteRoute: LiveRouteRoute,
+  LiveRouteRoute: LiveRouteRouteWithChildren,
   AuthenticatedAppRouteRoute: AuthenticatedAppRouteRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

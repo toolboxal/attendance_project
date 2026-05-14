@@ -54,7 +54,7 @@ function AssignRoleDialog({
 	const [copied, setCopied] = useState(false);
 	const [inviteUrl, setInviteUrl] = useState("");
 
-	const createInvite = useMutation(api.events.createStaffInvitation);
+	const createInvite = useMutation(api.liveStaff.createStaffInvitation);
 
 	const handleAssign = async () => {
 		if (!name.trim()) {
