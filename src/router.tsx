@@ -19,6 +19,10 @@ export function getRouter() {
 			queries: {
 				queryKeyHashFn: convexQueryClient.hashFn(),
 				queryFn: convexQueryClient.queryFn(),
+				// 🚀 Convex queries are fully reactive via WebSockets.
+				// Disable redundant TanStack Query refetching to prevent double-querying on focus/reconnect.
+				refetchOnWindowFocus: false,
+				refetchOnReconnect: false,
 			},
 		},
 	});

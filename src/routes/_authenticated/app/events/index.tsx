@@ -1,6 +1,6 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { format, parse } from "date-fns";
 import { Check, Copy, Share2 } from "lucide-react";
@@ -25,6 +25,8 @@ import { api } from "../../../../../convex/_generated/api";
 import type { Doc } from "../../../../../convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/app/events/")({
+	loader: ({ context: { queryClient } }) =>
+		queryClient.ensureQueryData(convexQuery(api.events.list, {})),
 	component: RouteComponent,
 });
 
