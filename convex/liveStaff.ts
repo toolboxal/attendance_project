@@ -151,3 +151,39 @@ export const claimStaffInvite = mutation({
 		return { accessToken: staff.accessToken };
 	},
 });
+
+/**
+ * Destroys the active staff assignment, deletes their live profile, and invalidates their access keycard.
+ */
+export const revokeStaffAccess = mutation({
+	args: {
+		slotId: v.id("roleSlots"),
+	},
+	handler: async (ctx, args) => {
+		const user = await getAuthenticatedUser(ctx);
+
+		// 1. Load and authorize slot
+		const slot = await ctx.db.get(args.slotId);
+		if (!slot) throw new Error("Role slot not found.");
+
+		const event = await ctx.db.get(slot.eventId);
+		if (!event) throw new Error("Parent event not found.");
+
+		if (event.adminId !== user._id) {
+			throw new Error("Unauthorized to modify this assignment.");
+		}
+
+		// 2. Delete the actual liveStaff profile record if linked
+		if (slot.assignedStaffId) {
+			await ctx.db.delete(slot.assignedStaffId);
+		}
+
+		// 3. Wipe assignment link and invite token on the slot
+		await ctx.db.patch(args.slotId, {
+			assignedStaffId: undefined,
+			inviteToken: undefined,
+		});
+
+		return { success: true };
+	},
+});
