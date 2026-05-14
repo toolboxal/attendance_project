@@ -91,15 +91,16 @@ function AssignRoleDialog({
 	};
 
 	// Construct universal share payload for Native Share Sheet
-	const shareText = `Hi ${name}! Here is your secure access link for your assignment as ${slot.title}:\n\n${inviteUrl}`;
+	const shareTextBody = `Hi ${name}! Here is your secure access link for your assignment as ${slot.title}:`;
+	const shareTextFull = `${shareTextBody}\n\n${inviteUrl}`;
 
 	const handleNativeShare = async () => {
 		try {
 			if (navigator.share) {
 				await navigator.share({
 					title: `Access Link for ${name}`,
-					text: shareText,
-					// Some OS share drawers combine text & url, passing text handles both formatting & the raw link!
+					text: shareTextBody,
+					url: inviteUrl,
 				});
 			}
 		} catch (err) {
@@ -111,7 +112,7 @@ function AssignRoleDialog({
 	const canShare = typeof navigator !== "undefined" && !!navigator.share;
 
 	// Construct graceful WhatsApp fallback for insecure testing & legacy support
-	const whatsAppUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+	const whatsAppUrl = `https://wa.me/?text=${encodeURIComponent(shareTextFull)}`;
 
 	return (
 		<Dialog
@@ -241,7 +242,11 @@ function AssignRoleDialog({
 						)}
 
 						<DialogClose asChild>
-							<Button variant="ghost" className="w-full text-zinc-500">
+							<Button
+								variant="ghost"
+								className="w-full text-zinc-500"
+								size={"lg"}
+							>
 								Done
 							</Button>
 						</DialogClose>

@@ -46,6 +46,7 @@ export const create = mutation({
     ),
     jobScopes: v.array(
       v.object({
+        id: v.optional(v.string()), // Matches frontend runtime format
         section: v.string(), // We'll match this name to the IDs we create!
         role: v.union(v.literal("staff"), v.literal("supervisor")),
         startTime: v.string(),
@@ -112,10 +113,19 @@ export const create = mutation({
       createdAt: Date.now(),
     });
 
-    // 3. SAVE CHILDREN: Insert each section using provided explicit scheduling!
+    // 3. SAVE CHILDREN: Normalize and insert each section using provided explicit scheduling
+    const sanitizedSections = args.sections.map((sec) => ({
+      ...sec,
+      name: sec.name.trim().toLowerCase(),
+    }));
+    const sanitizedJobScopes = args.jobScopes.map((scope) => ({
+      ...scope,
+      section: scope.section.trim().toLowerCase(),
+    }));
+
     const sectionMap = new Map();
 
-    for (const sec of args.sections) {
+    for (const sec of sanitizedSections) {
       const sectionId = await ctx.db.insert("eventSections", {
         eventId,
         name: sec.name,
@@ -129,7 +139,7 @@ export const create = mutation({
     }
 
     // 4. SAVE GRANDCHILDREN: Insert each individual staff role slotted correctly!
-    for (const scope of args.jobScopes) {
+    for (const scope of sanitizedJobScopes) {
       // Retrieve sectionId by matching the exact composite identity!
       const sectionId = sectionMap.get(`${scope.section}|${scope.startTime}|${scope.endTime}`);
 
@@ -256,6 +266,7 @@ export const update = mutation({
     ),
     jobScopes: v.array(
       v.object({
+        id: v.optional(v.string()), // Maps to existing DB IDs to perform non-destructive sync!
         section: v.string(), 
         role: v.union(v.literal("staff"), v.literal("supervisor")),
         startTime: v.string(),
@@ -283,47 +294,103 @@ export const update = mutation({
       description: args.description,
     });
 
-    // 2. CLEAR EXISTING CONFIG: Delete existing sections and slots to perform clean replacement
+    // Normalize incoming lists
+    const sanitizedSections = args.sections.map((sec) => ({
+      ...sec,
+      name: sec.name.trim().toLowerCase(),
+    }));
+    const sanitizedJobScopes = args.jobScopes.map((scope) => ({
+      ...scope,
+      section: scope.section.trim().toLowerCase(),
+    }));
+
+    // 2. SYNC SECTIONS NON-DESTRUCTIVELY
+    // Fetch all existing sections from the database
     const existingSections = await ctx.db
       .query("eventSections")
       .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
       .collect();
-    for (const sec of existingSections) {
-      await ctx.db.delete(sec._id);
+
+    const sectionMap = new Map();
+    const processedSectionIds = new Set();
+
+    for (const sec of sanitizedSections) {
+      // Match sections by their natural key (composite of name and shift time)
+      const existing = existingSections.find(
+        (s) =>
+          s.name === sec.name &&
+          s.startTime === sec.startTime &&
+          s.endTime === sec.endTime
+      );
+
+      if (existing) {
+        // Keep existing! Note down its ID for linkage and exclude from cleanup
+        sectionMap.set(`${sec.name}|${sec.startTime}|${sec.endTime}`, existing._id);
+        processedSectionIds.add(existing._id);
+      } else {
+        // New configuration! Insert section
+        const sectionId = await ctx.db.insert("eventSections", {
+          eventId: args.eventId,
+          name: sec.name,
+          headcount: 0,
+          status: "empty",
+          startTime: sec.startTime,
+          endTime: sec.endTime,
+        });
+        sectionMap.set(`${sec.name}|${sec.startTime}|${sec.endTime}`, sectionId);
+      }
     }
 
+    // Gracefully remove any sections no longer active in the layout
+    for (const sec of existingSections) {
+      if (!processedSectionIds.has(sec._id)) {
+        await ctx.db.delete(sec._id);
+      }
+    }
+
+    // 3. SYNC ROLE SLOTS NON-DESTRUCTIVELY
+    // Fetch all current role slots
     const existingSlots = await ctx.db
       .query("roleSlots")
       .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
       .collect();
-    for (const slot of existingSlots) {
-      await ctx.db.delete(slot._id);
-    }
 
-    // 3. WRITE NEW CONFIGURATION (Mirror logic of create mutation)
-    const sectionMap = new Map();
+    const processedSlotIds = new Set();
 
-    for (const sec of args.sections) {
-      const sectionId = await ctx.db.insert("eventSections", {
-        eventId: args.eventId,
-        name: sec.name,
-        headcount: 0, 
-        status: "empty", 
-        startTime: sec.startTime,
-        endTime: sec.endTime,
-      });
-      sectionMap.set(`${sec.name}|${sec.startTime}|${sec.endTime}`, sectionId);
-    }
-
-    for (const scope of args.jobScopes) {
+    for (const scope of sanitizedJobScopes) {
       const sectionId = sectionMap.get(`${scope.section}|${scope.startTime}|${scope.endTime}`);
-      await ctx.db.insert("roleSlots", {
-        eventId: args.eventId,
-        sectionId, 
-        title: scope.title,
-        role: scope.role,
-        description: scope.description,
-      });
+
+      // Validate if the incoming scope.id is an existing valid database row
+      const existingMatch = scope.id
+        ? existingSlots.find((slot) => slot._id === scope.id)
+        : undefined;
+
+      if (existingMatch) {
+        // 🚀 CRUCIAL FIX: Update existing slot to protect assignments & active invitation tokens!
+        await ctx.db.patch(existingMatch._id, {
+          sectionId,
+          title: scope.title,
+          role: scope.role,
+          description: scope.description,
+        });
+        processedSlotIds.add(existingMatch._id);
+      } else {
+        // Brand new role added by the admin! Create fresh slot
+        await ctx.db.insert("roleSlots", {
+          eventId: args.eventId,
+          sectionId,
+          title: scope.title,
+          role: scope.role,
+          description: scope.description,
+        });
+      }
+    }
+
+    // Prune old, removed slots
+    for (const slot of existingSlots) {
+      if (!processedSlotIds.has(slot._id)) {
+        await ctx.db.delete(slot._id);
+      }
     }
 
     return { success: true };

@@ -107,6 +107,7 @@ export const validateInvite = query({
 			valid: true,
 			eventTitle: event.title,
 			eventLocation: event.location,
+			eventDescription: event.description,
 			roleTitle: slot.title,
 			roleType: slot.role,
 			assignedName: liveStaff?.name || "Team Member",

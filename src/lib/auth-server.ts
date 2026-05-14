@@ -18,6 +18,4 @@ export const {
 } = convexBetterAuthReactStart({
 	convexUrl,
 	convexSiteUrl,
-	// Optional, defaults to "/api/auth"
-	basePath: "/custom/auth/path",
 });

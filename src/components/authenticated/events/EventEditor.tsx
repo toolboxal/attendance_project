@@ -43,6 +43,14 @@ const formStyle = tv({
 	},
 });
 
+function capitalizeWords(str: string) {
+	if (!str) return "";
+	return str
+		.split(" ")
+		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+		.join(" ");
+}
+
 export type JobScope = {
 	id: string;
 	section: string;
@@ -61,7 +69,7 @@ export type EventSubmitData = {
 	eventDate: number;
 	startTime: string;
 	sections: Array<{ name: string; startTime: string; endTime: string }>;
-	jobScopes: Array<Omit<JobScope, "id">>;
+	jobScopes: Array<JobScope>;
 };
 
 type EventEditorProps = {
@@ -132,6 +140,7 @@ export function EventEditor({
 					startTime: value.time,
 					sections: sections,
 					jobScopes: jobScopes.map((job) => ({
+						id: job.id, // 🚀 Crucial: Retain IDs to enable non-destructive differential updates!
 						section: job.section,
 						role: job.role,
 						startTime: job.startTime,
@@ -397,7 +406,14 @@ export function EventEditor({
 									</Field>
 								)}
 							</form.Field>
-							<form.Field name="description">
+							<form.Field
+								name="description"
+								validators={{
+									onChange: z
+										.string()
+										.max(300, "Description cannot exceed 300 characters"),
+								}}
+							>
 								{(field) => (
 									<Field>
 										<FieldLabel htmlFor="event-description">
@@ -409,10 +425,28 @@ export function EventEditor({
 											onBlur={field.handleBlur}
 											onChange={(e) => field.handleChange(e.target.value)}
 											className="min-h-24 p-3"
+											placeholder="Notes, rules, guidelines, etc."
 										/>
-										<FieldDescription>
-											Notes, rules, guidelines, etc.
-										</FieldDescription>
+										{field.state.meta.errors.length > 0 ? (
+											<FieldDescription className="text-red-500">
+												<em>
+													{field.state.meta.errors
+														.map((err: any) =>
+															typeof err === "string"
+																? err
+																: err?.message ||
+																	err?.issue?.message ||
+																	"Invalid input",
+														)
+														.join(", ")}
+												</em>
+											</FieldDescription>
+										) : (
+											<FieldDescription className="text-yellow-500/80 text-xs">
+												Do not put sensitive info here. This is seen on public
+												invite to helpers.
+											</FieldDescription>
+										)}
 									</Field>
 								)}
 							</form.Field>
@@ -556,14 +590,7 @@ export function EventEditor({
 											>
 												<div className="flex flex-col leading-tight">
 													<span className="font-medium text-zinc-950 text-md">
-														{section.name
-															.split(" ")
-															.map((word, index) =>
-																index === 0
-																	? word.charAt(0).toUpperCase() + word.slice(1)
-																	: word,
-															)
-															.join(" ")}
+														{capitalizeWords(section.name)}
 													</span>
 													<span className="text-[10px] text-zinc-500 font-mono">
 														{section.startTime} - {section.endTime}
@@ -614,8 +641,8 @@ export function EventEditor({
 															key={`${section.name}|${section.startTime}|${section.endTime}`}
 															value={`${section.name}|${section.startTime}|${section.endTime}`}
 														>
-															{section.name} ({section.startTime} -{" "}
-															{section.endTime})
+															{capitalizeWords(section.name)} (
+															{section.startTime} - {section.endTime})
 														</NativeSelectOption>
 													))}
 												</NativeSelect>
@@ -748,7 +775,7 @@ export function EventEditor({
 														>
 															<div className="flex items-center justify-center mb-2">
 																<h4 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider ">
-																	{sectionName}
+																	{capitalizeWords(sectionName)}
 																</h4>
 															</div>
 															<div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950/20">
