@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
-import { toast } from "sonner";
 import { Check, ChevronDown, Copy, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
 import {
 	Dialog,
@@ -15,6 +15,7 @@ import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc } from "../../../../convex/_generated/dataModel";
+import { formatTime12h } from "#/lib/utils";
 
 export function ManageStaffDialog({
 	slot,
@@ -129,8 +130,22 @@ export function ManageStaffDialog({
 			<DialogContent className="bg-zinc-900 border-zinc-800 sm:max-w-md text-zinc-50">
 				<DialogHeader>
 					<DialogTitle className="text-zinc-100">Manage Assignment</DialogTitle>
+					{/* <DialogDescription className="text-zinc-400">
+						{slot.title} — {section.name.toUpperCase()}
+					</DialogDescription> */}
 					<DialogDescription className="text-zinc-400">
-						{slot.title} — {section.name}
+						<div>
+							<span className="text-yellow-100 font-mono text-xs">
+								{formatTime12h(section.startTime || "")}
+							</span>
+							<span>→</span>
+							<span className="text-yellow-100 font-mono text-xs">
+								{formatTime12h(section.endTime || "")}
+							</span>
+						</div>
+						<p className="text-zinc-100 text-sm uppercase mt-1">
+							{section.name} → {slot.title}
+						</p>
 					</DialogDescription>
 				</DialogHeader>
 
@@ -139,9 +154,9 @@ export function ManageStaffDialog({
 					<div className="space-y-2 flex flex-col">
 						<Label
 							htmlFor="edit-staff-name"
-							className="text-zinc-400 text-xs uppercase font-bold tracking-wider"
+							className="text-xs font-semibold text-zinc-500"
 						>
-							Update Assigned Helper
+							Update name
 						</Label>
 						<div className="flex gap-2">
 							<Input
@@ -154,7 +169,7 @@ export function ManageStaffDialog({
 							<Button
 								onClick={handleUpdateName}
 								disabled={saving || name.trim() === staff.name}
-								className="bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold h-11 px-4"
+								className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium h-11 px-4"
 							>
 								{saving ? "Saving..." : "Update"}
 							</Button>
@@ -165,12 +180,11 @@ export function ManageStaffDialog({
 					{inviteUrl && (
 						<div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/30 space-y-3 mt-2 flex flex-col">
 							<div className="flex flex-col">
-								<span className="text-xs font-bold uppercase tracking-wider text-amber-400/90 flex items-center gap-1.5">
-									<span className="size-2 rounded-full bg-amber-400/80 animate-pulse" />
-									⏳ Invite Pending Claim
+								<span className="text-yellow-400 font-bold text-xs">
+									Invite Pending Claim
 								</span>
-								<p className="text-zinc-500 text-[11px] mt-1 leading-relaxed">
-									The worker has not loaded this ticket yet. Re-share or copy
+								<p className="text-zinc-500 text-[12px] mt-1">
+									The staff has not claimed this assignment. Re-share or copy
 									the active access token below:
 								</p>
 							</div>

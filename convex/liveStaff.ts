@@ -93,6 +93,9 @@ export const validateInvite = query({
 		const event = await ctx.db.get(slot.eventId);
 		if (!event) return { valid: false, message: "Event no longer exists." };
 
+		// Load the specific shift/section details linked to this role slot
+		const section = slot.sectionId ? await ctx.db.get(slot.sectionId) : null;
+
 		// 🏰 Smart Domain Gate: Check if the event is already concluded/archived
 		if (event.status === "archived") {
 			return {
@@ -107,7 +110,12 @@ export const validateInvite = query({
 			valid: true,
 			eventTitle: event.title,
 			eventLocation: event.location,
+			eventDate: event.eventDate,
+			eventTime: event.startTime,
 			eventDescription: event.description,
+			sectionName: section?.name ?? "",
+			sectionStartTime: section?.startTime ?? "",
+			sectionEndTime: section?.endTime ?? "",
 			roleTitle: slot.title,
 			roleType: slot.role,
 			assignedName: liveStaff?.name || "Team Member",
