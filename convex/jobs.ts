@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 // Retrieve active jobs for a specific event
-export const getActiveJobs = query({
+export const getAllJobs = query({
 	args: { accessToken: v.string() },
 	handler: async (ctx, args) => {
 		const staff = await ctx.db
@@ -16,11 +16,45 @@ export const getActiveJobs = query({
 		const jobs = await ctx.db
 			.query("jobs")
 			.withIndex("by_event", (q) => q.eq("eventId", staff.eventId))
-			.filter((q) => q.neq(q.field("status"), "resolved"))
 			.order("desc")
-			.take(50);
+			.take(100);
 
-		return jobs;
+		// Enrich jobs with human-readable names
+		const enrichedJobs = await Promise.all(
+			jobs.map(async (job) => {
+				const creator = await ctx.db.get(job.creatorId);
+				const claimer = job.claimerId ? await ctx.db.get(job.claimerId) : null;
+				
+				const creatorRoleSlot = creator 
+					? await ctx.db.query("roleSlots").withIndex("by_assignedStaff", (q) => q.eq("assignedStaffId", creator._id)).first() 
+					: null;
+					
+				const claimerRoleSlot = claimer 
+					? await ctx.db.query("roleSlots").withIndex("by_assignedStaff", (q) => q.eq("assignedStaffId", claimer._id)).first() 
+					: null;
+
+				const originSection = job.originSectionId
+					? await ctx.db.get(job.originSectionId)
+					: null;
+				const destinationSection = job.destinationSectionId
+					? await ctx.db.get(job.destinationSectionId)
+					: null;
+
+				return {
+					...job,
+					creatorName: creator?.staffName || "Unknown Staff",
+					creatorRole: creatorRoleSlot?.role || creator?.role,
+					creatorRoleTitle: creatorRoleSlot?.title || "",
+					claimerName: claimer?.staffName,
+					claimerRole: claimerRoleSlot?.role || claimer?.role,
+					claimerRoleTitle: claimerRoleSlot?.title || "",
+					originSectionName: originSection?.name || "Unknown Gate",
+					destinationSectionName: destinationSection?.name,
+				};
+			}),
+		);
+
+		return enrichedJobs;
 	},
 });
 
