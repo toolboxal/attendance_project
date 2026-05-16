@@ -115,19 +115,21 @@ export function AssignRoleDialog({
 					<DialogTitle className="text-zinc-100">
 						Assign {slot.title}
 					</DialogTitle>
-					<DialogDescription className="text-zinc-400">
+					<DialogDescription asChild className="text-zinc-400">
 						<div>
-							<span className="text-yellow-100 font-mono text-xs">
-								{formatTime12h(section.startTime || "")}
-							</span>
-							<span>→</span>
-							<span className="text-yellow-100 font-mono text-xs">
-								{formatTime12h(section.endTime || "")}
-							</span>
+							<div>
+								<span className="text-yellow-100 font-mono text-xs">
+									{formatTime12h(section.startTime || "")}
+								</span>
+								<span>→</span>
+								<span className="text-yellow-100 font-mono text-xs">
+									{formatTime12h(section.endTime || "")}
+								</span>
+							</div>
+							<p className="text-zinc-100 text-sm uppercase mt-1">
+								{section.name}
+							</p>
 						</div>
-						<p className="text-zinc-100 text-sm uppercase mt-1">
-							{section.name}
-						</p>
 					</DialogDescription>
 				</DialogHeader>
 

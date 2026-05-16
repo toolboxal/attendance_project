@@ -38,7 +38,7 @@ export const createStaffInvitation = mutation({
 
 			liveStaffId = await ctx.db.insert("liveStaff", {
 				eventId: slot.eventId,
-				name: trimmedName,
+				staffName: trimmedName,
 				role: slot.role,
 				sectionId: slot.sectionId, // Link physical duty location immediately!
 				accessToken: secureAccessToken,
@@ -48,7 +48,7 @@ export const createStaffInvitation = mutation({
 		} else {
 			// CASE B: Already assigned. Admin is just renaming/updating the entry!
 			await ctx.db.patch(liveStaffId, {
-				name: trimmedName,
+				staffName: trimmedName,
 				lastActive: Date.now(),
 			});
 		}
@@ -118,7 +118,7 @@ export const validateInvite = query({
 			sectionEndTime: section?.endTime ?? "",
 			roleTitle: slot.title,
 			roleType: slot.role,
-			assignedName: liveStaff?.name || "Team Member",
+			assignedName: liveStaff?.staffName || "Team Member",
 			// Passing access token ONLY here if desired, or handle in a protected claim mutation!
 			// We will serve the public details for the UI first.
 			accessToken: liveStaff?.accessToken ?? null,
@@ -193,5 +193,47 @@ export const revokeStaffAccess = mutation({
 		});
 
 		return { success: true };
+	},
+});
+
+/**
+ * Resolves the active staff member's profile using their secure access token.
+ * This powers the dashboard's context (e.g. knowing who they are and where they are stationed).
+ */
+export const getProfile = query({
+	args: { accessToken: v.string() },
+	handler: async (ctx, args) => {
+		const staff = await ctx.db
+			.query("liveStaff")
+			.withIndex("by_accessToken", (q) => q.eq("accessToken", args.accessToken))
+			.first();
+
+		if (!staff) return null;
+		
+		// Block access if they were manually removed or checked out
+		if (staff.status === "checked_out") return null;
+
+		// Load contextual data for the UI
+		const section = staff.sectionId ? await ctx.db.get(staff.sectionId) : null;
+		const event = await ctx.db.get(staff.eventId);
+		const roleSlot = await ctx.db
+			.query("roleSlots")
+			.withIndex("by_assignedStaff", (q) => q.eq("assignedStaffId", staff._id))
+			.first();
+
+		return {
+			_id: staff._id,
+			eventId: staff.eventId,
+			name: staff.staffName,
+			role: roleSlot?.role,
+			roleTitle: roleSlot?.title || "",
+			status: staff.status,
+			sectionId: staff.sectionId,
+			sectionName: section?.name || "Floating",
+			sectionStartTime: section?.startTime || "",
+			sectionEndTime: section?.endTime || "",
+			eventDate: event?.eventDate || "",
+			eventTime: event?.startTime || "",
+		};
 	},
 });

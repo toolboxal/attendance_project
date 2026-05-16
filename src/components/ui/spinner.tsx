@@ -1,9 +1,9 @@
 import { cn } from "#/lib/utils";
-import { Loader, LoaderPinwheelIcon } from "lucide-react";
+import { Clock12 } from "lucide-react";
 
 function Spinner({ className, ...props }: React.ComponentProps<"svg">) {
 	return (
-		<LoaderPinwheelIcon
+		<Clock12
 			role="status"
 			aria-label="Loading"
 			className={cn("size-10 animate-spin", className)}

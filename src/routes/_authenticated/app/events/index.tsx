@@ -264,7 +264,7 @@ function RouteComponent() {
 									{`Start a new draft event,\nyou can add sections, jobs later.\nWhen you are ready, you can go live.`}
 								</p>
 								<Button
-									variant={"link"}
+									variant={"ghost"}
 									onClick={() => navigate({ to: "/app/events/create" })}
 								>
 									Create Event

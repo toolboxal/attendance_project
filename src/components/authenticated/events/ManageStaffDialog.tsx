@@ -27,7 +27,7 @@ export function ManageStaffDialog({
 	staff: Doc<"liveStaff">;
 }) {
 	const [open, setOpen] = useState(false);
-	const [name, setName] = useState(staff.name);
+	const [name, setName] = useState(staff.staffName);
 	const [saving, setSaving] = useState(false);
 	const [revoking, setRevoking] = useState(false);
 	const [copied, setCopied] = useState(false);
@@ -37,8 +37,8 @@ export function ManageStaffDialog({
 
 	// Sync local input state if the underlying data updates from external push
 	useEffect(() => {
-		setName(staff.name);
-	}, [staff.name]);
+		setName(staff.staffName);
+	}, [staff.staffName]);
 
 	const handleUpdateName = async () => {
 		if (!name.trim()) {
@@ -63,7 +63,7 @@ export function ManageStaffDialog({
 	const handleRevoke = async () => {
 		if (
 			!window.confirm(
-				`Are you sure you want to revoke access for ${staff.name}? This will instantly deactivate their live workspace and clear this role slot.`,
+				`Are you sure you want to revoke access for ${staff.staffName}? This will instantly deactivate their live workspace and clear this role slot.`,
 			)
 		) {
 			return;
@@ -123,7 +123,7 @@ export function ManageStaffDialog({
 					type="button"
 					className="flex flex-row items-center gap-1 ml-auto text-sm font-normal text-zinc-400 hover:text-zinc-200 px-2 h-auto cursor-pointer select-none transition-colors focus:outline-none bg-transparent border-none"
 				>
-					<p>{staff.name}</p>
+					<p>{staff.staffName}</p>
 					<ChevronDown size={16} strokeWidth={1.5} />
 				</button>
 			</DialogTrigger>
@@ -133,19 +133,21 @@ export function ManageStaffDialog({
 					{/* <DialogDescription className="text-zinc-400">
 						{slot.title} — {section.name.toUpperCase()}
 					</DialogDescription> */}
-					<DialogDescription className="text-zinc-400">
+					<DialogDescription asChild className="text-zinc-400">
 						<div>
-							<span className="text-yellow-100 font-mono text-xs">
-								{formatTime12h(section.startTime || "")}
-							</span>
-							<span>→</span>
-							<span className="text-yellow-100 font-mono text-xs">
-								{formatTime12h(section.endTime || "")}
-							</span>
+							<div>
+								<span className="text-yellow-100 font-mono text-xs">
+									{formatTime12h(section.startTime || "")}
+								</span>
+								<span>→</span>
+								<span className="text-yellow-100 font-mono text-xs">
+									{formatTime12h(section.endTime || "")}
+								</span>
+							</div>
+							<p className="text-zinc-100 text-sm uppercase mt-1">
+								{section.name} → {slot.title}
+							</p>
 						</div>
-						<p className="text-zinc-100 text-sm uppercase mt-1">
-							{section.name} → {slot.title}
-						</p>
 					</DialogDescription>
 				</DialogHeader>
 
@@ -168,7 +170,7 @@ export function ManageStaffDialog({
 							/>
 							<Button
 								onClick={handleUpdateName}
-								disabled={saving || name.trim() === staff.name}
+								disabled={saving || name.trim() === staff.staffName}
 								className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium h-11 px-4"
 							>
 								{saving ? "Saving..." : "Update"}
@@ -234,7 +236,7 @@ export function ManageStaffDialog({
 								🟢 Activated & Active
 							</span>
 							<p className="text-zinc-500 text-[11px] mt-1.5 leading-relaxed">
-								{staff.name} successfully claimed their ticket and has an active
+								{staff.staffName} successfully claimed their ticket and has an active
 								browser keycard session.
 							</p>
 						</div>

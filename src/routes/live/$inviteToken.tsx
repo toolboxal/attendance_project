@@ -18,6 +18,7 @@ function InviteGateComponent() {
 	const { inviteToken } = Route.useParams();
 	const navigate = useNavigate();
 	const [claiming, setClaiming] = useState(false);
+	const [claimed, setClaimed] = useState(false);
 
 	// 1. 🕵️ Validate the link authenticity against Convex
 	const inviteData = useQuery(api.liveStaff.validateInvite, { inviteToken });
@@ -32,6 +33,7 @@ function InviteGateComponent() {
 
 			// 💳 Save the permanent session Keycard in browser storage!
 			localStorage.setItem("asistir_staff_token", result.accessToken);
+			setClaimed(true);
 
 			toast.success("Welcome to the team! Loading dashboard...");
 
@@ -44,7 +46,7 @@ function InviteGateComponent() {
 		}
 	};
 
-	// STATE A: 🌀 High-End Loader
+	// STATE A: High-End Loader
 	if (inviteData === undefined) {
 		return (
 			<div className="min-h-dvh w-full bg-zinc-950 flex flex-col items-center justify-center gap-4 ">
@@ -58,7 +60,7 @@ function InviteGateComponent() {
 	}
 
 	// STATE B: ❌ Invalid Link / Expired Ticket
-	if (inviteData.valid === false) {
+	if (inviteData.valid === false && !claimed) {
 		return (
 			<div className="min-h-dvh w-full bg-zinc-950 flex items-center justify-center p-4">
 				<div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl">
@@ -114,7 +116,7 @@ function InviteGateComponent() {
 								{inviteData.roleType}
 							</p>
 						</div>
-						<p className="text-zinc-400 text-sm">
+						<p className="text-zinc-400 text-sm leading-tight">
 							You have been assigned as event {inviteData.roleType}. <br />
 							This invitation can only be claimed once. <br />
 							No log in is required.
@@ -124,7 +126,7 @@ function InviteGateComponent() {
 				<Separator orientation="horizontal" className="lg:hidden" />
 				<Separator orientation="vertical" className="hidden lg:block" />
 				{/* 📋 The Specs Sheet */}
-				<div className="flex-1 rounded-2xl  space-y-5">
+				<div className="flex-1 rounded-2xl pt-1 space-y-5">
 					<div className="flex flex-col gap-0.5">
 						<span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">
 							Event
@@ -148,7 +150,7 @@ function InviteGateComponent() {
 							{formatTime12h(inviteData.eventTime || "")}
 						</span>
 					</div>
-					{inviteData.eventDescription ? (
+					{!inviteData.eventDescription ? (
 						<div className="flex items-start gap-4">
 							<div className="flex flex-col gap-0.5">
 								<span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">

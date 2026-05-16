@@ -1,4 +1,9 @@
-import { createFileRoute, Outlet, useNavigate, Link } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Outlet,
+	useNavigate,
+	Link,
+} from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Spinner } from "#/components/ui/spinner";
 import { Briefcase, MessageSquare, Users, LogOut } from "lucide-react";
@@ -15,12 +20,15 @@ function DashboardAuthLayout() {
 	useEffect(() => {
 		// 🔐 Perform the local secure handshake verification
 		const token = localStorage.getItem("asistir_staff_token");
-		
+
 		if (!token) {
 			setHasToken(false);
 			setIsAuthenticating(false);
 			// Re-route bad actors or lost sessions to the intake failure space
-			navigate({ to: "/live/$inviteToken", params: { inviteToken: "invalid" } });
+			navigate({
+				to: "/live/$inviteToken",
+				params: { inviteToken: "invalid" },
+			});
 		} else {
 			setHasToken(true);
 			setIsAuthenticating(false);
@@ -32,7 +40,7 @@ function DashboardAuthLayout() {
 		return (
 			<div className="min-h-dvh bg-zinc-950 flex flex-col items-center justify-center gap-4">
 				<Spinner className="size-8 text-zinc-100" />
-				<p className="text-zinc-500 text-xs font-mono">Initializing Secure Portal...</p>
+				<p className="text-zinc-500 text-xs font-mono">Initializing...</p>
 			</div>
 		);
 	}
@@ -43,22 +51,22 @@ function DashboardAuthLayout() {
 	// State C: Access Granted! Render the workspace & The persistent Bottom Nav Bar!
 	return (
 		<div className="min-h-dvh bg-zinc-950 text-zinc-100 flex flex-col pb-24">
-			
 			{/* Main Content Area */}
 			<main className="flex-1 w-full max-w-md mx-auto px-4 pt-6 overflow-y-auto">
 				<Outlet />
 			</main>
 
 			{/* 📱 HIGH-END FLOATING BOTTOM NAV BAR */}
-			<nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md h-20 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 rounded-3xl flex items-center justify-around px-4 shadow-2xl z-50">
-				
+			<nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md h-20 bg-zinc-900/80 backdrop-blur-xl  rounded-lg flex items-center justify-around px-4 shadow-2xl z-50">
 				{/* TAB 1: JOBS */}
 				<Link
 					to="/live/jobs"
 					className="flex flex-col items-center gap-1 text-zinc-500 hover:text-zinc-300 transition-all px-4 py-2 [&.active]:text-indigo-400 [&.active]:scale-110"
 				>
 					<Briefcase className="size-5" />
-					<span className="text-[10px] font-bold tracking-wider uppercase">Jobs</span>
+					<span className="text-[10px] font-bold tracking-wider uppercase">
+						Jobs
+					</span>
 				</Link>
 
 				{/* TAB 2: CHAT */}
@@ -67,7 +75,9 @@ function DashboardAuthLayout() {
 					className="flex flex-col items-center gap-1 text-zinc-500 hover:text-zinc-300 transition-all px-4 py-2 [&.active]:text-indigo-400 [&.active]:scale-110"
 				>
 					<MessageSquare className="size-5" />
-					<span className="text-[10px] font-bold tracking-wider uppercase">Chat</span>
+					<span className="text-[10px] font-bold tracking-wider uppercase">
+						Chat
+					</span>
 				</Link>
 
 				{/* TAB 3: ROSTER */}
@@ -76,7 +86,9 @@ function DashboardAuthLayout() {
 					className="flex flex-col items-center gap-1 text-zinc-500 hover:text-zinc-300 transition-all px-4 py-2 [&.active]:text-indigo-400 [&.active]:scale-110"
 				>
 					<Users className="size-5" />
-					<span className="text-[10px] font-bold tracking-wider uppercase">Roster</span>
+					<span className="text-[10px] font-bold tracking-wider uppercase">
+						Roster
+					</span>
 				</Link>
 
 				{/* SECURE LOGOUT */}
@@ -89,7 +101,9 @@ function DashboardAuthLayout() {
 					className="flex flex-col items-center gap-1 text-zinc-600 hover:text-red-400 transition-all px-4 py-2"
 				>
 					<LogOut className="size-5" />
-					<span className="text-[10px] font-bold tracking-wider uppercase">Exit</span>
+					<span className="text-[10px] font-bold tracking-wider uppercase">
+						Exit
+					</span>
 				</button>
 			</nav>
 		</div>

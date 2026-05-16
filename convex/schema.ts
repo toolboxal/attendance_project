@@ -101,7 +101,7 @@ export default defineSchema({
   // Ephemeral Guest/Staff Users
   liveStaff: defineTable({
     eventId: v.id("events"),
-    name: v.string(),
+    staffName: v.string(),
     role: v.union(v.literal("supervisor"), v.literal("staff")),
     sectionId: v.optional(v.id("eventSections")), // Tracks their active physical post
     accessToken: v.string(),         // The secret token stored in localStorage
@@ -115,9 +115,12 @@ export default defineSchema({
   jobs: defineTable({
     eventId: v.id("events"),
     creatorId: v.id("liveStaff"),
-    assigneeId: v.optional(v.id("liveStaff")),
-    title: v.string(),               // e.g., "Latecomers needing Section C"
-    details: v.optional(v.string()),
+    claimerId: v.optional(v.id("liveStaff")),        // The Usher who claimed it
+    originSectionId: v.optional(v.id("eventSections")), // Where the job was dispatched from
+    destinationSectionId: v.optional(v.id("eventSections")), // Where the usher is taking them
+    personCount: v.number(),
+    requestType: v.string(),         // "vip", "wheelchair", "regular", etc.
+    description: v.optional(v.string()),
     status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("resolved")),
     createdAt: v.number(),
   }).index("by_event", ["eventId"]),
