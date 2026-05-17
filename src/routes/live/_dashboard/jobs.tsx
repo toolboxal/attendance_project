@@ -2,32 +2,18 @@ import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
-import { useState } from "react";
 import { tv } from "tailwind-variants";
 import { DispatchPanel } from "#/components/jobs/DispatchPanel";
+import { JobItem } from "#/components/jobs/JobItem";
 import { capitalizeWords, formatTime12h } from "#/lib/utils";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "../../../../convex/_generated/api";
+import { useMutation } from "convex/react";
+import { toast } from "sonner";
 
-const jobComponent = tv({
+const layoutStyles = tv({
 	slots: {
-		container: "py-2",
-		card: "bg-zinc-800 rounded-md overflow-hidden text-zinc-100 py-0.5",
-		header:
-			" p-1 px-3  flex flex-row items-center justify-between font-normal ",
-		middleSection:
-			" flex flex-row items-center gap-5 p-1 px-3 text-sm font-normal font-bold justify-between",
-		bottomSection:
-			" flex flex-row items-center gap-5 p-1 px-3 text-sm font-normal font-bold justify-between",
-	},
-	variants: {
-		status: {
-			pending: "",
-			accepted: "",
-			resolved: "",
-		},
+		container: "py-2 flex flex-col gap-1.5",
 	},
 });
 
@@ -36,8 +22,7 @@ export const Route = createFileRoute("/live/_dashboard/jobs")({
 });
 
 function JobsTabComponent() {
-	const { container, card, header, middleSection, bottomSection } =
-		jobComponent();
+	const { container } = layoutStyles();
 
 	const { data: profile } = useSuspenseQuery(
 		convexQuery(api.liveStaff.getProfile, {
@@ -49,15 +34,29 @@ function JobsTabComponent() {
 			accessToken: localStorage.getItem("asistir_staff_token") ?? "",
 		}),
 	);
-	console.log(jobs);
+	// console.log(jobs);
 
 	const pendingJobs = jobs.filter((job) => job.status === "pending");
 	const myJobs = jobs.filter(
 		(job) => job.creatorId === profile?._id || job.claimerId === profile?._id,
 	);
 
+	const acceptJob = useMutation(api.jobs.acceptJob);
+
+	const handleAcceptJob = async (jobId: any) => {
+		try {
+			await acceptJob({
+				jobId: jobId,
+				accessToken: localStorage.getItem("asistir_staff_token") ?? "",
+			});
+			toast.success("Job accepted!");
+		} catch (e: any) {
+			toast.error(e.message || "Failed to accept job");
+		}
+	};
+
 	return (
-		<div className="flex flex-col gap-6 bg-zinc-950 pb-32">
+		<div className="flex-1 flex flex-col gap-2 bg-zinc-950 pb-32">
 			{/* Header Area */}
 			<div className="flex flex-col gap-4">
 				<div className="flex flex-row items-start justify-between">
@@ -91,8 +90,8 @@ function JobsTabComponent() {
 					</div>
 				</div>
 			</div>
-			<Tabs>
-				<TabsList variant={"line"} defaultValue="pending">
+			<Tabs defaultValue="pending">
+				<TabsList variant={"line"}>
 					<TabsTrigger value="pending">Pending Jobs</TabsTrigger>
 					<TabsTrigger value="myjobs">My Jobs</TabsTrigger>
 					<TabsTrigger value="all">All Jobs</TabsTrigger>
@@ -100,60 +99,27 @@ function JobsTabComponent() {
 				<TabsContent value="pending">
 					<div className={container()}>
 						{pendingJobs.map((job) => (
-							<div key={job._id} className={card()}>
-								<div className={header()}>
-									<div className="flex flex-col items-start">
-										<span className="font-semibold tracking-tight text-sm">
-											{capitalizeWords(job.originSectionName)}
-										</span>
-										<span className="font-medium text-[10px] italic">
-											{job.creatorRoleTitle}
-										</span>
-									</div>
-									<div className="flex flex-col items-end">
-										<span className="font-semibold tracking-tight text-sm">
-											{job.creatorName}
-										</span>
-
-										<span className="font-medium text-[10px] italic">
-											{job.creatorRole}
-										</span>
-									</div>
-								</div>
-								<div className={middleSection()}>
-									<div className="pl-1 flex items-center gap-10">
-										<div className="flex items-center gap-2">
-											<span className="text-lg"> {job.personCount}</span>
-											<span className="font-light">pax</span>
-										</div>
-										<span className="font-light text-xs">
-											{job.description}
-										</span>
-									</div>
-									<div className=" p-1 bg-blue-300 rounded-sm flex items-center justify-center">
-										<span className="text-[11px] font-normal text-zinc-950">
-											{capitalizeWords(job.requestType)}
-										</span>
-									</div>
-								</div>
-								<div className={bottomSection()}>
-									<div className=" p-1 bg-yellow-300/50 rounded-sm flex items-center justify-center">
-										<span className="text-[10px] font-medium uppercase">
-											{job.status}
-										</span>
-									</div>
-									<button
-										className="p-1 px-2 bg-zinc-50 text-zinc-950 text-sm font-semibold rounded-sm"
-										type="button"
-									>
-										Take this Job
-									</button>
-								</div>
-							</div>
+							<JobItem
+								key={job._id}
+								job={job}
+								currentStaffId={profile?._id}
+								onAccept={handleAcceptJob}
+							/>
 						))}
 					</div>
 				</TabsContent>
-				<TabsContent value="myjobs"></TabsContent>
+				<TabsContent value="myjobs">
+					<div className={container()}>
+						{myJobs.map((job) => (
+							<JobItem
+								key={job._id}
+								job={job}
+								currentStaffId={profile?._id}
+								onAccept={handleAcceptJob}
+							/>
+						))}
+					</div>
+				</TabsContent>
 				<TabsContent value="all"></TabsContent>
 			</Tabs>
 

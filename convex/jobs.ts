@@ -90,3 +90,30 @@ export const dispatchJob = mutation({
 		return jobId;
 	},
 });
+
+// Accept a pending job
+export const acceptJob = mutation({
+	args: {
+		accessToken: v.string(),
+		jobId: v.id("jobs"),
+	},
+	handler: async (ctx, args) => {
+		const staff = await ctx.db
+			.query("liveStaff")
+			.withIndex("by_accessToken", (q) => q.eq("accessToken", args.accessToken))
+			.first();
+
+		if (!staff || staff.status === "checked_out") {
+			throw new Error("Unauthorized or session expired.");
+		}
+
+		const job = await ctx.db.get(args.jobId);
+		if (!job) throw new Error("Job not found");
+
+		await ctx.db.patch(args.jobId, {
+			status: "accepted",
+			claimerId: staff._id,
+			destinationSectionId: staff.sectionId,
+		});
+	},
+});

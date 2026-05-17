@@ -13,7 +13,7 @@ export function DispatchPanel() {
 	const dispatchJob = useMutation(api.jobs.dispatchJob);
 
 	return (
-		<div className="fixed bottom-26 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-md bg-zinc-900/90 backdrop-blur-2xl rounded-2xl  p-3 shadow-2xl z-40 flex flex-col gap-3">
+		<div className="fixed bottom-18 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-md bg-zinc-800 backdrop-blur-2xl rounded-2xl  p-3 shadow-2xl z-40 flex flex-col gap-3">
 			{/* Tags Row */}
 			<div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
 				{["regular", "elderly", "family", "wheelchair", "vip"].map((tag) => (
@@ -23,7 +23,7 @@ export function DispatchPanel() {
 						onClick={() => setRequestType(tag)}
 						className={`px-4 py-1.5 rounded-full text-[11px] uppercase tracking-wider font-bold whitespace-nowrap transition-colors shrink-0 ${
 							requestType === tag
-								? "bg-yellow-200 text-zinc-950"
+								? "bg-zinc-200 text-zinc-950"
 								: "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
 						}`}
 					>
