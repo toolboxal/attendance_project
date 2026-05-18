@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Input } from "#/components/ui/input";
 import { api } from "../../../convex/_generated/api";
 
-export function DispatchPanel() {
+export function DispatchPanel({ isQueueFull = false }: { isQueueFull?: boolean }) {
 	const [personCount, setPersonCount] = useState(1);
 	const [requestType, setRequestType] = useState("regular");
 	const [description, setDescription] = useState("");
@@ -67,6 +67,7 @@ export function DispatchPanel() {
 				{/* Send Button */}
 				<button
 					type="button"
+					disabled={isQueueFull}
 					onClick={async () => {
 						if (personCount < 1) return;
 						try {
@@ -80,11 +81,17 @@ export function DispatchPanel() {
 							setDescription("");
 							setPersonCount(1);
 							setRequestType("regular");
-						} catch (err: any) {
-							toast.error(err.message || "Failed to dispatch");
+						} catch (err) {
+							toast.error(
+								err instanceof Error ? err.message : "Failed to dispatch",
+							);
 						}
 					}}
-					className="bg-zinc-100 hover:bg-zinc-200 text-zinc-950 rounded-xl p-3 transition-all active:scale-95 flex items-center justify-center shrink-0 shadow-lg"
+					className={`rounded-xl p-3 transition-all flex items-center justify-center shrink-0 shadow-lg ${
+						isQueueFull
+							? "bg-zinc-800 text-zinc-600 cursor-not-allowed opacity-50 border border-zinc-700"
+							: "bg-zinc-100 hover:bg-zinc-200 text-zinc-950 active:scale-95"
+					}`}
 				>
 					<Send className="size-4" />
 				</button>

@@ -138,6 +138,7 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior: none;
   }
   html {
     @apply font-sans scroll-smooth;

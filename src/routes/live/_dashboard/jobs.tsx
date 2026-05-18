@@ -5,11 +5,9 @@ import { format } from "date-fns";
 import { tv } from "tailwind-variants";
 import { DispatchPanel } from "#/components/jobs/DispatchPanel";
 import { JobItem } from "#/components/jobs/JobItem";
-import { capitalizeWords, formatTime12h } from "#/lib/utils";
+import { formatTime12h } from "#/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "../../../../convex/_generated/api";
-import { useMutation } from "convex/react";
-import { toast } from "sonner";
 
 const layoutStyles = tv({
 	slots: {
@@ -29,34 +27,22 @@ function JobsTabComponent() {
 			accessToken: localStorage.getItem("asistir_staff_token") ?? "",
 		}),
 	);
-	const { data: jobs } = useSuspenseQuery(
-		convexQuery(api.jobs.getAllJobs, {
+	const { data: activeJobs } = useSuspenseQuery(
+		convexQuery(api.jobs.getActiveJobs, {
 			accessToken: localStorage.getItem("asistir_staff_token") ?? "",
 		}),
 	);
-	// console.log(jobs);
-
-	const pendingJobs = jobs.filter((job) => job.status === "pending");
-	const myJobs = jobs.filter(
-		(job) => job.creatorId === profile?._id || job.claimerId === profile?._id,
+	const { data: historyJobs } = useSuspenseQuery(
+		convexQuery(api.jobs.getHistoryJobs, {
+			accessToken: localStorage.getItem("asistir_staff_token") ?? "",
+		}),
 	);
 
-	const acceptJob = useMutation(api.jobs.acceptJob);
-
-	const handleAcceptJob = async (jobId: any) => {
-		try {
-			await acceptJob({
-				jobId: jobId,
-				accessToken: localStorage.getItem("asistir_staff_token") ?? "",
-			});
-			toast.success("Job accepted!");
-		} catch (e: any) {
-			toast.error(e.message || "Failed to accept job");
-		}
-	};
+	const queueJobs = activeJobs;
+	const activeJobLimit = profile?.activeJobLimit ?? 15;
 
 	return (
-		<div className="flex-1 flex flex-col gap-2 bg-zinc-950 pb-32">
+		<div className="flex-1 flex flex-col gap-2 bg-zinc-950 pb-52">
 			{/* Header Area */}
 			<div className="flex flex-col gap-4">
 				<div className="flex flex-row items-start justify-between">
@@ -64,12 +50,17 @@ function JobsTabComponent() {
 						<p className="text-xs font-extrabold text-zinc-100 tracking-tight">
 							{profile?.sectionName.toUpperCase()}
 						</p>
-						<p className="text-xs font-extrabold text-zinc-100 tracking-tight">
+						<p className="text-xs font-extrabold text-zinc-300 tracking-tight">
 							{profile?.roleTitle}
 						</p>
-						<p className="text-xs font-extrabold text-zinc-400 tracking-tight">
-							{profile?.role}
-						</p>
+						<div className="flex flex-row gap-1 items-center">
+							<p className="text-xs font-extrabold text-zinc-400 tracking-tight italic">
+								{profile?.name}
+							</p>
+							<p className="text-xs font-extrabold text-teal-400 tracking-tight italic">
+								{profile?.role}
+							</p>
+						</div>
 					</div>
 					<div className="flex flex-col">
 						<span className="text-zinc-200 text-xs font-semibold self-end">
@@ -92,38 +83,35 @@ function JobsTabComponent() {
 			</div>
 			<Tabs defaultValue="pending">
 				<TabsList variant={"line"}>
-					<TabsTrigger value="pending">Pending Jobs</TabsTrigger>
-					<TabsTrigger value="myjobs">My Jobs</TabsTrigger>
-					<TabsTrigger value="all">All Jobs</TabsTrigger>
+					<TabsTrigger value="pending">
+						Active Jobs ({" "}
+						<span
+							className={`font-semibold ${activeJobs.length >= activeJobLimit ? "text-red-500" : "text-green-400"}`}
+						>
+							{queueJobs.length}
+						</span>
+						<span className="font-semibold">/ {activeJobLimit} Max)</span>
+					</TabsTrigger>
+					<TabsTrigger value="history">History</TabsTrigger>
 				</TabsList>
 				<TabsContent value="pending">
 					<div className={container()}>
-						{pendingJobs.map((job) => (
-							<JobItem
-								key={job._id}
-								job={job}
-								currentStaffId={profile?._id}
-								onAccept={handleAcceptJob}
-							/>
+						{queueJobs.map((job) => (
+							<JobItem key={job._id} job={job} currentStaffId={profile?._id} />
 						))}
 					</div>
 				</TabsContent>
-				<TabsContent value="myjobs">
+
+				<TabsContent value="history">
 					<div className={container()}>
-						{myJobs.map((job) => (
-							<JobItem
-								key={job._id}
-								job={job}
-								currentStaffId={profile?._id}
-								onAccept={handleAcceptJob}
-							/>
+						{historyJobs.map((job) => (
+							<JobItem key={job._id} job={job} currentStaffId={profile?._id} />
 						))}
 					</div>
 				</TabsContent>
-				<TabsContent value="all"></TabsContent>
 			</Tabs>
 
-			<DispatchPanel />
+			<DispatchPanel isQueueFull={queueJobs.length >= activeJobLimit} />
 		</div>
 	);
 }

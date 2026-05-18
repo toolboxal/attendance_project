@@ -35,6 +35,7 @@ export const create = mutation({
     eventDate: v.number(),
     startTime: v.string(),
     description: v.optional(v.string()),
+    activeJobLimit: v.optional(v.number()),
     
     // Arrays passed directly from our dynamic frontend state!
     sections: v.array(
@@ -110,6 +111,7 @@ export const create = mutation({
       eventDate: args.eventDate,
       startTime: args.startTime,
       description: args.description,
+      activeJobLimit: args.activeJobLimit,
       createdAt: Date.now(),
     });
 
@@ -263,6 +265,7 @@ export const update = mutation({
     eventDate: v.number(),
     startTime: v.string(),
     description: v.optional(v.string()),
+    activeJobLimit: v.optional(v.number()),
     
     sections: v.array(
       v.object({
@@ -299,6 +302,7 @@ export const update = mutation({
       eventDate: args.eventDate,
       startTime: args.startTime,
       description: args.description,
+      activeJobLimit: args.activeJobLimit,
     });
 
     // Normalize incoming lists
@@ -461,6 +465,37 @@ export const deleteEvent = mutation({
 
     // 5. Delete the parent event itself
     await ctx.db.delete(args.eventId);
+
+    return { success: true };
+  },
+});
+
+/**
+ * Update the active job limit for an event (Admin only).
+ */
+export const updateActiveJobLimit = mutation({
+  args: {
+    eventId: v.id("events"),
+    limit: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    const event = await ctx.db.get(args.eventId);
+
+    if (!event) throw new Error("Event not found");
+    if (event.adminId !== user._id) {
+      throw new Error("Unauthorized to modify this event");
+    }
+
+    // Validate the limit is in the range 10-30
+    if (args.limit < 10 || args.limit > 30) {
+      throw new Error("Active job limit must be between 10 and 30.");
+    }
+
+    // Update the event's limit
+    await ctx.db.patch(event._id, {
+      activeJobLimit: args.limit,
+    });
 
     return { success: true };
   },

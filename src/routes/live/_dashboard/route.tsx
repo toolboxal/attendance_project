@@ -59,9 +59,9 @@ function DashboardAuthLayout() {
 
 	// State C: Access Granted! Render the workspace & The persistent Bottom Nav Bar!
 	return (
-		<div className="min-h-dvh bg-zinc-950 text-zinc-100 flex flex-col">
+		<div className="bg-zinc-950 text-zinc-100">
 			{/* Main Content Area */}
-			<main className="flex-1 flex flex-col w-full max-w-md mx-auto px-1 pt-2 bg-zinc-950 overflow-y-auto">
+			<main className="w-full max-w-md mx-auto px-1 pt-2 bg-zinc-950">
 				<Outlet />
 			</main>
 

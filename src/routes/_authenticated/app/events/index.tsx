@@ -3,13 +3,13 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { Suspense, useEffect, useState } from "react";
+import { AssignRoleDialog } from "#/components/authenticated/events/AssignRoleDialog";
+import { ManageStaffDialog } from "#/components/authenticated/events/ManageStaffDialog";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
 import { useHeaderStore } from "#/lib/store/topHeaderStore";
-import { api } from "../../../../../convex/_generated/api";
 import { formatTime12h } from "#/lib/utils";
-import { AssignRoleDialog } from "#/components/authenticated/events/AssignRoleDialog";
-import { ManageStaffDialog } from "#/components/authenticated/events/ManageStaffDialog";
+import { api } from "../../../../../convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/app/events/")({
 	loader: ({ context: { queryClient } }) =>
@@ -20,9 +20,11 @@ export const Route = createFileRoute("/_authenticated/app/events/")({
 // Subcomponent that isolates the conditional suspense query securely
 function EventDetailsView({ eventId }: { eventId: string }) {
 	const navigate = useNavigate();
+
 	const { data: details } = useSuspenseQuery(
 		convexQuery(api.events.getDetails, { eventId: eventId as any }),
 	);
+
 	if (!details) return null;
 
 	// console.log(details);
@@ -69,6 +71,8 @@ function EventDetailsView({ eventId }: { eventId: string }) {
 				</div>
 				<p className="text-zinc-100 font-bold">Location: {event.location}</p>
 				<p className="text-zinc-300 text-sm italic">{event.description}</p>
+
+
 
 				<div className="mt-6 space-y-6">
 					<h3 className="text-zinc-500 font-semibold text-xs uppercase tracking-widest">

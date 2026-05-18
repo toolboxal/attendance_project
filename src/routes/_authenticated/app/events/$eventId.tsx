@@ -66,6 +66,7 @@ function RouteComponent() {
 		description: event.description,
 		eventDate: event.eventDate,
 		startTime: event.startTime,
+		activeJobLimit: event.activeJobLimit,
 		// Convert sections with safe fallbacks
 		sections: sections.map((sec) => ({
 			name: sec.name,
