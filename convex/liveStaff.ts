@@ -28,9 +28,10 @@ export const createStaffInvitation = mutation({
 		}
 
 		let liveStaffId = slot.assignedStaffId;
+		const existingStaff = liveStaffId ? await ctx.db.get(liveStaffId) : null;
 
-		// 2. CASE A: This slot is brand new/unclaimed. Create the pre-emptive record!
-		if (!liveStaffId) {
+		// 2. CASE A: This slot is brand new/unclaimed or the referenced record was deleted. Create the record!
+		if (!existingStaff) {
 			// Generate secure internal credential for persistent session storage later
 			const secureAccessToken =
 				Math.random().toString(36).substring(2, 15) +
@@ -47,7 +48,7 @@ export const createStaffInvitation = mutation({
 			});
 		} else {
 			// CASE B: Already assigned. Admin is just renaming/updating the entry!
-			await ctx.db.patch(liveStaffId, {
+			await ctx.db.patch(liveStaffId!, {
 				staffName: trimmedName,
 				lastActive: Date.now(),
 			});
@@ -96,11 +97,14 @@ export const validateInvite = query({
 		// Load the specific shift/section details linked to this role slot
 		const section = slot.sectionId ? await ctx.db.get(slot.sectionId) : null;
 
-		// 🏰 Smart Domain Gate: Check if the event is already concluded/archived
-		if (event.status === "archived") {
+		// 🏰 Smart Domain Gate: Only allow helpers to enter if the event is explicitly live!
+		if (event.status !== "live") {
 			return {
 				valid: false,
-				message: "This event has concluded and the invite portal is closed.",
+				message:
+					event.status === "archived"
+						? "This event has concluded and the invite portal is closed."
+						: "This event is in draft mode. Please wait for the event administrator to go live.",
 			};
 		}
 
@@ -143,6 +147,15 @@ export const claimStaffInvite = mutation({
 
 		const staff = await ctx.db.get(slot.assignedStaffId);
 		if (!staff) throw new Error("Staff member record not found.");
+
+		const event = await ctx.db.get(slot.eventId);
+		if (!event || event.status !== "live") {
+			throw new Error(
+				event?.status === "archived"
+					? "This event has concluded. You can no longer claim this invite."
+					: "This event is in draft mode. You cannot claim this invite until the administrator goes live."
+			);
+		}
 
 		// 1. 🚀 Activate the user profile
 		await ctx.db.patch(staff._id, {
@@ -214,8 +227,10 @@ export const getProfile = query({
 		if (staff.status === "checked_out") return null;
 
 		// Load contextual data for the UI
-		const section = staff.sectionId ? await ctx.db.get(staff.sectionId) : null;
 		const event = await ctx.db.get(staff.eventId);
+		if (!event || event.status !== "live") return null;
+
+		const section = staff.sectionId ? await ctx.db.get(staff.sectionId) : null;
 		const roleSlot = await ctx.db
 			.query("roleSlots")
 			.withIndex("by_assignedStaff", (q) => q.eq("assignedStaffId", staff._id))

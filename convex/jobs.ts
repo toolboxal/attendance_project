@@ -203,8 +203,8 @@ export const rejectJob = mutation({
 		const job = await ctx.db.get(args.jobId);
 		if (!job) throw new Error("Job not found");
 
-		// Ensure only the active claimer can reject/release the job
-		if (job.claimerId !== staff._id) {
+		// Ensure only the active claimer or creator can reject/release the job
+		if (job.claimerId !== staff._id && job.creatorId !== staff._id) {
 			throw new Error("You are not authorized to reject this job.");
 		}
 
@@ -229,8 +229,8 @@ export const resolveJob = mutation({
 		const job = await ctx.db.get(args.jobId);
 		if (!job) throw new Error("Job not found");
 
-		// Ensure only the active claimer can resolve the job
-		if (job.claimerId !== staff._id) {
+		// Ensure only the active claimer or creator can resolve the job
+		if (job.claimerId !== staff._id && job.creatorId !== staff._id) {
 			throw new Error("You are not authorized to resolve this job.");
 		}
 

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
+import type { Id } from "./_generated/dataModel";
 
 /**
  * Helper to get currently authenticated user from Better Auth and the database.
@@ -60,7 +61,18 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
 
-    // 1. Generate unique 6-character alphanumeric invite code
+    // 1. Draft Limit Guard: Enforce max 10 drafts at any time
+    const existingDrafts = await ctx.db
+      .query("events")
+      .withIndex("by_admin", (q) => q.eq("adminId", user._id))
+      .filter((q) => q.eq(q.field("status"), "draft"))
+      .collect();
+
+    if (existingDrafts.length >= 10) {
+      throw new Error("You have reached the maximum limit of 5 draft events. Please delete or activate an existing draft before creating a new one.");
+    }
+
+    // 2. Generate unique 6-character alphanumeric invite code
     let joinCode = "";
     let isUnique = false;
     while (!isUnique) {
@@ -71,16 +83,6 @@ export const create = mutation({
         .first();
       if (!existing) isUnique = true;
     }
-
-    // 2. CREDIT CHECK: Ensure the user has at least 1 valid pass available.
-    const monthlyCredits = user.monthlyCredits ?? 0;
-    const oneTimeCredits = user.oneTimeCredits ?? 0;
-    const totalCredits = monthlyCredits + oneTimeCredits;
-
-    if (totalCredits <= 0) {
-      throw new Error("Insufficient credits. Please top up or upgrade to create a new event.");
-    }
-
     // 3. Determine user tier status and hard limits
     const isPaidUser = 
       user.billingPlan === "pro_monthly" || 
@@ -90,14 +92,6 @@ export const create = mutation({
     
     // 🚀 Safety: 50 staff is completely safe and will not impact operational costs!
     const maxStaff = isPaidUser ? 50 : 5; 
-
-    // 4. DEDUCT CREDIT: Consume 1 pass atomically. 
-    // Prioritize Monthly subscription credits first, fall back to One-time credits.
-    if (monthlyCredits > 0) {
-      await ctx.db.patch(user._id, { monthlyCredits: monthlyCredits - 1 });
-    } else {
-      await ctx.db.patch(user._id, { oneTimeCredits: oneTimeCredits - 1 });
-    }
 
     // 2. SAVE PARENT: Create the core event container
     const eventId = await ctx.db.insert("events", {
@@ -112,7 +106,6 @@ export const create = mutation({
       startTime: args.startTime,
       description: args.description,
       activeJobLimit: args.activeJobLimit,
-      createdAt: Date.now(),
     });
 
     // 3. SAVE CHILDREN: Normalize and insert each section using provided explicit scheduling
@@ -168,11 +161,31 @@ export const list = query({
   handler: async (ctx) => {
     const user = await getAuthenticatedUser(ctx);
 
-    return await ctx.db
+    // 1. Fetch active events (draft or live) - usually very few (hard-capped at 10 drafts & 1 live)
+    const activeEvents = await ctx.db
       .query("events")
       .withIndex("by_admin", (q) => q.eq("adminId", user._id))
-      .order("asc") // Show closest events first!
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("status"), "draft"),
+          q.eq(q.field("status"), "live")
+        )
+      )
       .collect();
+
+    // 2. Fetch only the 10 most recent archived events (sorted descending by date)
+    const archivedEvents = await ctx.db
+      .query("events")
+      .withIndex("by_admin", (q) => q.eq("adminId", user._id))
+      .filter((q) => q.eq(q.field("status"), "archived"))
+      .order("desc")
+      .take(10);
+
+    // 3. Combine and sort chronologically (newest first)
+    const combined = [...activeEvents, ...archivedEvents];
+    combined.sort((a, b) => b.eventDate - a.eventDate);
+
+    return combined;
   },
 });
 
@@ -400,6 +413,13 @@ export const update = mutation({
     // Prune old, removed slots
     for (const slot of existingSlots) {
       if (!processedSlotIds.has(slot._id)) {
+        // Safety Guard: If the event is live, block deleting slots that have checked-in ushers!
+        if (event.status === "live" && slot.assignedStaffId) {
+          const staffUser = await ctx.db.get(slot.assignedStaffId);
+          throw new Error(
+            `Cannot delete role "${slot.title}" because ${staffUser?.staffName || "a helper"} is currently active and checked into it. Please unassign or check them out first.`
+          );
+        }
         await ctx.db.delete(slot._id);
       }
     }
@@ -463,7 +483,16 @@ export const deleteEvent = mutation({
       await ctx.db.delete(msg._id);
     }
 
-    // 5. Delete the parent event itself
+    // 5. Delete associated eventSections
+    const sections = await ctx.db
+      .query("eventSections")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+    for (const sec of sections) {
+      await ctx.db.delete(sec._id);
+    }
+
+    // 6. Delete the parent event itself
     await ctx.db.delete(args.eventId);
 
     return { success: true };
@@ -498,6 +527,184 @@ export const updateActiveJobLimit = mutation({
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Update the status of an event (e.g. going live or archiving/concluding).
+ */
+export const updateStatus = mutation({
+  args: {
+    eventId: v.id("events"),
+    status: v.union(v.literal("draft"), v.literal("live"), v.literal("archived")),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    const event = await ctx.db.get(args.eventId);
+
+    if (!event) throw new Error("Event not found");
+    if (event.adminId !== user._id) {
+      throw new Error("Unauthorized to modify this event");
+    }
+
+    const updateFields: any = { status: args.status };
+
+    if (args.status === "live") {
+      // 1. Concurrent Live Guard: Ensure the admin doesn't have another active live event
+      const activeLiveEvent = await ctx.db
+        .query("events")
+        .withIndex("by_admin", (q) => q.eq("adminId", user._id))
+        .filter((q) => q.eq(q.field("status"), "live"))
+        .first();
+
+      if (activeLiveEvent && activeLiveEvent._id !== event._id) {
+        throw new Error(
+          `You already have an active live event ("${activeLiveEvent.title}"). Please end it before going live with another one.`
+        );
+      }
+
+      // Deduct event pass credits ONLY when transitioning from draft to live
+      if (event.status === "draft") {
+        const monthlyCredits = user.monthlyCredits ?? 0;
+        const oneTimeCredits = user.oneTimeCredits ?? 0;
+        const totalCredits = monthlyCredits + oneTimeCredits;
+
+        if (totalCredits <= 0) {
+          throw new Error("Insufficient pass credits. Please top up or upgrade to go live.");
+        }
+
+        // Credit consumption priority:
+        // 1. Expiring Monthly subscription credits (consume first)
+        // 2. Lifetime One-time purchase credits (falls back next)
+        if (monthlyCredits > 0) {
+          await ctx.db.patch(user._id, { monthlyCredits: monthlyCredits - 1 });
+        } else {
+          await ctx.db.patch(user._id, { oneTimeCredits: oneTimeCredits - 1 });
+        }
+      }
+
+      updateFields.liveAt = Date.now();
+      // Set default expiration window of 24 hours
+      updateFields.expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+    }
+
+    await ctx.db.patch(event._id, updateFields);
+
+    return { success: true };
+  },
+});
+
+/**
+ * Duplicate an event (cloning event parameters, sections, and role slots, while resetting assignments).
+ */
+export const duplicate = mutation({
+  args: {
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    const sourceEvent = await ctx.db.get(args.eventId);
+
+    if (!sourceEvent) throw new Error("Source event not found");
+    if (sourceEvent.adminId !== user._id) {
+      throw new Error("Unauthorized to duplicate this event");
+    }
+
+    // 1. Enforce max 10 drafts cap!
+    const existingDrafts = await ctx.db
+      .query("events")
+      .withIndex("by_admin", (q) => q.eq("adminId", user._id))
+      .filter((q) => q.eq(q.field("status"), "draft"))
+      .collect();
+
+    if (existingDrafts.length >= 10) {
+      throw new Error("You have reached the maximum limit of 10 draft events. Please delete or activate an existing draft first.");
+    }
+
+    // 2. Generate new unique joinCode
+    let joinCode = "";
+    let isUnique = false;
+    while (!isUnique) {
+      joinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const existing = await ctx.db
+        .query("events")
+        .withIndex("by_joinCode", (q) => q.eq("joinCode", joinCode))
+        .first();
+      if (!existing) isUnique = true;
+    }
+
+    // 3. Smart Title Generation: increment suffix instead of building ugly "(Copy) (Copy)" titles
+    let newTitle = "";
+    const copyRegex = /\(Copy\s*(\d*)\)$/;
+    const match = sourceEvent.title.match(copyRegex);
+
+    if (match) {
+      const copyNum = match[1] ? parseInt(match[1], 10) : 1;
+      newTitle = sourceEvent.title.replace(copyRegex, `(Copy ${copyNum + 1})`);
+    } else {
+      newTitle = `${sourceEvent.title} (Copy)`;
+    }
+
+    // 4. Clone the Event document (resets status to draft, liveAt/expiresAt to undefined)
+    const newEventId = await ctx.db.insert("events", {
+      adminId: user._id,
+      title: newTitle,
+      location: sourceEvent.location,
+      eventDate: sourceEvent.eventDate,
+      startTime: sourceEvent.startTime,
+      description: sourceEvent.description,
+      maxStaff: sourceEvent.maxStaff,
+      activeJobLimit: sourceEvent.activeJobLimit ?? 15,
+      joinCode,
+      status: "draft",
+      tier: sourceEvent.tier,
+    });
+
+    // 4. Clone all Sections and keep an ID mapping
+    const sourceSections = await ctx.db
+      .query("eventSections")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+
+    const sectionIdMap = new Map<string, Id<"eventSections">>();
+
+    for (const sec of sourceSections) {
+      const newSecId = await ctx.db.insert("eventSections", {
+        eventId: newEventId,
+        name: sec.name,
+        capacity: sec.capacity,
+        headcount: 0, // Resets headcount for the new event!
+        status: "empty", // Starts fresh
+        startTime: sec.startTime,
+        endTime: sec.endTime,
+      });
+      sectionIdMap.set(sec._id, newSecId);
+    }
+
+    // 5. Clone all Role Slots (linking them to the new Section IDs and clearing assignments)
+    const sourceSlots = await ctx.db
+      .query("roleSlots")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+
+    for (const slot of sourceSlots) {
+      const newSectionId = slot.sectionId 
+        ? sectionIdMap.get(slot.sectionId) 
+        : undefined;
+
+      await ctx.db.insert("roleSlots", {
+        eventId: newEventId,
+        title: slot.title,
+        role: slot.role,
+        sectionId: newSectionId,
+        description: slot.description,
+        // Purge assigned staff and tokens!
+        inviteToken: undefined,
+        assignedStaffId: undefined,
+      });
+    }
+
+    return { newEventId };
   },
 });
 

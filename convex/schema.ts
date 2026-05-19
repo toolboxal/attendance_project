@@ -51,7 +51,6 @@ export default defineSchema({
     expiresAt: v.optional(v.number()), // liveAt + 24 hours (or duration)
     activeJobLimit: v.optional(v.number()), // Configurable WIP job limit (defaults to 15)
     
-    createdAt: v.number(),
   })
   .index("by_joinCode", ["joinCode"])
   .index("by_admin", ["adminId", "eventDate"]),

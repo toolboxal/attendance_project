@@ -6,12 +6,12 @@ import { tv } from "tailwind-variants";
 import { DispatchPanel } from "#/components/jobs/DispatchPanel";
 import { JobItem } from "#/components/jobs/JobItem";
 import { formatTime12h } from "#/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "../../../../convex/_generated/api";
 
 const layoutStyles = tv({
 	slots: {
-		container: "py-2 flex flex-col gap-1.5",
+		container:
+			"flex-1 overflow-y-auto py-2 space-y-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pr-0.5 pb-36",
 	},
 });
 
@@ -32,17 +32,11 @@ function JobsTabComponent() {
 			accessToken: localStorage.getItem("asistir_staff_token") ?? "",
 		}),
 	);
-	const { data: historyJobs } = useSuspenseQuery(
-		convexQuery(api.jobs.getHistoryJobs, {
-			accessToken: localStorage.getItem("asistir_staff_token") ?? "",
-		}),
-	);
 
-	const queueJobs = activeJobs;
 	const activeJobLimit = profile?.activeJobLimit ?? 15;
 
 	return (
-		<div className="flex-1 flex flex-col gap-2 bg-zinc-950 pb-52">
+		<div className="h-[calc(100dvh-5.5rem)] flex flex-col bg-zinc-950 overflow-hidden">
 			{/* Header Area */}
 			<div className="flex flex-col gap-4">
 				<div className="flex flex-row items-start justify-between">
@@ -54,10 +48,10 @@ function JobsTabComponent() {
 							{profile?.roleTitle}
 						</p>
 						<div className="flex flex-row gap-1 items-center">
-							<p className="text-xs font-extrabold text-zinc-400 tracking-tight italic">
+							<p className="text-xs font-extrabold text-yellow-400 tracking-tight italic">
 								{profile?.name}
 							</p>
-							<p className="text-xs font-extrabold text-teal-400 tracking-tight italic">
+							<p className="text-xs font-extrabold text-yellow-400 tracking-tight italic">
 								{profile?.role}
 							</p>
 						</div>
@@ -81,37 +75,28 @@ function JobsTabComponent() {
 					</div>
 				</div>
 			</div>
-			<Tabs defaultValue="pending">
-				<TabsList variant={"line"}>
-					<TabsTrigger value="pending">
-						Active Jobs ({" "}
-						<span
-							className={`font-semibold ${activeJobs.length >= activeJobLimit ? "text-red-500" : "text-green-400"}`}
-						>
-							{queueJobs.length}
-						</span>
-						<span className="font-semibold">/ {activeJobLimit} Max)</span>
-					</TabsTrigger>
-					<TabsTrigger value="history">History</TabsTrigger>
-				</TabsList>
-				<TabsContent value="pending">
-					<div className={container()}>
-						{queueJobs.map((job) => (
-							<JobItem key={job._id} job={job} currentStaffId={profile?._id} />
-						))}
-					</div>
-				</TabsContent>
 
-				<TabsContent value="history">
-					<div className={container()}>
-						{historyJobs.map((job) => (
-							<JobItem key={job._id} job={job} currentStaffId={profile?._id} />
-						))}
-					</div>
-				</TabsContent>
-			</Tabs>
+			{/* Queue Header Counter */}
+			<div className="flex flex-row items-center justify-between pb-2 border-b border-zinc-800 mt-2">
+				<span className="text-zinc-400 font-black text-sm uppercase">
+					Active Jobs ({" "}
+					<span
+						className={`font-bold ${activeJobs.length >= activeJobLimit ? "text-red-500" : "text-green-400"}`}
+					>
+						{activeJobs.length}
+					</span>
+					<span className="font-bold">/ {activeJobLimit} Max)</span>
+				</span>
+			</div>
 
-			<DispatchPanel isQueueFull={queueJobs.length >= activeJobLimit} />
+			{/* Queue Stream */}
+			<div className={container()}>
+				{activeJobs.map((job) => (
+					<JobItem key={job._id} job={job} currentStaffId={profile?._id} />
+				))}
+			</div>
+
+			<DispatchPanel isQueueFull={activeJobs.length >= activeJobLimit} />
 		</div>
 	);
 }

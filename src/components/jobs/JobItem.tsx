@@ -1,10 +1,10 @@
 import { useMutation } from "convex/react";
+import { MoveRight } from "lucide-react";
 import { toast } from "sonner";
 import { tv } from "tailwind-variants";
 import { capitalizeWords } from "#/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
-import { MoveRight } from "lucide-react";
 
 type EnrichedJob = Doc<"jobs"> & {
 	creatorName: string;
@@ -19,7 +19,7 @@ type EnrichedJob = Doc<"jobs"> & {
 
 const jobStyles = tv({
 	slots: {
-		card: "bg-zinc-800 rounded-md overflow-hidden text-zinc-100 ",
+		card: "bg-zinc-700 rounded-md overflow-hidden text-zinc-100 ",
 		header:
 			" py-0.5 px-2  flex flex-row items-center justify-between font-normal ",
 		middleSection:
@@ -209,7 +209,7 @@ export function JobItem({
 		// 	</div>
 		// </div>
 		<div className={card()}>
-			<div className="flex flex-row items-center justify-between px-2 py-0.5 border-b border-zinc-700">
+			<div className="flex flex-row items-center justify-between px-2 py-0.5 border-b border-zinc-600">
 				<div className="flex flex-col leading-tight">
 					<span className="font-medium text-zinc-50 tracking-tight text-sm">
 						{capitalizeWords(job.originSectionName)}
@@ -217,13 +217,20 @@ export function JobItem({
 					<span className="font-medium text-zinc-300 text-xs">
 						{job.creatorRoleTitle}
 					</span>
-					<div className="flex flex-row items-center gap-1">
-						<span className="font-medium text-[11px] text-zinc-300 italic">
+					<div className="flex flex-row items-center gap-1 ">
+						<span
+							className={`font-medium text-[11px] italic ${job.creatorId === currentStaffId ? "text-yellow-400 font-semibold " : "text-zinc-300"}`}
+						>
 							{job.creatorName}
 						</span>
-						<span className="font-medium text-[11px] text-teal-400 italic">
+						<span
+							className={`font-medium text-[11px] italic relative ${job.creatorId === currentStaffId ? "text-yellow-400 font-semibold " : "text-zinc-300"}`}
+						>
 							{job.creatorRole}
 						</span>
+						{job.creatorId === currentStaffId && (
+							<span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />
+						)}
 					</div>
 				</div>
 				{job.status === "pending" && (
@@ -250,10 +257,17 @@ export function JobItem({
 							{job.claimerRoleTitle}
 						</span>
 						<div className="flex flex-row items-center gap-1">
-							<span className="font-medium text-[11px] text-zinc-300 italic">
+							{job.claimerId === currentStaffId && (
+								<span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />
+							)}
+							<span
+								className={`font-medium text-[11px] italic ${job.claimerId === currentStaffId ? "text-yellow-400 font-semibold" : "text-zinc-300"}`}
+							>
 								{job.claimerName}
 							</span>
-							<span className="font-medium text-[11px] text-teal-400 italic">
+							<span
+								className={`font-medium text-[11px] italic relative ${job.claimerId === currentStaffId ? "text-yellow-400 font-semibold" : "text-zinc-300"}`}
+							>
 								{job.claimerRole}
 							</span>
 						</div>
@@ -288,24 +302,27 @@ export function JobItem({
 						</button>
 					</div>
 				)}
-				{job.status === "accepted" && job.claimerId === currentStaffId && (
-					<div className="flex flex-row items-center gap-1.5 ml-auto">
-						<button
-							className="p-1 px-2 bg-zinc-200 text-zinc-950 text-xs font-medium rounded-sm ml-auto"
-							type="button"
-							onClick={handleRejectJob}
-						>
-							Reject
-						</button>
-						<button
-							className="p-1 px-2 bg-zinc-200 text-zinc-950 text-xs font-medium rounded-sm ml-auto"
-							type="button"
-							onClick={handleResolveJob}
-						>
-							Resolve
-						</button>
-					</div>
-				)}
+				{/* Both creator and accepter can reject and resolve */}
+				{job.status === "accepted" &&
+					(job.claimerId === currentStaffId ||
+						job.creatorId === currentStaffId) && (
+						<div className="flex flex-row items-center gap-1.5 ml-auto">
+							<button
+								className="p-1 px-2 bg-zinc-200 text-zinc-950 text-xs font-medium rounded-sm ml-auto"
+								type="button"
+								onClick={handleRejectJob}
+							>
+								Reject
+							</button>
+							<button
+								className="p-1 px-2 bg-zinc-200 text-zinc-950 text-xs font-medium rounded-sm ml-auto"
+								type="button"
+								onClick={handleResolveJob}
+							>
+								Resolve
+							</button>
+						</div>
+					)}
 			</div>
 		</div>
 	);

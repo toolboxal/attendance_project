@@ -11,8 +11,8 @@ import { Spinner } from "#/components/ui/spinner";
 const navBarItem = tv({
 	slots: {
 		navBar:
-			"fixed bottom-1 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-md h-16 bg-zinc-800 rounded-3xl flex items-center justify-around px-2 z-50 border-t border-zinc-700",
-		tab: "flex flex-col items-center gap-1 text-zinc-400 text-[11px] font-bold uppercase hover:text-zinc-100 transition-all px-4 py-2 [&.active]:text-yellow-400 [&.active]:scale-110",
+			"fixed bottom-1 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-md h-14 bg-zinc-800 rounded-3xl flex items-center justify-around px-2 z-50 border-t border-zinc-700",
+		tab: "flex flex-col items-center gap-1 text-zinc-400 text-[11px] font-bold uppercase hover:text-zinc-100 transition-all px-4 py-2 [&.active]:text-yellow-500 [&.active]:scale-110",
 	},
 });
 

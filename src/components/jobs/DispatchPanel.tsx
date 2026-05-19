@@ -5,7 +5,11 @@ import { toast } from "sonner";
 import { Input } from "#/components/ui/input";
 import { api } from "../../../convex/_generated/api";
 
-export function DispatchPanel({ isQueueFull = false }: { isQueueFull?: boolean }) {
+export function DispatchPanel({
+	isQueueFull = false,
+}: {
+	isQueueFull?: boolean;
+}) {
 	const [personCount, setPersonCount] = useState(1);
 	const [requestType, setRequestType] = useState("regular");
 	const [description, setDescription] = useState("");
@@ -13,7 +17,7 @@ export function DispatchPanel({ isQueueFull = false }: { isQueueFull?: boolean }
 	const dispatchJob = useMutation(api.jobs.dispatchJob);
 
 	return (
-		<div className="fixed bottom-18 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-md bg-zinc-800 backdrop-blur-2xl rounded-2xl  p-3 shadow-2xl z-40 flex flex-col gap-3">
+		<div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-md bg-zinc-800 backdrop-blur-2xl rounded-2xl  p-3 shadow-2xl z-40 flex flex-col gap-3 border-[0.5px]	 border-zinc-300">
 			{/* Tags Row */}
 			<div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
 				{["regular", "elderly", "family", "wheelchair", "vip"].map((tag) => (
