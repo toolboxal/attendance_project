@@ -59,10 +59,8 @@ export const createStaffInvitation = mutation({
 		// If an inviteToken doesn't exist yet, generate one now!
 		let token = slot.inviteToken;
 		if (!token) {
-			// Use safe alphanumeric string generator
-			token =
-				Math.random().toString(36).substring(2, 10) +
-				Math.random().toString(36).substring(2, 10);
+			// Generate a shorter, cleaner 6-character uppercase code
+			token = Math.random().toString(36).substring(2, 8).toUpperCase();
 		}
 
 		// 4. Seal the linkage

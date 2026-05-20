@@ -13,9 +13,9 @@ import {
 } from "#/components/ui/dialog";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
+import { formatTime12h } from "#/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc } from "../../../../convex/_generated/dataModel";
-import { formatTime12h } from "#/lib/utils";
 
 export function ManageStaffDialog({
 	slot,
@@ -127,12 +127,13 @@ export function ManageStaffDialog({
 					<ChevronDown size={16} strokeWidth={1.5} />
 				</button>
 			</DialogTrigger>
-			<DialogContent className="bg-zinc-900 border-zinc-800 sm:max-w-md text-zinc-50">
+			<DialogContent
+				onOpenAutoFocus={(e) => e.preventDefault()}
+				className="bg-zinc-900 border-zinc-800 sm:max-w-md text-zinc-50"
+			>
 				<DialogHeader>
 					<DialogTitle className="text-zinc-100">Manage Assignment</DialogTitle>
-					{/* <DialogDescription className="text-zinc-400">
-						{slot.title} — {section.name.toUpperCase()}
-					</DialogDescription> */}
+
 					<DialogDescription asChild className="text-zinc-400">
 						<div>
 							<div>
@@ -151,7 +152,7 @@ export function ManageStaffDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="space-y-6 py-2 flex flex-col">
+				<div className="space-y-2 flex flex-col">
 					{/* 📝 Section 1: Rename Helper */}
 					<div className="space-y-2 flex flex-col">
 						<Label
@@ -183,25 +184,40 @@ export function ManageStaffDialog({
 						<div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/30 space-y-3 mt-2 flex flex-col">
 							<div className="flex flex-col">
 								<span className="text-yellow-400 font-bold text-xs">
-									Invite Pending Claim
+									In Pending Mode
 								</span>
-								<p className="text-zinc-500 text-[12px] mt-1">
-									The staff has not claimed this assignment. Re-share or copy
-									the active access token below:
+								<p className="text-zinc-300 text-[12px] mt-1">
+									Event must go live to activate this assignment.
 								</p>
 							</div>
 
-							<div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800/80 rounded-lg p-2 pr-1.5 text-xs font-mono text-zinc-400 select-all truncate mt-1">
-								<span className="flex-1 truncate pl-1">{inviteUrl}</span>
+							<div className="flex flex-col gap-2  mt-1 overflow-hidden">
+								<div className="flex-1 min-w-0">
+									<p className="text-[10px] uppercase font-bold text-zinc-400 mb-1">
+										Access Link
+									</p>
+									<p className="break-all text-xs font-mono text-zinc-100 select-all leading-relaxed">
+										{inviteUrl}
+									</p>
+								</div>
 								<Button
-									size="sm"
 									onClick={handleCopy}
-									className="shrink-0 bg-zinc-800 hover:bg-zinc-700 h-8 w-8 p-0 rounded-md"
+									className={`w-full mt-2 h-11 transition-all flex items-center justify-center gap-2 font-bold rounded-lg ${
+										copied
+											? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30"
+											: "bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
+									}`}
 								>
 									{copied ? (
-										<Check className="size-3.5 text-emerald-400" />
+										<>
+											<Check className="size-4" />
+											<span>Copied!</span>
+										</>
 									) : (
-										<Copy className="size-3.5 text-zinc-400" />
+										<>
+											<Copy className="size-4" />
+											<span>Copy Invite Link</span>
+										</>
 									)}
 								</Button>
 							</div>
@@ -219,7 +235,7 @@ export function ManageStaffDialog({
 										href={whatsAppUrl}
 										target="_blank"
 										rel="noreferrer"
-										className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#22c35e] text-white font-bold py-2.5 rounded-lg text-xs transition-colors w-full"
+										className="flex items-center h-11 justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-bold py-2.5 rounded-lg text-xs transition-colors w-full"
 									>
 										Share via WhatsApp
 									</a>
@@ -233,11 +249,10 @@ export function ManageStaffDialog({
 						<div className="p-4 rounded-xl border border-emerald-500/10 bg-emerald-500/5 flex flex-col mt-2">
 							<span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
 								<span className="size-2 bg-emerald-400 rounded-full animate-pulse" />
-								🟢 Activated & Active
+								Activated & Active
 							</span>
-							<p className="text-zinc-500 text-[11px] mt-1.5 leading-relaxed">
-								{staff.staffName} successfully claimed their ticket and has an active
-								browser keycard session.
+							<p className="text-zinc-300 text-[11px] mt-1.5 leading-relaxed">
+								{staff.staffName} successfully claimed their assignment.
 							</p>
 						</div>
 					)}
@@ -246,7 +261,7 @@ export function ManageStaffDialog({
 					<div className="h-px bg-zinc-800/60 w-full my-1" />
 
 					{/* 🚨 Section 3: Danger Zone (Revocation) */}
-					<div className="pt-2 flex flex-col gap-2 text-center">
+					<div className="pt-1 flex flex-col gap-2 text-center">
 						<Button
 							variant="destructive"
 							onClick={handleRevoke}
@@ -255,8 +270,8 @@ export function ManageStaffDialog({
 						>
 							{revoking ? "Revoking..." : "Revoke Access & Remove Assignment"}
 						</Button>
-						<span className="text-[10px] text-zinc-500 font-medium">
-							⚠️ Instantly invalidates their token and locks out their device.
+						<span className="text-xs text-red-200 font-medium italic">
+							Instantly revokes their token and locks out their device.
 						</span>
 					</div>
 				</div>

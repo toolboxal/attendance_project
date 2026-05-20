@@ -1,15 +1,11 @@
 import { convexQuery } from "@convex-dev/react-query";
-import { useMutation } from "convex/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { useMutation } from "convex/react";
 import { format } from "date-fns";
-import { Suspense, useEffect, useState } from "react";
-import { AssignRoleDialog } from "./AssignRoleDialog";
-import { ManageStaffDialog } from "./ManageStaffDialog";
+import { CircleAlert, Timer } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "#/components/ui/button";
-import { formatTime12h } from "#/lib/utils";
-import { api } from "../../../../convex/_generated/api";
-import type { Id } from "../../../../convex/_generated/dataModel";
 import {
 	Dialog,
 	DialogContent,
@@ -18,7 +14,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "#/components/ui/dialog";
-import { CircleAlert, Timer } from "lucide-react";
+import { formatTime12h } from "#/lib/utils";
+import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
+import { AssignRoleDialog } from "./AssignRoleDialog";
+import { ManageStaffDialog } from "./ManageStaffDialog";
 
 // High-performance isolated countdown timer to avoid parent details view re-renders
 export function LiveCountdown({ expiresAt }: { expiresAt?: number }) {
@@ -226,7 +226,7 @@ export function EventDetailsView({
 													<p className="text-zinc-100 font-bold capitalize text-base">
 														{section.name}
 													</p>
-													<p className="text-zinc-500 font-mono text-[11px] mt-0.5">
+													<p className="text-yellow-100 font-mono text-xs mt-1">
 														{formatTime12h(section.startTime ?? "")} -{" "}
 														{formatTime12h(section.endTime ?? "")}
 													</p>
