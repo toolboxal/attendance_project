@@ -1,14 +1,18 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	useNavigate,
+} from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { AlertCircle, ArrowRight } from "lucide-react";
+import { format } from "date-fns";
+import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
+import { formatTime12h } from "#/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { api } from "../../../convex/_generated/api";
-import { format } from "date-fns";
-import { formatTime12h } from "#/lib/utils";
+import { ErrorView } from "#/components/error-view";
 
 export const Route = createFileRoute("/live/$inviteToken")({
 	component: InviteGateComponent,
@@ -19,6 +23,11 @@ function InviteGateComponent() {
 	const navigate = useNavigate();
 	const [claiming, setClaiming] = useState(false);
 	const [claimed, setClaimed] = useState(false);
+	const [claimError, setClaimError] = useState<{
+		errorType?: number;
+		reason?: string;
+		actionNeeded?: string;
+	} | null>(null);
 
 	// 1. 🕵️ Validate the link authenticity against Convex
 	const inviteData = useQuery(api.liveStaff.validateInvite, { inviteToken });
@@ -28,19 +37,31 @@ function InviteGateComponent() {
 	const handleAccept = async () => {
 		try {
 			setClaiming(true);
+			setClaimError(null);
 			// Trigger Convex Mutation: activates profile & destroys the one-time token!
 			const result = await claimInvite({ inviteToken });
 
-			// 💳 Save the permanent session Keycard in browser storage!
-			localStorage.setItem("asistir_staff_token", result.accessToken);
-			setClaimed(true);
+			if (result.success && result.accessToken) {
+				// 💳 Save the permanent session Keycard in browser storage!
+				localStorage.setItem("asistir_staff_token", result.accessToken);
+				setClaimed(true);
 
-			toast.success("Welcome to the team! Loading dashboard...");
+				toast.success("Welcome to the team! Loading dashboard...");
 
-			// 🏁 Push directly to their live interactive workspace!
-			navigate({ to: "/live/jobs", replace: true });
-		} catch (err: any) {
-			toast.error(err.message || "Failed to claim assignment.");
+				// 🏁 Push directly to their live interactive workspace!
+				navigate({ to: "/live/jobs", replace: true });
+			} else {
+				// Handle structured error (e.g. event not live yet)
+				setClaimError({
+					errorType: result.errorType,
+					reason: result.reason,
+					actionNeeded: result.actionNeeded,
+				});
+			}
+		} catch (err: unknown) {
+			const errorMessage =
+				err instanceof Error ? err.message : "Failed to claim assignment.";
+			toast.error(errorMessage);
 		} finally {
 			setClaiming(false);
 		}
@@ -59,26 +80,20 @@ function InviteGateComponent() {
 		);
 	}
 
-	// STATE B: ❌ Invalid Link / Expired Ticket
-	if (inviteData.valid === false && !claimed) {
+	// STATE B: ❌ Invalid Link / Expired Ticket / Claim Error
+	const isError = inviteData.valid === false || claimError !== null;
+	if (isError && !claimed) {
+		const error =
+			inviteData.valid === false ? inviteData : (claimError as typeof inviteData);
+
 		return (
-			<div className="min-h-dvh w-full bg-zinc-950 flex items-center justify-center p-4">
-				<div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl">
-					<div className="size-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center text-red-400 mb-6">
-						<AlertCircle className="size-8" />
-					</div>
-					<h1 className="text-xl font-bold text-zinc-100 tracking-tight">
-						Access Link Invalid
-					</h1>
-					<p className="text-zinc-400 text-sm mt-3 leading-relaxed">
-						{inviteData.message ||
-							"This link has already been claimed, expired, or doesn't exist."}
-					</p>
-					<p className="text-zinc-600 text-xs mt-6 italic">
-						Please contact your event administrator to generate a new secure
-						link.
-					</p>
-				</div>
+			<div className="min-h-dvh w-full bg-zinc-950 flex items-center justify-center">
+				<ErrorView
+					title="Access Denied"
+					errorType={error.errorType}
+					reason={error.reason || ""}
+					actionNeeded={error.actionNeeded || ""}
+				/>
 			</div>
 		);
 	}

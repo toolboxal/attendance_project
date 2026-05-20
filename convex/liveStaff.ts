@@ -89,24 +89,27 @@ export const validateInvite = query({
 			.withIndex("by_inviteToken", (q) => q.eq("inviteToken", args.inviteToken))
 			.first();
 
-		if (!slot) return { valid: false, message: "Invalid invite link." };
+		if (!slot) {
+			return {
+				valid: false,
+				errorType: 404,
+				reason: "Invalid invite link",
+				actionNeeded: "This link has already been claimed, has expired, or is typed incorrectly. Please request a new invite link from your event administrator.",
+			};
+		}
 
 		const event = await ctx.db.get(slot.eventId);
-		if (!event) return { valid: false, message: "Event no longer exists." };
+		if (!event) {
+			return {
+				valid: false,
+				errorType: 404,
+				reason: "Event no longer exists",
+				actionNeeded: "The event for this assignment has been deleted. Please contact your administrator if you believe this is an error.",
+			};
+		}
 
 		// Load the specific shift/section details linked to this role slot
 		const section = slot.sectionId ? await ctx.db.get(slot.sectionId) : null;
-
-		// 🏰 Smart Domain Gate: Only allow helpers to enter if the event is explicitly live!
-		if (event.status !== "live") {
-			return {
-				valid: false,
-				message:
-					event.status === "archived"
-						? "This event has concluded and the invite portal is closed."
-						: "This event is in draft mode. Please wait for the event administrator to go live.",
-			};
-		}
 
 		const liveStaff = slot.assignedStaffId ? await ctx.db.get(slot.assignedStaffId) : null;
 
@@ -149,12 +152,19 @@ export const claimStaffInvite = mutation({
 		if (!staff) throw new Error("Staff member record not found.");
 
 		const event = await ctx.db.get(slot.eventId);
-		if (!event || event.status !== "live") {
-			throw new Error(
-				event?.status === "archived"
-					? "This event has concluded. You can no longer claim this invite."
-					: "This event is in draft mode. You cannot claim this invite until the administrator goes live."
-			);
+		if (!event) throw new Error("Parent event not found.");
+
+		// 🏰 Smart Domain Gate: Only allow helpers to enter if the event is explicitly live!
+		if (event.status !== "live") {
+			return {
+				success: false,
+				errorType: event.status === "archived" ? 410 : 403,
+				reason: event.status === "archived" ? "Event has concluded" : "Event is not yet live",
+				actionNeeded:
+					event.status === "archived"
+						? "This event has finished and the staff portal is now closed. Thank you for your help!"
+						: "The administrator has not activated this event yet. Please wait for them to go live before attempting to check in.",
+			};
 		}
 
 		// 1. 🚀 Activate the user profile
@@ -169,7 +179,7 @@ export const claimStaffInvite = mutation({
 		});
 
 		// Return the permanent session key to store in localstorage
-		return { accessToken: staff.accessToken };
+		return { success: true, accessToken: staff.accessToken };
 	},
 });
 

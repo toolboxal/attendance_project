@@ -7,6 +7,7 @@ import {
 import { useEffect, useState } from "react";
 import { tv } from "tailwind-variants";
 import { Spinner } from "#/components/ui/spinner";
+import { ErrorView } from "#/components/error-view";
 
 const navBarItem = tv({
 	slots: {
@@ -18,6 +19,27 @@ const navBarItem = tv({
 
 export const Route = createFileRoute("/live/_dashboard")({
 	component: DashboardAuthLayout,
+	notFoundComponent: () => (
+		<div className="flex min-h-[50vh] flex-col items-center justify-center p-4 text-center bg-zinc-950 text-zinc-100">
+			<ErrorView
+				title="Activity Missing"
+				reason="Page Not Found"
+				actionNeeded="This job post or section is no longer active. Tap below to refresh your assignments."
+				showHomeButton={false}
+			/>
+		</div>
+	),
+	errorComponent: ({ error, reset }) => (
+		<div className="flex min-h-[50vh] flex-col items-center justify-center p-4 text-center bg-zinc-950 text-zinc-100">
+			<ErrorView
+				title="Something went wrong"
+				reason={error instanceof Error ? error.message : "An unexpected error occurred."}
+				actionNeeded="Please try again or contact your administrator."
+				onBack={() => reset()}
+				showHomeButton={false}
+			/>
+		</div>
+	),
 });
 
 function DashboardAuthLayout() {
