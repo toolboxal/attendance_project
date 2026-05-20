@@ -4,11 +4,13 @@ import {
 	Outlet,
 	useNavigate,
 } from "@tanstack/react-router";
+import { useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { tv } from "tailwind-variants";
 import { ErrorView } from "#/components/error-view";
 import { Spinner } from "#/components/ui/spinner";
 import { parseStructuredError } from "#/lib/error-utils";
+import { api } from "../../../../convex/_generated/api";
 
 const navBarItem = tv({
 	slots: {
@@ -59,13 +61,26 @@ function DashboardAuthLayout() {
 	const [isAuthenticating, setIsAuthenticating] = useState(true);
 	const [hasToken, setHasToken] = useState(false);
 
-	useEffect(() => {
-		// 🔐 Perform the local secure handshake verification
-		const token = localStorage.getItem("asistir_staff_token");
+	// 🔐 Perform the local secure handshake verification
+	const token = typeof window !== "undefined" ? localStorage.getItem("asistir_staff_token") : null;
+	
+	// 🕵️ Verify the token is still valid in the database
+	const profile = useQuery(api.liveStaff.getProfile, { 
+		accessToken: token || "" 
+	});
 
-		if (!token) {
+	useEffect(() => {
+		if (profile === undefined) return; // Still loading from Convex
+
+		if (!token || profile === null) {
 			setHasToken(false);
 			setIsAuthenticating(false);
+			
+			// If we had a token but profile is null, it was revoked
+			if (token && profile === null) {
+				localStorage.removeItem("asistir_staff_token");
+			}
+
 			// Re-route bad actors or lost sessions to the intake failure space
 			navigate({
 				to: "/live/$inviteToken",
@@ -75,7 +90,7 @@ function DashboardAuthLayout() {
 			setHasToken(true);
 			setIsAuthenticating(false);
 		}
-	}, [navigate]);
+	}, [navigate, token, profile]);
 
 	// State A: Loading Check
 	if (isAuthenticating) {

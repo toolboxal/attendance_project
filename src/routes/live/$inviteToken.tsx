@@ -85,13 +85,16 @@ function InviteGateComponent() {
 				? inviteData
 				: (claimError as typeof inviteData);
 
+		const isRevoked = inviteToken === "invalid";
+
 		return (
 			<div className="min-h-dvh w-full bg-zinc-950 flex items-center justify-center">
 				<ErrorView
-					title="Access Denied"
+					title={isRevoked ? "Session Expired" : "Access Denied"}
 					errorType={error.errorType}
-					reason={error.reason || ""}
-					actionNeeded={error.actionNeeded || ""}
+					reason={isRevoked ? "Your access has been revoked or session expired." : (error.reason || "")}
+					actionNeeded={isRevoked ? "Please contact your administrator to request a new invite link." : (error.actionNeeded || "")}
+					showBackButton={!isRevoked}
 				/>
 			</div>
 		);
