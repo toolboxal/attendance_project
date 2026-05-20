@@ -6,8 +6,9 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { tv } from "tailwind-variants";
-import { Spinner } from "#/components/ui/spinner";
 import { ErrorView } from "#/components/error-view";
+import { Spinner } from "#/components/ui/spinner";
+import { parseStructuredError } from "#/lib/error-utils";
 
 const navBarItem = tv({
 	slots: {
@@ -29,17 +30,27 @@ export const Route = createFileRoute("/live/_dashboard")({
 			/>
 		</div>
 	),
-	errorComponent: ({ error, reset }) => (
-		<div className="flex min-h-[50vh] flex-col items-center justify-center p-4 text-center bg-zinc-950 text-zinc-100">
-			<ErrorView
-				title="Something went wrong"
-				reason={error instanceof Error ? error.message : "An unexpected error occurred."}
-				actionNeeded="Please try again or contact your administrator."
-				onBack={() => reset()}
-				showHomeButton={false}
-			/>
-		</div>
-	),
+	errorComponent: ({ error, reset }) => {
+		const errorData = parseStructuredError(error);
+		return (
+			<div className="flex min-h-[50vh] flex-col items-center justify-center p-4 text-center bg-zinc-950 text-zinc-100">
+				<ErrorView
+					title={errorData.title || "Something went wrong"}
+					errorType={errorData.errorType}
+				reason={
+					errorData.reason ||
+					"An unexpected error occurred."
+				}
+					actionNeeded={
+						errorData.actionNeeded ||
+						"Please try again or contact your administrator."
+					}
+					onBack={() => reset()}
+					showHomeButton={false}
+				/>
+			</div>
+		);
+	},
 });
 
 function DashboardAuthLayout() {

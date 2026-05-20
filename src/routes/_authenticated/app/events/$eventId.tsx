@@ -1,18 +1,49 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	useNavigate,
+	useRouter,
+} from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { Suspense, useEffect } from "react";
 import { toast } from "sonner";
 import type { EventSubmitData } from "#/components/authenticated/events/EventEditor";
 import { EventEditor } from "#/components/authenticated/events/EventEditor";
+import { ErrorView } from "#/components/error-view";
 import { Spinner } from "#/components/ui/spinner";
+import { parseStructuredError } from "#/lib/error-utils";
 import { useHeaderStore } from "#/lib/store/topHeaderStore";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/app/events/$eventId")({
 	component: EditRouteWrapper,
+	errorComponent: ({ error, reset }) => {
+		const router = useRouter();
+		const errorData = parseStructuredError(error);
+		return (
+			<div className="flex  h-[calc(100vh-72px)]  items-center justify-center">
+				<ErrorView
+					title={errorData.title || "Something went wrong"}
+					errorType={errorData.errorType}
+					reason={
+						errorData.reason ||
+						"An unexpected error occurred while loading this event."
+					}
+					actionNeeded={
+						errorData.actionNeeded || "Please try again or return to Events."
+					}
+					onBack={() => reset()}
+					onHome={() =>
+						router.navigate({
+							to: "/app/events",
+						})
+					}
+				/>
+			</div>
+		);
+	},
 });
 
 // Wrapper to allow top-level suspense without blocking full shell

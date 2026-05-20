@@ -15,6 +15,7 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
 import type * as React from "react";
 import { NotFoundComponent } from "#/components/not-found";
+import { GlobalErrorComponent } from "#/components/error-component";
 import { authClient } from "#/lib/auth-client";
 import { getToken } from "#/lib/auth-server";
 import { Toaster } from "@/components/ui/sonner";
@@ -60,6 +61,7 @@ export const Route = createRootRouteWithContext<{
 	},
 	component: RootComponent,
 	notFoundComponent: NotFoundComponent,
+	errorComponent: GlobalErrorComponent,
 });
 function RootComponent() {
 	const context = useRouteContext({ from: Route.id });
@@ -84,7 +86,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<body className="bg-neutral-950 text-neutral-50">
 				{children}
 				<Toaster />
-				{/* <TanStackDevtools
+				<TanStackDevtools
 					config={{
 						position: "bottom-right",
 					}}
@@ -94,7 +96,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 							render: <TanStackRouterDevtoolsPanel />,
 						},
 					]}
-				/> */}
+				/>
 				<Scripts />
 			</body>
 		</html>

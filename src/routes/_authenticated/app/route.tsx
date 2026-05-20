@@ -2,11 +2,9 @@ import {
 	createFileRoute,
 	Navigate,
 	Outlet,
-	useRouter,
 } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
 import { AppSidebar } from "#/components/authenticated/app-sidebar";
-import { ErrorView } from "#/components/error-view";
 import TopHeaderBar from "#/components/authenticated/topHeaderBar";
 import {
 	SidebarInset,
@@ -16,42 +14,6 @@ import {
 
 export const Route = createFileRoute("/_authenticated/app")({
 	component: RouteComponent,
-	notFoundComponent: () => {
-		const router = useRouter();
-		return (
-			<div className="flex h-full flex-col items-center justify-center">
-				<ErrorView
-					reason="Item Not Found"
-					actionNeeded="The event, job, or setting you are trying to access is not available at this time."
-					onHome={() =>
-						router.navigate({
-							to: "/app/dashboard",
-							search: { checkoutSlug: undefined },
-						})
-					}
-				/>
-			</div>
-		);
-	},
-	errorComponent: ({ error, reset }) => {
-		const router = useRouter();
-		return (
-			<div className="flex h-full flex-col items-center justify-center">
-				<ErrorView
-					title="Something went wrong"
-					reason={error instanceof Error ? error.message : "An unexpected error occurred while loading this page."}
-					actionNeeded="Please try again or return to the dashboard."
-					onBack={() => reset()}
-					onHome={() =>
-						router.navigate({
-							to: "/app/dashboard",
-							search: { checkoutSlug: undefined },
-						})
-					}
-				/>
-			</div>
-		);
-	},
 });
 
 function RouteComponent() {

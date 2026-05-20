@@ -28,7 +28,7 @@ export function ErrorView({
 	const handleHome = onHome || (() => router.navigate({ to: "/" }));
 
 	return (
-		<div className="w-full max-w-md p-8">
+		<div className="w-full max-w-md p-8 flex flex-col  justify-center">
 			<p className="logo mb-4">Asistir</p>
 			<div className="flex items-center gap-2 mb-2">
 				<p className="text-md font-bold italic text-red-400 uppercase">

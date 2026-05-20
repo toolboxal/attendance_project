@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
 import type { Id } from "./_generated/dataModel";
+import { ConvexError } from "convex/values";
 
 /**
  * Helper to get currently authenticated user from Better Auth and the database.
@@ -9,7 +10,12 @@ import type { Id } from "./_generated/dataModel";
 export async function getAuthenticatedUser(ctx: any) {
   const authUser = await authComponent.getAuthUser(ctx);
   if (!authUser) {
-    throw new Error("Unauthorized: No session found");
+    throw new ConvexError({
+      title: "Authentication Required",
+      reason: "No active session found.",
+      actionNeeded: "Please sign in to access this resource.",
+      errorType: 401,
+    });
   }
   
   const userId = authUser._id || authUser.id;
@@ -19,7 +25,12 @@ export async function getAuthenticatedUser(ctx: any) {
     .first();
 
   if (!user) {
-    throw new Error("Unauthorized: User record not found");
+    throw new ConvexError({
+      title: "User Not Found",
+      reason: "Your user record could not be located in our database.",
+      actionNeeded: "Please contact support if this issue persists.",
+      errorType: 404,
+    });
   }
 
   return user;
@@ -69,7 +80,12 @@ export const create = mutation({
       .collect();
 
     if (existingDrafts.length >= 10) {
-      throw new Error("You have reached the maximum limit of 5 draft events. Please delete or activate an existing draft before creating a new one.");
+      throw new ConvexError({
+        title: "Draft Limit Reached",
+        reason: "You have reached the maximum limit of 10 draft events.",
+        actionNeeded: "Please delete or activate an existing draft before creating a new one.",
+        errorType: 403,
+      });
     }
 
     // 2. Generate unique 6-character alphanumeric invite code
@@ -159,6 +175,8 @@ export const create = mutation({
 export const list = query({
   args: {},
   handler: async (ctx) => {
+  
+
     const user = await getAuthenticatedUser(ctx);
 
     // 1. Fetch active events (draft or live) - usually very few (hard-capped at 10 drafts & 1 live)

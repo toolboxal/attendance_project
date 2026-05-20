@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthenticatedUser } from "./events";
+import { ConvexError } from "convex/values";
 
 /**
  * Create or update a staff assignment and generate a secure invite token.
@@ -144,12 +145,33 @@ export const claimStaffInvite = mutation({
 			.withIndex("by_inviteToken", (q) => q.eq("inviteToken", args.inviteToken))
 			.first();
 
-		if (!slot) throw new Error("This invite link is invalid or has already been claimed.");
+		if (!slot) {
+			throw new ConvexError({
+				title: "Invalid Invite",
+				reason: "This invite link is invalid or has already been claimed.",
+				actionNeeded: "Please request a new link from your administrator.",
+				errorType: 404,
+			});
+		}
 
-		if (!slot.assignedStaffId) throw new Error("No assigned staff found for this slot.");
+		if (!slot.assignedStaffId) {
+			throw new ConvexError({
+				title: "Assignment Missing",
+				reason: "No assigned staff found for this slot.",
+				actionNeeded: "Please contact your administrator.",
+				errorType: 404,
+			});
+		}
 
 		const staff = await ctx.db.get(slot.assignedStaffId);
-		if (!staff) throw new Error("Staff member record not found.");
+		if (!staff) {
+			throw new ConvexError({
+				title: "Staff Record Missing",
+				reason: "Your staff member record could not be found.",
+				actionNeeded: "Please contact your administrator.",
+				errorType: 404,
+			});
+		}
 
 		const event = await ctx.db.get(slot.eventId);
 		if (!event) throw new Error("Parent event not found.");
@@ -195,13 +217,32 @@ export const revokeStaffAccess = mutation({
 
 		// 1. Load and authorize slot
 		const slot = await ctx.db.get(args.slotId);
-		if (!slot) throw new Error("Role slot not found.");
+		if (!slot) {
+			throw new ConvexError({
+				title: "Slot Not Found",
+				reason: "The requested role slot does not exist.",
+				actionNeeded: "Please refresh your dashboard and try again.",
+				errorType: 404,
+			});
+		}
 
 		const event = await ctx.db.get(slot.eventId);
-		if (!event) throw new Error("Parent event not found.");
+		if (!event) {
+			throw new ConvexError({
+				title: "Event Not Found",
+				reason: "The parent event for this assignment has been deleted.",
+				actionNeeded: "Please contact your administrator.",
+				errorType: 404,
+			});
+		}
 
 		if (event.adminId !== user._id) {
-			throw new Error("Unauthorized to modify this assignment.");
+			throw new ConvexError({
+				title: "Unauthorized",
+				reason: "You do not have permission to modify this assignment.",
+				actionNeeded: "Please ensure you are logged in with the correct account.",
+				errorType: 403,
+			});
 		}
 
 		// 2. Delete the actual liveStaff profile record if linked

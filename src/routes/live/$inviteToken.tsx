@@ -1,18 +1,15 @@
-import {
-	createFileRoute,
-	useNavigate,
-} from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ErrorView } from "#/components/error-view";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
 import { formatTime12h } from "#/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { api } from "../../../convex/_generated/api";
-import { ErrorView } from "#/components/error-view";
 
 export const Route = createFileRoute("/live/$inviteToken")({
 	component: InviteGateComponent,
@@ -84,7 +81,9 @@ function InviteGateComponent() {
 	const isError = inviteData.valid === false || claimError !== null;
 	if (isError && !claimed) {
 		const error =
-			inviteData.valid === false ? inviteData : (claimError as typeof inviteData);
+			inviteData.valid === false
+				? inviteData
+				: (claimError as typeof inviteData);
 
 		return (
 			<div className="min-h-dvh w-full bg-zinc-950 flex items-center justify-center">
