@@ -43,7 +43,7 @@ function InviteGateComponent() {
 				localStorage.setItem("asistir_staff_token", result.accessToken);
 				setClaimed(true);
 
-				toast.success("Welcome to the team! Loading dashboard...");
+				toast.success("Welcome to the team!");
 
 				// 🏁 Push directly to their live interactive workspace!
 				navigate({ to: "/live/jobs", replace: true });
@@ -77,6 +77,18 @@ function InviteGateComponent() {
 		);
 	}
 
+	if (claiming || claimed) {
+		return (
+			<div className="min-h-dvh w-full bg-zinc-950 flex flex-col items-center justify-center gap-4">
+				<Spinner className="size-6 text-zinc-200 mb-4" />
+				<p className="logo animate-pulse">Asistir</p>
+				<p className="text-zinc-500 text-sm font-medium">
+					activating keycard and loading dashboard
+				</p>
+			</div>
+		);
+	}
+
 	// STATE B: ❌ Invalid Link / Expired Ticket / Claim Error
 	const isError = inviteData.valid === false || claimError !== null;
 	if (isError && !claimed) {
@@ -92,8 +104,16 @@ function InviteGateComponent() {
 				<ErrorView
 					title={isRevoked ? "Session Expired" : "Access Denied"}
 					errorType={error.errorType}
-					reason={isRevoked ? "Your access has been revoked or session expired." : (error.reason || "")}
-					actionNeeded={isRevoked ? "Please contact your administrator to request a new invite link." : (error.actionNeeded || "")}
+					reason={
+						isRevoked
+							? "Your access has been revoked or session expired."
+							: error.reason || ""
+					}
+					actionNeeded={
+						isRevoked
+							? "Please contact your administrator to request a new invite link."
+							: error.actionNeeded || ""
+					}
 					showBackButton={!isRevoked}
 				/>
 			</div>
@@ -181,23 +201,12 @@ function InviteGateComponent() {
 					) : null}
 					<Button
 						onClick={handleAccept}
-						disabled={claiming}
 						variant={"default"}
 						size={"xl"}
 						className="w-full mt-2 text-md"
-						// className="w-full mt-6 py-7 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold tracking-wide shadow-xl hover:shadow-zinc-500/10 transition-all active:scale-[0.98] flex items-center justify-center gap-2 group"
 					>
-						{claiming ? (
-							<>
-								<Spinner className="size-4 text-zinc-950" />
-								<span>Activating Keycard...</span>
-							</>
-						) : (
-							<>
-								<span>Enter</span>
-								<ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
-							</>
-						)}
+						<span>Enter</span>
+						<ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
 					</Button>
 				</div>
 			</div>
