@@ -1,7 +1,9 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { authComponent } from "./auth";
-import type { Id } from "./_generated/dataModel";
 import { ConvexError } from "convex/values";
 
 /**
@@ -35,6 +37,41 @@ export async function getAuthenticatedUser(ctx: any) {
 
   return user;
 }
+
+/** True when a live event's 24-hour window has elapsed. */
+export function isLiveEventExpired(event: Pick<Doc<"events">, "status" | "expiresAt">) {
+  return (
+    event.status === "live" &&
+    event.expiresAt != null &&
+    Date.now() >= event.expiresAt
+  );
+}
+
+/** Staff/admin access should be closed (archived or past expiresAt). */
+export function isEventAccessClosed(event: Pick<Doc<"events">, "status" | "expiresAt">) {
+  return event.status === "archived" || isLiveEventExpired(event);
+}
+
+async function archiveEventIfExpired(ctx: MutationCtx, eventId: Id<"events">) {
+  const event = await ctx.db.get(eventId);
+  if (!event || !isLiveEventExpired(event)) return false;
+  await ctx.db.patch(eventId, { status: "archived" });
+  return true;
+}
+
+/**
+ * Scheduled at go-live (expiresAt): archives the event when its 24h window ends.
+ * No-op if the admin already closed the event manually.
+ */
+export const archiveExpiredLiveEvents = internalMutation({
+  args: { eventId: v.id("events") },
+  handler: async (ctx, { eventId }) => {
+    const event = await ctx.db.get(eventId);
+    if (!event || event.status !== "live") return;
+
+    await ctx.db.patch(eventId, { status: "archived" });
+  },
+});
 
 /**
  * Create a new event (starts in 'draft' mode).
@@ -576,9 +613,13 @@ export const updateStatus = mutation({
         .first();
 
       if (activeLiveEvent && activeLiveEvent._id !== event._id) {
-        throw new Error(
-          `You already have an active live event ("${activeLiveEvent.title}"). Please end it before going live with another one.`
-        );
+        if (await archiveEventIfExpired(ctx, activeLiveEvent._id)) {
+          // Stale live event past its 24h window — allow going live with the new one.
+        } else {
+          throw new Error(
+            `You already have an active live event ("${activeLiveEvent.title}"). Please end it before going live with another one.`
+          );
+        }
       }
 
       // Deduct event pass credits ONLY when transitioning from draft to live
@@ -607,6 +648,14 @@ export const updateStatus = mutation({
     }
 
     await ctx.db.patch(event._id, updateFields);
+
+    if (args.status === "live" && updateFields.expiresAt) {
+      await ctx.scheduler.runAt(
+        updateFields.expiresAt,
+        internal.events.archiveExpiredLiveEvents,
+        { eventId: event._id },
+      );
+    }
 
     return { success: true };
   },

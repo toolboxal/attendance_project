@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthenticatedUser } from "./events";
+import { getAuthenticatedUser, isEventAccessClosed } from "./events";
 import { ConvexError } from "convex/values";
 
 /**
@@ -174,16 +174,16 @@ export const claimStaffInvite = mutation({
 		const event = await ctx.db.get(slot.eventId);
 		if (!event) throw new Error("Parent event not found.");
 
-		// 🏰 Smart Domain Gate: Only allow helpers to enter if the event is explicitly live!
-		if (event.status !== "live") {
+		// 🏰 Smart Domain Gate: Only allow helpers while the event is live and within its window
+		if (event.status !== "live" || isEventAccessClosed(event)) {
+			const concluded = isEventAccessClosed(event);
 			return {
 				success: false,
-				errorType: event.status === "archived" ? 410 : 403,
-				reason: event.status === "archived" ? "Event has concluded" : "Event is not yet live",
-				actionNeeded:
-					event.status === "archived"
-						? "This event has finished and the staff portal is now closed. Thank you for your help!"
-						: "The administrator has not activated this event yet. Please wait for them to go live before attempting to check in.",
+				errorType: concluded ? 410 : 403,
+				reason: concluded ? "Event has concluded" : "Event is not yet live",
+				actionNeeded: concluded
+					? "This event has finished and the staff portal is now closed. Thank you for your help!"
+					: "The administrator has not activated this event yet. Please wait for them to go live before attempting to check in.",
 			};
 		}
 
@@ -277,7 +277,7 @@ export const getProfile = query({
 
 		// Load contextual data for the UI
 		const event = await ctx.db.get(staff.eventId);
-		if (!event || event.status !== "live") return null;
+		if (!event || event.status !== "live" || isEventAccessClosed(event)) return null;
 
 		const section = staff.sectionId ? await ctx.db.get(staff.sectionId) : null;
 		const roleSlot = await ctx.db

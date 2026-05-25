@@ -39,10 +39,7 @@ export const Route = createFileRoute("/live/_dashboard")({
 				<ErrorView
 					title={errorData.title || "Something went wrong"}
 					errorType={errorData.errorType}
-				reason={
-					errorData.reason ||
-					"An unexpected error occurred."
-				}
+					reason={errorData.reason || "An unexpected error occurred."}
 					actionNeeded={
 						errorData.actionNeeded ||
 						"Please try again or contact your administrator."
@@ -62,11 +59,14 @@ function DashboardAuthLayout() {
 	const [hasToken, setHasToken] = useState(false);
 
 	// 🔐 Perform the local secure handshake verification
-	const token = typeof window !== "undefined" ? localStorage.getItem("asistir_staff_token") : null;
-	
+	const token =
+		typeof window !== "undefined"
+			? localStorage.getItem("asistir_staff_token")
+			: null;
+
 	// 🕵️ Verify the token is still valid in the database
-	const profile = useQuery(api.liveStaff.getProfile, { 
-		accessToken: token || "" 
+	const profile = useQuery(api.liveStaff.getProfile, {
+		accessToken: token || "",
 	});
 
 	useEffect(() => {
@@ -75,7 +75,7 @@ function DashboardAuthLayout() {
 		if (!token || profile === null) {
 			setHasToken(false);
 			setIsAuthenticating(false);
-			
+
 			// If we had a token but profile is null, it was revoked
 			if (token && profile === null) {
 				localStorage.removeItem("asistir_staff_token");
@@ -122,9 +122,9 @@ function DashboardAuthLayout() {
 				</Link>
 
 				{/* TAB 2: CHAT */}
-				<Link to="/live/chat" className={tab()}>
+				<Link to="/live/alert" className={tab()}>
 					{/* <MessageSquare className="size-5" /> */}
-					<span>Chat</span>
+					<span>Alert</span>
 				</Link>
 
 				{/* TAB 3: ROSTER */}

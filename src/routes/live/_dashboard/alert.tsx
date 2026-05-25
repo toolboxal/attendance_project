@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MessageSquareDashed } from "lucide-react";
 
-export const Route = createFileRoute("/live/_dashboard/chat")({
+export const Route = createFileRoute("/live/_dashboard/alert")({
 	component: ChatTabComponent,
 });
 

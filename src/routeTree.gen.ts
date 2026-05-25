@@ -19,7 +19,7 @@ import { Route as LiveDashboardIndexRouteImport } from './routes/live/_dashboard
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
 import { Route as LiveDashboardRosterRouteImport } from './routes/live/_dashboard/roster'
 import { Route as LiveDashboardJobsRouteImport } from './routes/live/_dashboard/jobs'
-import { Route as LiveDashboardChatRouteImport } from './routes/live/_dashboard/chat'
+import { Route as LiveDashboardAlertRouteImport } from './routes/live/_dashboard/alert'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthenticatedAppSuccessRouteImport } from './routes/_authenticated/app/success'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/app/dashboard'
@@ -78,9 +78,9 @@ const LiveDashboardJobsRoute = LiveDashboardJobsRouteImport.update({
   path: '/jobs',
   getParentRoute: () => LiveDashboardRouteRoute,
 } as any)
-const LiveDashboardChatRoute = LiveDashboardChatRouteImport.update({
-  id: '/chat',
-  path: '/chat',
+const LiveDashboardAlertRoute = LiveDashboardAlertRouteImport.update({
+  id: '/alert',
+  path: '/alert',
   getParentRoute: () => LiveDashboardRouteRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -144,7 +144,7 @@ export interface FileRoutesByFullPath {
   '/app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/live/chat': typeof LiveDashboardChatRoute
+  '/live/alert': typeof LiveDashboardAlertRoute
   '/live/jobs': typeof LiveDashboardJobsRoute
   '/live/roster': typeof LiveDashboardRosterRoute
   '/app/': typeof AuthenticatedAppIndexRoute
@@ -163,7 +163,7 @@ export interface FileRoutesByTo {
   '/app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/live/chat': typeof LiveDashboardChatRoute
+  '/live/alert': typeof LiveDashboardAlertRoute
   '/live/jobs': typeof LiveDashboardJobsRoute
   '/live/roster': typeof LiveDashboardRosterRoute
   '/app': typeof AuthenticatedAppIndexRoute
@@ -185,7 +185,7 @@ export interface FileRoutesById {
   '/_authenticated/app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/live/_dashboard/chat': typeof LiveDashboardChatRoute
+  '/live/_dashboard/alert': typeof LiveDashboardAlertRoute
   '/live/_dashboard/jobs': typeof LiveDashboardJobsRoute
   '/live/_dashboard/roster': typeof LiveDashboardRosterRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
@@ -207,7 +207,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/success'
     | '/api/auth/$'
-    | '/live/chat'
+    | '/live/alert'
     | '/live/jobs'
     | '/live/roster'
     | '/app/'
@@ -226,7 +226,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/success'
     | '/api/auth/$'
-    | '/live/chat'
+    | '/live/alert'
     | '/live/jobs'
     | '/live/roster'
     | '/app'
@@ -247,7 +247,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/dashboard'
     | '/_authenticated/app/success'
     | '/api/auth/$'
-    | '/live/_dashboard/chat'
+    | '/live/_dashboard/alert'
     | '/live/_dashboard/jobs'
     | '/live/_dashboard/roster'
     | '/_authenticated/app/'
@@ -336,11 +336,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiveDashboardJobsRouteImport
       parentRoute: typeof LiveDashboardRouteRoute
     }
-    '/live/_dashboard/chat': {
-      id: '/live/_dashboard/chat'
-      path: '/chat'
-      fullPath: '/live/chat'
-      preLoaderRoute: typeof LiveDashboardChatRouteImport
+    '/live/_dashboard/alert': {
+      id: '/live/_dashboard/alert'
+      path: '/alert'
+      fullPath: '/live/alert'
+      preLoaderRoute: typeof LiveDashboardAlertRouteImport
       parentRoute: typeof LiveDashboardRouteRoute
     }
     '/api/auth/$': {
@@ -426,14 +426,14 @@ const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
 )
 
 interface LiveDashboardRouteRouteChildren {
-  LiveDashboardChatRoute: typeof LiveDashboardChatRoute
+  LiveDashboardAlertRoute: typeof LiveDashboardAlertRoute
   LiveDashboardJobsRoute: typeof LiveDashboardJobsRoute
   LiveDashboardRosterRoute: typeof LiveDashboardRosterRoute
   LiveDashboardIndexRoute: typeof LiveDashboardIndexRoute
 }
 
 const LiveDashboardRouteRouteChildren: LiveDashboardRouteRouteChildren = {
-  LiveDashboardChatRoute: LiveDashboardChatRoute,
+  LiveDashboardAlertRoute: LiveDashboardAlertRoute,
   LiveDashboardJobsRoute: LiveDashboardJobsRoute,
   LiveDashboardRosterRoute: LiveDashboardRosterRoute,
   LiveDashboardIndexRoute: LiveDashboardIndexRoute,

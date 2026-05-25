@@ -134,18 +134,20 @@ export function EventDetailsView({
 						{event.status === "draft" ? "Go Live" : "End Event"}
 					</Button>
 				)}
-				<Button
-					onClick={() => {
-						navigate({
-							to: "/app/events/$eventId",
-							params: { eventId: eventId as string },
-						});
-					}}
-					variant={"secondary"}
-					size={"lg"}
-				>
-					Edit Event
-				</Button>
+				{event.status !== "archived" && (
+					<Button
+						onClick={() => {
+							navigate({
+								to: "/app/events/$eventId",
+								params: { eventId: eventId as string },
+							});
+						}}
+						variant={"secondary"}
+						size={"lg"}
+					>
+						Edit Event
+					</Button>
+				)}
 				{event.status !== "live" && (
 					<>
 						<Button onClick={handleDuplicate} variant={"ghost"} size={"lg"}>
@@ -272,15 +274,22 @@ export function EventDetailsView({
 																	</p>
 																</div>
 																{!assignedStaff ? (
-																	<AssignRoleDialog
-																		slot={slot}
-																		section={section}
-																	/>
+																	event.status !== "archived" ? (
+																		<AssignRoleDialog
+																			slot={slot}
+																			section={section}
+																		/>
+																	) : (
+																		<span className="ml-auto text-sm text-zinc-500">
+																			Unassigned
+																		</span>
+																	)
 																) : (
 																	<ManageStaffDialog
 																		slot={slot}
 																		section={section}
 																		staff={assignedStaff}
+																		isArchived={event.status === "archived"}
 																	/>
 																)}
 															</div>

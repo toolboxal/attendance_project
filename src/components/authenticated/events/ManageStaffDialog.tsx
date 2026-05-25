@@ -21,10 +21,12 @@ export function ManageStaffDialog({
 	slot,
 	section,
 	staff,
+	isArchived = false,
 }: {
 	slot: Doc<"roleSlots">;
 	section: Doc<"eventSections">;
 	staff: Doc<"liveStaff">;
+	isArchived?: boolean;
 }) {
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState(staff.staffName);
@@ -153,34 +155,47 @@ export function ManageStaffDialog({
 				</DialogHeader>
 
 				<div className="space-y-2 flex flex-col">
-					{/* 📝 Section 1: Rename Helper */}
-					<div className="space-y-2 flex flex-col">
-						<Label
-							htmlFor="edit-staff-name"
-							className="text-xs font-semibold text-zinc-500"
-						>
-							Update name
-						</Label>
-						<div className="flex gap-2">
-							<Input
-								id="edit-staff-name"
-								value={name}
-								onChange={(e) => setName(e.target.value)}
-								placeholder="Enter name"
-								className="bg-zinc-950 border-zinc-800 focus:border-zinc-700 flex-1 h-11 text-sm"
-							/>
-							<Button
-								onClick={handleUpdateName}
-								disabled={saving || name.trim() === staff.staffName}
-								className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium h-11 px-4"
-							>
-								{saving ? "Saving..." : "Update"}
-							</Button>
+					{isArchived ? (
+						<div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/30 flex flex-col">
+							<span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+								Event expired
+							</span>
+							<p className="text-zinc-300 text-[11px] mt-1.5 leading-relaxed">
+								{inviteUrl
+									? `${staff.staffName} was assigned but did not claim before the event ended.`
+									: `Event expired but ${staff.staffName} successfully claimed their assignment.`}
+							</p>
 						</div>
-					</div>
+					) : (
+						<>
+							{/* 📝 Section 1: Rename Helper */}
+							<div className="space-y-2 flex flex-col">
+								<Label
+									htmlFor="edit-staff-name"
+									className="text-xs font-semibold text-zinc-500"
+								>
+									Update name
+								</Label>
+								<div className="flex gap-2">
+									<Input
+										id="edit-staff-name"
+										value={name}
+										onChange={(e) => setName(e.target.value)}
+										placeholder="Enter name"
+										className="bg-zinc-950 border-zinc-800 focus:border-zinc-700 flex-1 h-11 text-sm"
+									/>
+									<Button
+										onClick={handleUpdateName}
+										disabled={saving || name.trim() === staff.staffName}
+										className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium h-11 px-4"
+									>
+										{saving ? "Saving..." : "Update"}
+									</Button>
+								</div>
+							</div>
 
-					{/* ⏳ Section 2: Pending Invite Re-sharing (Conditional) */}
-					{inviteUrl && (
+							{/* ⏳ Section 2: Pending Invite Re-sharing (Conditional) */}
+							{inviteUrl && (
 						<div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/30 space-y-3 mt-2 flex flex-col">
 							<div className="flex flex-col">
 								<span className="text-yellow-400 font-bold text-xs">
@@ -242,38 +257,40 @@ export function ManageStaffDialog({
 								)}
 							</div>
 						</div>
+							)}
+
+							{/* 🟢 Section 2: Claimed & Fully Active (Conditional) */}
+							{!inviteUrl && (
+								<div className="p-4 rounded-xl border border-emerald-500/10 bg-emerald-500/5 flex flex-col mt-2">
+									<span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+										<span className="size-2 bg-emerald-400 rounded-full animate-pulse" />
+										Activated & Active
+									</span>
+									<p className="text-zinc-300 text-[11px] mt-1.5 leading-relaxed">
+										{staff.staffName} successfully claimed their assignment.
+									</p>
+								</div>
+							)}
+
+							{/* Separator */}
+							<div className="h-px bg-zinc-800/60 w-full my-1" />
+
+							{/* 🚨 Section 3: Danger Zone (Revocation) */}
+							<div className="pt-1 flex flex-col gap-2 text-center">
+								<Button
+									variant="destructive"
+									onClick={handleRevoke}
+									disabled={revoking}
+									className="w-full border border-red-500/10 hover:bg-red-950/20 text-red-500 font-bold py-6 rounded-xl transition-colors"
+								>
+									{revoking ? "Revoking..." : "Revoke Access & Remove Assignment"}
+								</Button>
+								<span className="text-xs text-red-200 font-medium italic">
+									Instantly revokes their token and locks out their device.
+								</span>
+							</div>
+						</>
 					)}
-
-					{/* 🟢 Section 2: Claimed & Fully Active (Conditional) */}
-					{!inviteUrl && (
-						<div className="p-4 rounded-xl border border-emerald-500/10 bg-emerald-500/5 flex flex-col mt-2">
-							<span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-								<span className="size-2 bg-emerald-400 rounded-full animate-pulse" />
-								Activated & Active
-							</span>
-							<p className="text-zinc-300 text-[11px] mt-1.5 leading-relaxed">
-								{staff.staffName} successfully claimed their assignment.
-							</p>
-						</div>
-					)}
-
-					{/* Separator */}
-					<div className="h-px bg-zinc-800/60 w-full my-1" />
-
-					{/* 🚨 Section 3: Danger Zone (Revocation) */}
-					<div className="pt-1 flex flex-col gap-2 text-center">
-						<Button
-							variant="destructive"
-							onClick={handleRevoke}
-							disabled={revoking}
-							className="w-full border border-red-500/10 hover:bg-red-950/20 text-red-500 font-bold py-6 rounded-xl transition-colors"
-						>
-							{revoking ? "Revoking..." : "Revoke Access & Remove Assignment"}
-						</Button>
-						<span className="text-xs text-red-200 font-medium italic">
-							Instantly revokes their token and locks out their device.
-						</span>
-					</div>
 				</div>
 			</DialogContent>
 		</Dialog>

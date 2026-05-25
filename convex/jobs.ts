@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query, type QueryCtx, type MutationCtx } from "./_generated/server";
+import { isEventAccessClosed } from "./events";
 
 async function getAuthenticatedStaff(
 	ctx: QueryCtx | MutationCtx,
@@ -13,6 +14,12 @@ async function getAuthenticatedStaff(
 	if (!staff || staff.status === "checked_out") {
 		return null;
 	}
+
+	const event = await ctx.db.get(staff.eventId);
+	if (!event || event.status !== "live" || isEventAccessClosed(event)) {
+		return null;
+	}
+
 	return staff;
 }
 
