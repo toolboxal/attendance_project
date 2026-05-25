@@ -1,0 +1,5 @@
+{"sessionId":"df78bf","runId":"pre-fix","hypothesisId":"D","location":"__root.tsx:beforeLoad","message":"root beforeLoad auth","data":{"isSSR":true,"hasToken":true},"timestamp":1779730686157}
+{"sessionId":"df78bf","runId":"pre-fix","hypothesisId":"A","location":"events/index.tsx:loader","message":"events.list loader invoked","data":{"hasRootToken":true,"isSSR":true,"isClient":false},"timestamp":1779730686160}
+{"sessionId":"df78bf","runId":"pre-fix","hypothesisId":"D","location":"__root.tsx:beforeLoad","message":"root beforeLoad auth","data":{"isSSR":true,"hasToken":true},"timestamp":1779730738610}
+{"sessionId":"df78bf","runId":"pre-fix","hypothesisId":"A","location":"events/index.tsx:loader","message":"events.list loader invoked","data":{"hasRootToken":true,"isSSR":true,"isClient":false},"timestamp":1779730738611}
+{"sessionId":"df78bf","runId":"pre-fix","hypothesisId":"D","location":"__root.tsx:beforeLoad","message":"root beforeLoad auth","data":{"isSSR":true,"hasToken":false},"timestamp":1779730769953}

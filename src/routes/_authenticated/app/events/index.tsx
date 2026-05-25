@@ -17,8 +17,6 @@ import { api } from "../../../../../convex/_generated/api";
 import { EventDetailsView } from "#/components/authenticated/events/EventDetailsView";
 
 export const Route = createFileRoute("/_authenticated/app/events/")({
-	loader: ({ context: { queryClient } }) =>
-		queryClient.ensureQueryData(convexQuery(api.events.list, {})),
 	component: RouteComponent,
 	errorComponent: ({ error, reset }) => {
 		const router = useRouter();

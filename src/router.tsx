@@ -10,9 +10,9 @@ export function getRouter() {
 	if (!CONVEX_URL) {
 		throw new Error("missing envar VITE_CONVEX_URL");
 	}
-	const convexQueryClient = new ConvexQueryClient(CONVEX_URL, {
-		expectAuth: true,
-	});
+	// Staff live links (/live/:token) are used without admin login; expectAuth would
+	// block the WebSocket until a session exists and leave invite pages loading forever.
+	const convexQueryClient = new ConvexQueryClient(CONVEX_URL);
 
 	const queryClient: QueryClient = new QueryClient({
 		defaultOptions: {
