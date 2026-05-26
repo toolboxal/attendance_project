@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { MAX_ACTIVE_JOBS } from "./constants";
 import { mutation, query } from "./_generated/server";
 import { getLiveContext } from "./liveAuth";
 
@@ -17,7 +18,7 @@ export const getActiveJobs = query({
 			.withIndex("by_event", (q) => q.eq("eventId", staff.eventId))
 			.filter((q) => q.neq(q.field("status"), "resolved"))
 			.order("desc")
-			.take(20); // Hard-capped at 15 globally by dispatchJob anyway
+			.take(MAX_ACTIVE_JOBS);
 
 		// Enrich jobs with human-readable names
 		const enrichedJobs = await Promise.all(
@@ -76,76 +77,6 @@ export const getActiveJobs = query({
 	},
 });
 
-// Retrieve resolved jobs for history audit
-export const getHistoryJobs = query({
-	args: { accessToken: v.string() },
-	handler: async (ctx, args) => {
-		const live = await getLiveContext(ctx, args.accessToken);
-		if (!live) return [];
-
-		const { staff } = live;
-
-		// Query resolved jobs for this event, newest first, limited to 30
-		const jobs = await ctx.db
-			.query("jobs")
-			.withIndex("by_event", (q) => q.eq("eventId", staff.eventId))
-			.filter((q) => q.eq(q.field("status"), "resolved"))
-			.order("desc")
-			.take(30);
-
-		// Enrich jobs with human-readable names
-		const enrichedJobs = await Promise.all(
-			jobs.map(async (job) => {
-				const creator = await ctx.db.get(job.creatorId);
-				const claimer = job.claimerId ? await ctx.db.get(job.claimerId) : null;
-
-				const creatorRoleSlot = creator
-					? await ctx.db
-							.query("roleSlots")
-							.withIndex("by_assignedStaff", (q) =>
-								q.eq("assignedStaffId", creator._id),
-							)
-							.first()
-					: null;
-
-				const claimerRoleSlot = claimer
-					? await ctx.db
-							.query("roleSlots")
-							.withIndex("by_assignedStaff", (q) =>
-								q.eq("assignedStaffId", claimer._id),
-							)
-							.first()
-					: null;
-
-				const originSection = job.originSectionId
-					? await ctx.db.get(job.originSectionId)
-					: null;
-				const destinationSection = job.destinationSectionId
-					? await ctx.db.get(job.destinationSectionId)
-					: null;
-
-				return {
-					...job,
-					creatorName: creator?.staffName || "Unknown Staff",
-					creatorRole: creatorRoleSlot?.role || creator?.role,
-					creatorRoleTitle: creator?.adminUserId
-						? "Event Admin"
-						: creatorRoleSlot?.title || "",
-					claimerName: claimer?.staffName,
-					claimerRole: claimerRoleSlot?.role || claimer?.role,
-					claimerRoleTitle: claimer?.adminUserId
-						? "Event Admin"
-						: claimerRoleSlot?.title || "",
-					originSectionName: originSection?.name || "Unknown Gate",
-					destinationSectionName: destinationSection?.name,
-				};
-			}),
-		);
-
-		return enrichedJobs;
-	},
-});
-
 // Dispatch a new job from the Gate Controller
 export const dispatchJob = mutation({
 	args: {
@@ -158,8 +89,7 @@ export const dispatchJob = mutation({
 		const live = await getLiveContext(ctx, args.accessToken);
 		if (!live) throw new Error("Unauthorized or session expired.");
 
-		const { staff, event } = live;
-		const limit = event.activeJobLimit ?? 15;
+		const { staff } = live;
 
 		const activeJobs = await ctx.db
 			.query("jobs")
@@ -167,9 +97,9 @@ export const dispatchJob = mutation({
 			.filter((q) => q.neq(q.field("status"), "resolved"))
 			.collect();
 
-		if (activeJobs.length >= limit) {
+		if (activeJobs.length >= MAX_ACTIVE_JOBS) {
 			throw new Error(
-				`Active job limit reached (max ${limit}). Please wait for current jobs to be accepted and resolved.`,
+				`Active job limit reached (max ${MAX_ACTIVE_JOBS}). Please wait for current jobs to be accepted and resolved.`,
 			);
 		}
 

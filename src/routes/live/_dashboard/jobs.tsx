@@ -7,6 +7,7 @@ import { DispatchPanel } from "#/components/jobs/DispatchPanel";
 import { JobItem } from "#/components/jobs/JobItem";
 import { formatTime12h } from "#/lib/utils";
 import { api } from "../../../../convex/_generated/api";
+import { MAX_ACTIVE_JOBS } from "../../../../convex/constants";
 
 const layoutStyles = tv({
 	slots: {
@@ -32,8 +33,6 @@ function JobsTabComponent() {
 			accessToken: localStorage.getItem("asistir_staff_token") ?? "",
 		}),
 	);
-
-	const activeJobLimit = profile?.activeJobLimit ?? 15;
 
 	return (
 		<div className="h-[calc(100dvh-5.5rem)] flex flex-col bg-zinc-950 overflow-hidden">
@@ -81,11 +80,11 @@ function JobsTabComponent() {
 				<span className="text-zinc-400 font-black text-sm uppercase">
 					Active Jobs ({" "}
 					<span
-						className={`font-bold ${activeJobs.length >= activeJobLimit ? "text-red-500" : "text-green-400"}`}
+						className={`font-bold ${activeJobs.length >= MAX_ACTIVE_JOBS ? "text-red-500" : "text-green-400"}`}
 					>
 						{activeJobs.length}
 					</span>
-					<span className="font-bold">/ {activeJobLimit} Max)</span>
+					<span className="font-bold">/ {MAX_ACTIVE_JOBS} Max)</span>
 				</span>
 			</div>
 
@@ -96,7 +95,7 @@ function JobsTabComponent() {
 				))}
 			</div>
 
-			<DispatchPanel isQueueFull={activeJobs.length >= activeJobLimit} />
+			<DispatchPanel isQueueFull={activeJobs.length >= MAX_ACTIVE_JOBS} />
 		</div>
 	);
 }

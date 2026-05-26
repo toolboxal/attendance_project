@@ -9,6 +9,7 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as constants from "../constants.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as jobs from "../jobs.js";
@@ -25,6 +26,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  constants: typeof constants;
   events: typeof events;
   http: typeof http;
   jobs: typeof jobs;

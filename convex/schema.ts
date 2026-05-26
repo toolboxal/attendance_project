@@ -49,7 +49,6 @@ export default defineSchema({
 
     liveAt: v.optional(v.number()),    // When they clicked "Go Live"
     expiresAt: v.optional(v.number()), // liveAt + 24 hours (or duration)
-    activeJobLimit: v.optional(v.number()), // Configurable WIP job limit (defaults to 15)
     
   })
   .index("by_joinCode", ["joinCode"])

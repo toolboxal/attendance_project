@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/native-select";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Slider } from "@/components/ui/slider";
 
 const formStyle = tv({
 	slots: {
@@ -69,7 +68,6 @@ export type EventSubmitData = {
 	description?: string;
 	eventDate: number;
 	startTime: string;
-	activeJobLimit?: number;
 	sections: Array<{ name: string; startTime: string; endTime: string }>;
 	jobScopes: Array<JobScope>;
 };
@@ -82,7 +80,6 @@ type EventEditorProps = {
 		description?: string;
 		eventDate: number; // unix ms
 		startTime: string;
-		activeJobLimit?: number;
 		sections: Array<{ name: string; startTime: string; endTime: string }>;
 		jobScopes: Array<JobScope>;
 	};
@@ -127,7 +124,6 @@ export function EventEditor({
 				? new Date(initialData.eventDate)
 				: new Date(),
 			time: initialData?.startTime ?? "10:30:00",
-			activeJobLimit: initialData?.activeJobLimit ?? 15,
 		},
 		onSubmit: async ({ value }) => {
 			// 1. Unlock the gate PROACTIVELY before firing the network call,
@@ -142,7 +138,6 @@ export function EventEditor({
 					description: value.description || undefined,
 					eventDate: value.date.getTime(),
 					startTime: value.time,
-					activeJobLimit: value.activeJobLimit,
 					sections: sections,
 					jobScopes: jobScopes.map((job) => ({
 						id: job.id, // 🚀 Crucial: Retain IDs to enable non-destructive differential updates!
@@ -452,35 +447,6 @@ export function EventEditor({
 												invite to helpers.
 											</FieldDescription>
 										)}
-									</Field>
-								)}
-							</form.Field>
-							
-							<form.Field name="activeJobLimit">
-								{(field) => (
-									<Field className="max-w-md mt-2">
-										<div className="flex flex-row justify-between items-center mb-2">
-											<FieldLabel htmlFor="active-job-limit">
-												Max Active Jobs Running At A Time
-											</FieldLabel>
-											<span className="text-sm font-bold text-zinc-400 font-mono">
-												{field.state.value || 15} Max
-											</span>
-										</div>
-										<div className="flex items-center gap-4">
-											<Slider
-												id="active-job-limit"
-												value={[field.state.value || 15]}
-												onValueChange={(val) => field.handleChange(val[0])}
-												min={10}
-												max={30}
-												step={1}
-												className="flex-1"
-											/>
-										</div>
-										<FieldDescription>
-											Set the work-in-progress limit for unresolved jobs on the event floor.
-										</FieldDescription>
 									</Field>
 								)}
 							</form.Field>

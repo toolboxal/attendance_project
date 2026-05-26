@@ -384,7 +384,6 @@ export const getProfile = query({
 			sectionEndTime: section?.endTime || "",
 			eventDate: event?.eventDate || "",
 			eventTime: event?.startTime || "",
-			activeJobLimit: event?.activeJobLimit ?? 15,
 			isAdmin,
 			isSupervisor,
 		};
