@@ -137,8 +137,17 @@ function DashboardAuthLayout() {
 				<button
 					type="button"
 					onClick={() => {
+						const wasAdmin = profile?.isAdmin;
+						const eventId = profile?.eventId;
 						localStorage.removeItem("asistir_staff_token");
-						window.location.reload(); // Clears session instantly!
+						if (wasAdmin && eventId) {
+							navigate({
+								to: "/app/events/$eventId",
+								params: { eventId },
+							});
+							return;
+						}
+						window.location.reload();
 					}}
 					className={tab()}
 				>

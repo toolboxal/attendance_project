@@ -1,34 +1,15 @@
 import { v } from "convex/values";
-import { mutation, query, type QueryCtx, type MutationCtx } from "./_generated/server";
-import { isEventAccessClosed } from "./events";
-
-async function getAuthenticatedStaff(
-	ctx: QueryCtx | MutationCtx,
-	accessToken: string,
-) {
-	const staff = await ctx.db
-		.query("liveStaff")
-		.withIndex("by_accessToken", (q) => q.eq("accessToken", accessToken))
-		.first();
-
-	if (!staff || staff.status === "checked_out") {
-		return null;
-	}
-
-	const event = await ctx.db.get(staff.eventId);
-	if (!event || event.status !== "live" || isEventAccessClosed(event)) {
-		return null;
-	}
-
-	return staff;
-}
+import { mutation, query } from "./_generated/server";
+import { getLiveContext } from "./liveAuth";
 
 // Retrieve active (pending and accepted) jobs for a specific event
 export const getActiveJobs = query({
 	args: { accessToken: v.string() },
 	handler: async (ctx, args) => {
-		const staff = await getAuthenticatedStaff(ctx, args.accessToken);
-		if (!staff) return [];
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) return [];
+
+		const { staff } = live;
 
 		// Query unresolved jobs for this event
 		const jobs = await ctx.db
@@ -43,13 +24,23 @@ export const getActiveJobs = query({
 			jobs.map(async (job) => {
 				const creator = await ctx.db.get(job.creatorId);
 				const claimer = job.claimerId ? await ctx.db.get(job.claimerId) : null;
-				
-				const creatorRoleSlot = creator 
-					? await ctx.db.query("roleSlots").withIndex("by_assignedStaff", (q) => q.eq("assignedStaffId", creator._id)).first() 
+
+				const creatorRoleSlot = creator
+					? await ctx.db
+							.query("roleSlots")
+							.withIndex("by_assignedStaff", (q) =>
+								q.eq("assignedStaffId", creator._id),
+							)
+							.first()
 					: null;
-					
-				const claimerRoleSlot = claimer 
-					? await ctx.db.query("roleSlots").withIndex("by_assignedStaff", (q) => q.eq("assignedStaffId", claimer._id)).first() 
+
+				const claimerRoleSlot = claimer
+					? await ctx.db
+							.query("roleSlots")
+							.withIndex("by_assignedStaff", (q) =>
+								q.eq("assignedStaffId", claimer._id),
+							)
+							.first()
 					: null;
 
 				const originSection = job.originSectionId
@@ -63,10 +54,14 @@ export const getActiveJobs = query({
 					...job,
 					creatorName: creator?.staffName || "Unknown Staff",
 					creatorRole: creatorRoleSlot?.role || creator?.role,
-					creatorRoleTitle: creatorRoleSlot?.title || "",
+					creatorRoleTitle: creator?.adminUserId
+						? "Event Admin"
+						: creatorRoleSlot?.title || "",
 					claimerName: claimer?.staffName,
 					claimerRole: claimerRoleSlot?.role || claimer?.role,
-					claimerRoleTitle: claimerRoleSlot?.title || "",
+					claimerRoleTitle: claimer?.adminUserId
+						? "Event Admin"
+						: claimerRoleSlot?.title || "",
 					originSectionName: originSection?.name || "Unknown Gate",
 					destinationSectionName: destinationSection?.name,
 				};
@@ -85,8 +80,10 @@ export const getActiveJobs = query({
 export const getHistoryJobs = query({
 	args: { accessToken: v.string() },
 	handler: async (ctx, args) => {
-		const staff = await getAuthenticatedStaff(ctx, args.accessToken);
-		if (!staff) return [];
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) return [];
+
+		const { staff } = live;
 
 		// Query resolved jobs for this event, newest first, limited to 30
 		const jobs = await ctx.db
@@ -101,13 +98,23 @@ export const getHistoryJobs = query({
 			jobs.map(async (job) => {
 				const creator = await ctx.db.get(job.creatorId);
 				const claimer = job.claimerId ? await ctx.db.get(job.claimerId) : null;
-				
-				const creatorRoleSlot = creator 
-					? await ctx.db.query("roleSlots").withIndex("by_assignedStaff", (q) => q.eq("assignedStaffId", creator._id)).first() 
+
+				const creatorRoleSlot = creator
+					? await ctx.db
+							.query("roleSlots")
+							.withIndex("by_assignedStaff", (q) =>
+								q.eq("assignedStaffId", creator._id),
+							)
+							.first()
 					: null;
-					
-				const claimerRoleSlot = claimer 
-					? await ctx.db.query("roleSlots").withIndex("by_assignedStaff", (q) => q.eq("assignedStaffId", claimer._id)).first() 
+
+				const claimerRoleSlot = claimer
+					? await ctx.db
+							.query("roleSlots")
+							.withIndex("by_assignedStaff", (q) =>
+								q.eq("assignedStaffId", claimer._id),
+							)
+							.first()
 					: null;
 
 				const originSection = job.originSectionId
@@ -121,10 +128,14 @@ export const getHistoryJobs = query({
 					...job,
 					creatorName: creator?.staffName || "Unknown Staff",
 					creatorRole: creatorRoleSlot?.role || creator?.role,
-					creatorRoleTitle: creatorRoleSlot?.title || "",
+					creatorRoleTitle: creator?.adminUserId
+						? "Event Admin"
+						: creatorRoleSlot?.title || "",
 					claimerName: claimer?.staffName,
 					claimerRole: claimerRoleSlot?.role || claimer?.role,
-					claimerRoleTitle: claimerRoleSlot?.title || "",
+					claimerRoleTitle: claimer?.adminUserId
+						? "Event Admin"
+						: claimerRoleSlot?.title || "",
 					originSectionName: originSection?.name || "Unknown Gate",
 					destinationSectionName: destinationSection?.name,
 				};
@@ -144,12 +155,11 @@ export const dispatchJob = mutation({
 		description: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const staff = await getAuthenticatedStaff(ctx, args.accessToken);
-		if (!staff) throw new Error("Unauthorized or session expired.");
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) throw new Error("Unauthorized or session expired.");
 
-		// Enforce WIP cap of dynamic active (pending/accepted) jobs for this event
-		const event = await ctx.db.get(staff.eventId);
-		const limit = event?.activeJobLimit ?? 15;
+		const { staff, event } = live;
+		const limit = event.activeJobLimit ?? 15;
 
 		const activeJobs = await ctx.db
 			.query("jobs")
@@ -158,7 +168,9 @@ export const dispatchJob = mutation({
 			.collect();
 
 		if (activeJobs.length >= limit) {
-			throw new Error(`Active job limit reached (max ${limit}). Please wait for current jobs to be accepted and resolved.`);
+			throw new Error(
+				`Active job limit reached (max ${limit}). Please wait for current jobs to be accepted and resolved.`,
+			);
 		}
 
 		const jobId = await ctx.db.insert("jobs", {
@@ -183,8 +195,10 @@ export const acceptJob = mutation({
 		jobId: v.id("jobs"),
 	},
 	handler: async (ctx, args) => {
-		const staff = await getAuthenticatedStaff(ctx, args.accessToken);
-		if (!staff) throw new Error("Unauthorized or session expired.");
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) throw new Error("Unauthorized or session expired.");
+
+		const { staff } = live;
 
 		const job = await ctx.db.get(args.jobId);
 		if (!job) throw new Error("Job not found");
@@ -204,8 +218,10 @@ export const rejectJob = mutation({
 		jobId: v.id("jobs"),
 	},
 	handler: async (ctx, args) => {
-		const staff = await getAuthenticatedStaff(ctx, args.accessToken);
-		if (!staff) throw new Error("Unauthorized or session expired.");
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) throw new Error("Unauthorized or session expired.");
+
+		const { staff } = live;
 
 		const job = await ctx.db.get(args.jobId);
 		if (!job) throw new Error("Job not found");
@@ -230,8 +246,10 @@ export const resolveJob = mutation({
 		jobId: v.id("jobs"),
 	},
 	handler: async (ctx, args) => {
-		const staff = await getAuthenticatedStaff(ctx, args.accessToken);
-		if (!staff) throw new Error("Unauthorized or session expired.");
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) throw new Error("Unauthorized or session expired.");
+
+		const { staff } = live;
 
 		const job = await ctx.db.get(args.jobId);
 		if (!job) throw new Error("Job not found");
@@ -247,20 +265,20 @@ export const resolveJob = mutation({
 	},
 });
 
-
 export const cancelJob = mutation({
 	args: {
 		accessToken: v.string(),
 		jobId: v.id("jobs"),
 	},
 	handler: async (ctx, args) => {
-		const staff = await getAuthenticatedStaff(ctx, args.accessToken);
-		if (!staff) throw new Error("Unauthorized or session expired.");
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) throw new Error("Unauthorized or session expired.");
+
+		const { staff } = live;
 
 		const job = await ctx.db.get(args.jobId);
 		if (!job) throw new Error("Job not found");
 
-		// Ensure only the active claimer can resolve the job
 		if (job.creatorId !== staff._id) {
 			throw new Error("You are not authorized to cancel this job.");
 		}

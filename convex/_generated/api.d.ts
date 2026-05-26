@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as jobs from "../jobs.js";
+import type * as liveAuth from "../liveAuth.js";
 import type * as liveStaff from "../liveStaff.js";
 import type * as payments from "../payments.js";
 import type * as test from "../test.js";
@@ -27,6 +28,7 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   http: typeof http;
   jobs: typeof jobs;
+  liveAuth: typeof liveAuth;
   liveStaff: typeof liveStaff;
   payments: typeof payments;
   test: typeof test;

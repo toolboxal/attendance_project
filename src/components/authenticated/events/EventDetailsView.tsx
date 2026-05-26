@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import { format } from "date-fns";
 import { CircleAlert, Timer } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
 import {
 	Dialog,
@@ -68,8 +69,10 @@ export function EventDetailsView({
 	const updateStatus = useMutation(api.events.updateStatus);
 	const duplicateEvent = useMutation(api.events.duplicate);
 	const deleteEvent = useMutation(api.events.deleteEvent);
+	const enterLiveFloor = useMutation(api.liveStaff.enterLiveFloorAsAdmin);
 	const [isConfirmLiveOpen, setIsConfirmLiveOpen] = useState(false);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+	const [isEnteringLiveFloor, setIsEnteringLiveFloor] = useState(false);
 
 	const { data: details } = useSuspenseQuery(
 		convexQuery(api.events.getDetails, { eventId: eventId as any }),
@@ -78,6 +81,23 @@ export function EventDetailsView({
 	if (!details) return null;
 
 	const { event, sections, slots, liveStaff } = details;
+
+	const handleEnterLiveFloor = async () => {
+		try {
+			setIsEnteringLiveFloor(true);
+			const { accessToken } = await enterLiveFloor({
+				eventId: eventId as Id<"events">,
+			});
+			localStorage.setItem("asistir_staff_token", accessToken);
+			navigate({ to: "/live/jobs" });
+		} catch (err) {
+			toast.error(
+				err instanceof Error ? err.message : "Failed to enter live floor",
+			);
+		} finally {
+			setIsEnteringLiveFloor(false);
+		}
+	};
 
 	const handleToggleStatus = async () => {
 		const newStatus = event.status === "draft" ? "live" : "archived";
@@ -125,6 +145,16 @@ export function EventDetailsView({
 		<div className="flex flex-col gap-8 px-2 py-4 md:p-6">
 			{/* header */}
 			<div className="flex flex-row gap-1.5 justify-end items-center">
+				{event.status === "live" && (
+					<Button
+						onClick={handleEnterLiveFloor}
+						disabled={isEnteringLiveFloor}
+						variant="default"
+						size="lg"
+					>
+						{isEnteringLiveFloor ? "Opening..." : "Enter Live Event"}
+					</Button>
+				)}
 				{event.status !== "archived" && (
 					<Button
 						onClick={handleStatusButtonClick}

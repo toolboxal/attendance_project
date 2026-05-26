@@ -307,11 +307,13 @@ export const getDetails = query({
       .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
       .collect();
 
-    // 4. Fetch All Assigned Ephemeral liveStaff Profiles
-    const liveStaff = await ctx.db
-      .query("liveStaff")
-      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-      .collect();
+    // 4. Fetch assigned ephemeral liveStaff (exclude admin floor sessions)
+    const liveStaff = (
+      await ctx.db
+        .query("liveStaff")
+        .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+        .collect()
+    ).filter((s) => s.adminUserId == null);
 
     return {
       event,

@@ -107,9 +107,11 @@ export default defineSchema({
     accessToken: v.string(),         // The secret token stored in localStorage
     lastActive: v.number(),
     status: v.optional(v.union(v.literal("unclaimed"), v.literal("active"), v.literal("checked_out"))), // Support active shift rotation
+    adminUserId: v.optional(v.id("users")), // Admin floor session (not tied to a role slot)
   })
   .index("by_event", ["eventId"])
-  .index("by_accessToken", ["accessToken"]),
+  .index("by_accessToken", ["accessToken"])
+  .index("by_event_admin", ["eventId", "adminUserId"]),
 
   // Job Queues
   jobs: defineTable({

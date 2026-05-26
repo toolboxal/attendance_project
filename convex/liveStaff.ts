@@ -3,6 +3,13 @@ import { mutation, query } from "./_generated/server";
 import { getAuthenticatedUser, isEventAccessClosed } from "./events";
 import { ConvexError } from "convex/values";
 
+function generateAccessToken() {
+	return (
+		Math.random().toString(36).substring(2, 15) +
+		Math.random().toString(36).substring(2, 15)
+	);
+}
+
 /**
  * Create or update a staff assignment and generate a secure invite token.
  * Called by Admin from the dashboard to pre-fill a name and get a shareable link.
@@ -34,9 +41,7 @@ export const createStaffInvitation = mutation({
 		// 2. CASE A: This slot is brand new/unclaimed or the referenced record was deleted. Create the record!
 		if (!existingStaff) {
 			// Generate secure internal credential for persistent session storage later
-			const secureAccessToken =
-				Math.random().toString(36).substring(2, 15) +
-				Math.random().toString(36).substring(2, 15);
+			const secureAccessToken = generateAccessToken();
 
 			liveStaffId = await ctx.db.insert("liveStaff", {
 				eventId: slot.eventId,
@@ -259,6 +264,78 @@ export const revokeStaffAccess = mutation({
 });
 
 /**
+ * Issues (or reuses) a live floor session for the event admin.
+ * Idempotent: same accessToken across laptop/phone re-entry.
+ */
+export const enterLiveFloorAsAdmin = mutation({
+	args: { eventId: v.id("events") },
+	handler: async (ctx, args) => {
+		const user = await getAuthenticatedUser(ctx);
+
+		const event = await ctx.db.get(args.eventId);
+		if (!event) {
+			throw new ConvexError({
+				title: "Event Not Found",
+				reason: "This event does not exist.",
+				actionNeeded: "Please refresh and try again.",
+				errorType: 404,
+			});
+		}
+
+		if (event.adminId !== user._id) {
+			throw new ConvexError({
+				title: "Unauthorized",
+				reason: "You do not have permission to enter this event's live floor.",
+				actionNeeded: "Please sign in with the account that owns this event.",
+				errorType: 403,
+			});
+		}
+
+		if (event.status !== "live" || isEventAccessClosed(event)) {
+			const concluded = isEventAccessClosed(event);
+			throw new ConvexError({
+				title: concluded ? "Event Concluded" : "Event Not Live",
+				reason: concluded
+					? "This event has finished and the live floor is closed."
+					: "The event must be live before you can enter the floor.",
+				actionNeeded: concluded
+					? "Re-open or duplicate the event if you need access again."
+					: 'Use "Go Live" from the event dashboard first.',
+				errorType: concluded ? 410 : 403,
+			});
+		}
+
+		const existing = await ctx.db
+			.query("liveStaff")
+			.withIndex("by_event_admin", (q) =>
+				q.eq("eventId", args.eventId).eq("adminUserId", user._id),
+			)
+			.first();
+
+		if (existing) {
+			await ctx.db.patch(existing._id, {
+				status: "active",
+				lastActive: Date.now(),
+			});
+			return { accessToken: existing.accessToken };
+		}
+
+		const accessToken = generateAccessToken();
+		await ctx.db.insert("liveStaff", {
+			eventId: args.eventId,
+			staffName: user.name ?? "Event Admin",
+			role: "supervisor",
+			adminUserId: user._id,
+			accessToken,
+			lastActive: Date.now(),
+			status: "active",
+		});
+
+		return { accessToken };
+	},
+});
+
+/**
  * Resolves the active staff member's profile using their secure access token.
  * This powers the dashboard's context (e.g. knowing who they are and where they are stationed).
  */
@@ -279,26 +356,37 @@ export const getProfile = query({
 		const event = await ctx.db.get(staff.eventId);
 		if (!event || event.status !== "live" || isEventAccessClosed(event)) return null;
 
+		const isAdmin = staff.adminUserId != null;
+		const isSupervisor = staff.role === "supervisor" || isAdmin;
+
 		const section = staff.sectionId ? await ctx.db.get(staff.sectionId) : null;
-		const roleSlot = await ctx.db
-			.query("roleSlots")
-			.withIndex("by_assignedStaff", (q) => q.eq("assignedStaffId", staff._id))
-			.first();
+		const roleSlot = isAdmin
+			? null
+			: await ctx.db
+					.query("roleSlots")
+					.withIndex("by_assignedStaff", (q) =>
+						q.eq("assignedStaffId", staff._id),
+					)
+					.first();
 
 		return {
 			_id: staff._id,
 			eventId: staff.eventId,
 			name: staff.staffName,
-			role: roleSlot?.role,
-			roleTitle: roleSlot?.title || "",
+			role: isAdmin ? staff.role : roleSlot?.role ?? staff.role,
+			roleTitle: isAdmin ? "Event Admin" : roleSlot?.title || "",
 			status: staff.status,
 			sectionId: staff.sectionId,
-			sectionName: section?.name || "Floating",
+			sectionName: isAdmin
+				? "Event Control"
+				: section?.name || "Floating",
 			sectionStartTime: section?.startTime || "",
 			sectionEndTime: section?.endTime || "",
 			eventDate: event?.eventDate || "",
 			eventTime: event?.startTime || "",
 			activeJobLimit: event?.activeJobLimit ?? 15,
+			isAdmin,
+			isSupervisor,
 		};
 	},
 });
