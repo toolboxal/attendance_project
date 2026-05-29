@@ -126,6 +126,29 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_event", ["eventId"]),
 
+  // Live incident alerts (radio-style queue)
+  alerts: defineTable({
+    eventId: v.id("events"),
+    creatorId: v.id("liveStaff"),
+    sectionId: v.optional(v.id("eventSections")),
+    alertType: v.string(),
+    body: v.string(),
+    photoId: v.optional(v.id("_storage")),
+    isPinned: v.boolean(),
+    pinnedAt: v.optional(v.number()),
+    pinnedById: v.optional(v.id("liveStaff")),
+    status: v.union(v.literal("open"), v.literal("resolved")),
+    resolvedAt: v.optional(v.number()),
+    resolvedById: v.optional(v.id("liveStaff")),
+  }).index("by_event", ["eventId"]),
+
+  alertUpdates: defineTable({
+    alertId: v.id("alerts"),
+    eventId: v.id("events"),
+    authorId: v.id("liveStaff"),
+    content: v.string(),
+  }).index("by_alert", ["alertId"]),
+
   // Discord-like Messages
   messages: defineTable({
     eventId: v.id("events"),
