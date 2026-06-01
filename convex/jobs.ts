@@ -81,9 +81,13 @@ export const getActiveJobs = query({
 			}),
 		);
 
-		// Sort jobs so that pending jobs always appear on top, followed by accepted.
-		const statusOrder: Record<string, number> = { pending: 1, accepted: 2 };
-		enrichedJobs.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+		// Accepted first, then pending; newest first within each group.
+		const statusOrder: Record<string, number> = { accepted: 1, pending: 2 };
+		enrichedJobs.sort((a, b) => {
+			const byStatus = statusOrder[a.status] - statusOrder[b.status];
+			if (byStatus !== 0) return byStatus;
+			return b.createdAt - a.createdAt;
+		});
 
 		return enrichedJobs;
 	},

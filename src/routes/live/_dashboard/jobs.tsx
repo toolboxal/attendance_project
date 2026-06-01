@@ -33,47 +33,82 @@ function JobsTabComponent() {
 			accessToken: localStorage.getItem("asistir_staff_token") ?? "",
 		}),
 	);
+	const relevantJobs = activeJobs.filter(
+		(job) =>
+			(job.creatorId === profile?._id || job.claimerId === profile?._id) &&
+			job.status === "accepted",
+	);
 
 	return (
 		<div className="h-[calc(100dvh-5.5rem)] flex flex-col bg-zinc-950 overflow-hidden">
-			{/* Header Area */}
-			<div className="flex flex-col gap-4">
-				<div className="flex flex-row items-start justify-between">
-					<div className="flex flex-col">
-						<p className="text-xs font-extrabold text-zinc-100 tracking-tight">
-							{profile?.sectionName.toUpperCase()}
-						</p>
-						<p className="text-xs font-extrabold text-zinc-300 tracking-tight">
-							{profile?.roleTitle}
-						</p>
-						<div className="flex flex-row gap-1 items-center">
-							<p className="text-xs font-extrabold text-yellow-400 tracking-tight italic">
-								{profile?.name}
+			{relevantJobs.length > 0 ? (
+				<div className="flex flex-col gap-1.5 rounded-md p-1">
+					{relevantJobs.map((relevantJob) => {
+						const isCreator = relevantJob.creatorId === profile?._id;
+						const message = isCreator
+							? `${relevantJob.claimerName ?? "Someone"} has accepted your job`
+							: `You have accepted ${relevantJob.creatorName}'s job`;
+
+						return (
+							<div
+								className="flex flex-col rounded-md bg-zinc-900 px-2.5 py-1 shadow-sm shadow-emerald-700"
+								key={relevantJob._id}
+							>
+								<p className="text-xs font-semibold text-emerald-50">
+									{message}
+								</p>
+								<p className="text-[11px] text-emerald-200">
+									{relevantJob.originSectionName}
+									{relevantJob.personCount >= 1
+										? ` · ${relevantJob.personCount} pax`
+										: ""}
+									{relevantJob.requestType
+										? ` · ${relevantJob.requestType}`
+										: ""}
+								</p>
+							</div>
+						);
+					})}
+				</div>
+			) : (
+				<div className="flex flex-col gap-4">
+					<div className="flex flex-row items-start justify-between">
+						<div className="flex flex-col">
+							<p className="text-xs font-extrabold text-zinc-100 tracking-tight">
+								{profile?.sectionName?.toUpperCase() ?? "EVENT"}
 							</p>
-							<p className="text-xs font-extrabold text-yellow-400 tracking-tight italic">
-								{profile?.role}
+							<p className="text-xs font-extrabold text-zinc-300 tracking-tight">
+								{profile?.roleTitle}
 							</p>
+							<div className="flex flex-row items-center gap-1">
+								<p className="text-xs font-extrabold text-yellow-400 tracking-tight italic">
+									{profile?.name}
+								</p>
+								<p className="text-xs font-extrabold text-yellow-400 tracking-tight italic">
+									{profile?.role}
+								</p>
+							</div>
+						</div>
+						<div className="flex flex-col">
+							<span className="self-end text-xs font-semibold text-zinc-200">
+								{profile?.eventDate
+									? format(new Date(profile.eventDate), "PPPP")
+									: "Date TBD"}
+							</span>
+							<span className="self-end font-mono text-xs text-yellow-200">
+								{profile?.sectionStartTime
+									? formatTime12h(profile.sectionStartTime)
+									: profile?.eventTime
+										? formatTime12h(profile.eventTime)
+										: "Time TBD"}
+								{profile?.sectionEndTime
+									? ` - ${formatTime12h(profile.sectionEndTime)}`
+									: ""}
+							</span>
 						</div>
 					</div>
-					<div className="flex flex-col">
-						<span className="text-zinc-200 text-xs font-semibold self-end">
-							{profile?.eventDate
-								? format(new Date(profile.eventDate), "PPPP")
-								: "Date TBD"}
-						</span>
-						<span className="text-yellow-200 text-xs font-mono self-end">
-							{profile?.sectionStartTime
-								? formatTime12h(profile.sectionStartTime)
-								: profile?.eventTime
-									? formatTime12h(profile.eventTime)
-									: "Time TBD"}
-							{profile?.sectionEndTime
-								? ` - ${formatTime12h(profile.sectionEndTime)}`
-								: ""}
-						</span>
-					</div>
 				</div>
-			</div>
+			)}
 
 			{/* Queue Header Counter */}
 			<div className="flex flex-row items-center justify-between pb-2 border-b border-zinc-800 mt-2">

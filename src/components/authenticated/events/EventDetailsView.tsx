@@ -205,6 +205,7 @@ export function EventDetailsView({
 						disabled={isEnteringLiveFloor}
 						variant="default"
 						size="lg"
+						className="animate-pulse"
 					>
 						{isEnteringLiveFloor ? "Opening..." : "Enter Live Event"}
 					</Button>
@@ -243,7 +244,7 @@ export function EventDetailsView({
 			<div className="flex flex-col gap-2">
 				<div className="flex flex-row items-center gap-1 mb-2">
 					<span
-						className={`w-fit flex flex-row items-center justify-center p-2 rounded-lg text-xs font-mono border uppercase tracking-wider font-semibold ${event.status === "live" ? "bg-green-500 text-zinc-950 animate-pulse" : event.status === "draft" ? "bg-yellow-400 text-zinc-950" : "bg-red-400 text-zinc-950"}`}
+						className={`w-fit flex flex-row items-center justify-center p-2 rounded-lg text-xs font-mono border uppercase tracking-wider font-semibold ${event.status === "live" ? "bg-green-500 text-zinc-950" : event.status === "draft" ? "bg-yellow-400 text-zinc-950" : "bg-red-400 text-zinc-950"}`}
 					>
 						{event.status}
 					</span>

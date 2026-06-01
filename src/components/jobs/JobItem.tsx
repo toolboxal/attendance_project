@@ -19,7 +19,7 @@ type EnrichedJob = Doc<"jobs"> & {
 
 const jobStyles = tv({
 	slots: {
-		card: "bg-zinc-700 rounded-md overflow-hidden text-zinc-100 ",
+		card: "bg-zinc-700 rounded-md overflow-hidden text-zinc-100 shadow-sm shadow-zinc-400",
 		header:
 			" py-0.5 px-2  flex flex-row items-center justify-between font-normal ",
 		middleSection:
@@ -31,11 +31,10 @@ const jobStyles = tv({
 		status: {
 			pending: "",
 			accepted: {
-				bottomSection: "bg-green-800 text-zinc-50 rounded-b-md px-2 py-1",
+				card: "bg-emerald-700/40 shadow-sm shadow-emerald-500",
 			},
 			resolved: {
 				card: "bg-zinc-950 opacity-40",
-				// bottomSection: "bg-blue-800 text-zinc-50 rounded-b-md px-2 py-1",
 			},
 		},
 	},
@@ -142,7 +141,18 @@ export function JobItem({
 						<span className="text-[11px] font-bold text-green-400 uppercase">
 							{job.status} BY
 						</span>
-						<MoveRight size={24} strokeWidth={1.5} className="text-green-400" />
+
+						{job.claimerId === currentStaffId ? (
+							<span className="text-[11px] font-bold text-green-400 uppercase">
+								ME
+							</span>
+						) : (
+							<MoveRight
+								size={22}
+								strokeWidth={1.5}
+								className="text-green-400"
+							/>
+						)}
 					</div>
 				)}
 				{job.status === "accepted" && (
