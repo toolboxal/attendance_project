@@ -327,7 +327,7 @@ export function AlertItem({
 
 					<form
 						noValidate
-						className="flex items-end gap-1.5 pt-1"
+						className="flex items-start gap-1.5 pt-1"
 						onSubmit={(e) => {
 							e.preventDefault();
 							e.stopPropagation();

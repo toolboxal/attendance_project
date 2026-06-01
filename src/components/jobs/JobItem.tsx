@@ -15,6 +15,8 @@ type EnrichedJob = Doc<"jobs"> & {
 	claimerRoleTitle: string;
 	originSectionName: string;
 	destinationSectionName: string | undefined;
+	creatorMissing: boolean;
+	claimerMissing: boolean;
 };
 
 const jobStyles = tv({
@@ -43,9 +45,11 @@ const jobStyles = tv({
 export function JobItem({
 	job,
 	currentStaffId,
+	isSupervisor = false,
 }: {
 	job: EnrichedJob;
 	currentStaffId?: string;
+	isSupervisor?: boolean;
 }) {
 	const { card } = jobStyles({
 		status: job.status,
@@ -99,8 +103,18 @@ export function JobItem({
 			});
 			toast.success("Job cancelled!");
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : "Failed to resolve job");
+			toast.error(e instanceof Error ? e.message : "Failed to cancel job");
 		}
+	};
+
+	const isCreator = job.creatorId === currentStaffId;
+	const showCreatorCancel = job.status === "pending" && isCreator;
+	const showSupervisorCancel = isSupervisor;
+
+	const staffNameClass = (isSelf: boolean, isRevoked: boolean) => {
+		if (isSelf) return "text-yellow-400 font-semibold";
+		if (isRevoked) return "text-red-400 font-semibold";
+		return "text-zinc-300";
 	};
 
 	return (
@@ -115,12 +129,12 @@ export function JobItem({
 					</span>
 					<div className="flex flex-row items-center gap-1 ">
 						<span
-							className={`font-medium text-[11px] italic ${job.creatorId === currentStaffId ? "text-yellow-400 font-semibold " : "text-zinc-300"}`}
+							className={`font-medium text-[11px] italic ${staffNameClass(isCreator, job.creatorMissing)}`}
 						>
 							{job.creatorName}
 						</span>
 						<span
-							className={`font-medium text-[11px] italic relative ${job.creatorId === currentStaffId ? "text-yellow-400 font-semibold " : "text-zinc-300"}`}
+							className={`relative font-medium text-[11px] italic ${staffNameClass(isCreator, job.creatorMissing)}`}
 						>
 							{job.creatorRole}
 						</span>
@@ -168,12 +182,12 @@ export function JobItem({
 								<span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />
 							)}
 							<span
-								className={`font-medium text-[11px] italic ${job.claimerId === currentStaffId ? "text-yellow-400 font-semibold" : "text-zinc-300"}`}
+								className={`font-medium text-[11px] italic ${staffNameClass(job.claimerId === currentStaffId, job.claimerMissing)}`}
 							>
 								{job.claimerName}
 							</span>
 							<span
-								className={`font-medium text-[11px] italic relative ${job.claimerId === currentStaffId ? "text-yellow-400 font-semibold" : "text-zinc-300"}`}
+								className={`relative font-medium text-[11px] italic ${staffNameClass(job.claimerId === currentStaffId, job.claimerMissing)}`}
 							>
 								{job.claimerRole}
 							</span>
@@ -189,47 +203,53 @@ export function JobItem({
 				<span className="text-[12px] italic ">{job.description}</span>
 			</div>
 			<div className="flex flex-row items-center justify-between px-2 py-0.5">
-				{job.status === "pending" && job.creatorId !== currentStaffId && (
-					<button
-						className="p-1 px-2 bg-zinc-200 text-zinc-950 text-xs font-medium rounded-sm ml-auto"
-						type="button"
-						onClick={handleAcceptJob}
-					>
-						Accept Job
-					</button>
-				)}
-				{job.status === "pending" && job.creatorId === currentStaffId && (
-					<div className="flex flex-row items-center gap-1.5 ml-auto">
+				<div className="ml-auto flex flex-row items-center gap-1.5">
+					{(showCreatorCancel ||
+						(showSupervisorCancel && job.status !== "accepted")) && (
 						<button
-							className="p-1 px-2 bg-red-300 text-zinc-950 text-xs font-medium rounded-sm ml-auto"
+							className="rounded-sm bg-red-300 p-1 px-2 text-xs font-medium text-zinc-950"
 							type="button"
 							onClick={handleCancelJob}
 						>
 							Cancel
 						</button>
-					</div>
-				)}
-				{/* Both creator and accepter can reject and resolve */}
-				{job.status === "accepted" &&
-					(job.claimerId === currentStaffId ||
-						job.creatorId === currentStaffId) && (
-						<div className="flex flex-row items-center gap-1.5 ml-auto">
-							<button
-								className="p-1 px-2 bg-zinc-200 text-zinc-950 text-xs font-medium rounded-sm ml-auto"
-								type="button"
-								onClick={handleRejectJob}
-							>
-								Reject
-							</button>
-							<button
-								className="p-1 px-2 bg-zinc-200 text-zinc-950 text-xs font-medium rounded-sm ml-auto"
-								type="button"
-								onClick={handleResolveJob}
-							>
-								Resolve
-							</button>
-						</div>
 					)}
+					{job.status === "pending" && !isCreator && !job.creatorMissing && (
+						<button
+							className="rounded-sm bg-zinc-200 p-1 px-2 text-xs font-medium text-zinc-950"
+							type="button"
+							onClick={handleAcceptJob}
+						>
+							Accept Job
+						</button>
+					)}
+					{job.status === "pending" &&
+						job.creatorMissing &&
+						!showSupervisorCancel && (
+							<p className="text-[11px] italic text-red-400/90">
+								Waiting for supervisor or admin to clear
+							</p>
+						)}
+					{job.status === "accepted" &&
+						(job.claimerId === currentStaffId || isCreator) && (
+							<>
+								<button
+									className="rounded-sm bg-zinc-200 p-1 px-2 text-xs font-medium text-zinc-950"
+									type="button"
+									onClick={handleRejectJob}
+								>
+									Reject
+								</button>
+								<button
+									className="rounded-sm bg-zinc-200 p-1 px-2 text-xs font-medium text-zinc-950"
+									type="button"
+									onClick={handleResolveJob}
+								>
+									Resolve
+								</button>
+							</>
+						)}
+				</div>
 			</div>
 		</div>
 	);

@@ -126,7 +126,12 @@ function JobsTabComponent() {
 			{/* Queue Stream */}
 			<div className={container()}>
 				{activeJobs.map((job) => (
-					<JobItem key={job._id} job={job} currentStaffId={profile?._id} />
+					<JobItem
+						key={job._id}
+						job={job}
+						currentStaffId={profile?._id}
+						isSupervisor={profile?.isSupervisor}
+					/>
 				))}
 			</div>
 

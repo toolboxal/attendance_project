@@ -65,12 +65,16 @@ export const getActiveJobs = query({
 
 				return {
 					...job,
-					creatorName: creator?.staffName || "Unknown Staff",
+					creatorMissing: creator === null,
+					creatorName: creator?.staffName ?? "Revoked staff",
 					creatorRole: creatorRoleSlot?.role || creator?.role,
 					creatorRoleTitle: creator?.adminUserId
 						? "Event Admin"
 						: creatorRoleSlot?.title || "",
-					claimerName: claimer?.staffName,
+					claimerMissing: job.claimerId != null && claimer === null,
+					claimerName:
+						claimer?.staffName ??
+						(job.claimerId ? "Revoked staff" : undefined),
 					claimerRole: claimerRoleSlot?.role || claimer?.role,
 					claimerRoleTitle: claimer?.adminUserId
 						? "Event Admin"
@@ -149,6 +153,20 @@ export const acceptJob = mutation({
 		const job = await ctx.db.get(args.jobId);
 		if (!job) throw new Error("Job not found");
 
+		if (job.eventId !== staff.eventId) {
+			throw new Error("Job not found");
+		}
+		if (job.status !== "pending") {
+			throw new Error("Only pending jobs can be accepted.");
+		}
+
+		const creator = await ctx.db.get(job.creatorId);
+		if (!creator) {
+			throw new Error(
+				"This job cannot be accepted. A supervisor must cancel it.",
+			);
+		}
+
 		await ctx.db.patch(args.jobId, {
 			status: "accepted",
 			claimerId: staff._id,
@@ -225,10 +243,16 @@ export const cancelJob = mutation({
 		const job = await ctx.db.get(args.jobId);
 		if (!job) throw new Error("Job not found");
 
-		if (job.creatorId !== staff._id) {
-			throw new Error("You are not authorized to cancel this job.");
+		if (job.eventId !== staff.eventId) {
+			throw new Error("Job not found");
 		}
 
-		await ctx.db.delete(args.jobId);
+		const isCreator = job.creatorId === staff._id;
+		if (isCreator || live.isSupervisor) {
+			await ctx.db.delete(args.jobId);
+			return;
+		}
+
+		throw new Error("You are not authorized to cancel this job.");
 	},
 });
