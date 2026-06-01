@@ -15,7 +15,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "#/components/ui/dialog";
-import { formatTime12h } from "#/lib/utils";
+import {
+	cn,
+	eventDateFromMs,
+	formatTime12h,
+	isEventDateOnOrAfterToday,
+} from "#/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { AssignRoleDialog } from "./AssignRoleDialog";
@@ -81,6 +86,7 @@ export function EventDetailsView({
 	if (!details) return null;
 
 	const { event, sections, slots, liveStaff } = details;
+	const canGoLive = isEventDateOnOrAfterToday(event.eventDate);
 
 	const handleEnterLiveFloor = async () => {
 		try {
@@ -107,7 +113,9 @@ export function EventDetailsView({
 				eventId: eventId as Id<"events">,
 			});
 		} catch (err) {
-			console.error("Failed to update event status:", err);
+			const message =
+				err instanceof Error ? err.message : "Failed to update event status";
+			toast.error(message);
 		}
 	};
 
@@ -117,6 +125,13 @@ export function EventDetailsView({
 		} else {
 			handleToggleStatus();
 		}
+	};
+
+	const goToEditEvent = () => {
+		navigate({
+			to: "/app/events/$eventId",
+			params: { eventId: eventId as string },
+		});
 	};
 
 	const handleDuplicate = async () => {
@@ -141,10 +156,49 @@ export function EventDetailsView({
 		}
 	};
 
+	const needsDateUpdate = event.status === "draft" && !canGoLive;
+
 	return (
 		<div className="flex flex-col gap-8 px-2 py-4 md:p-6">
+			{needsDateUpdate && (
+				<div
+					id="past-date-notice"
+					className="flex flex-col gap-3 rounded-xl shadow shadow-zinc-800 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+				>
+					<div className="flex gap-3">
+						<CircleAlert
+							strokeWidth={1.5}
+							size={18}
+							className="shrink-0 text-red-400"
+							aria-hidden
+						/>
+						<div>
+							<p className="text-sm font-semibold text-red-300">
+								This event&apos;s date has already passed
+							</p>
+							<p className="mt-1 text-xs text-zinc-100">
+								Update the date to today or later before you can go live.
+								<strong className="font-medium text-zinc-400">
+									{" "}
+									Go Live stays unavailable until then.
+								</strong>
+							</p>
+						</div>
+					</div>
+					<Button
+						type="button"
+						variant="link"
+						size="sm"
+						className="shrink-0  text-zinc-100 hover:bg-zinc-950/70"
+						onClick={goToEditEvent}
+					>
+						Update date
+					</Button>
+				</div>
+			)}
+
 			{/* header */}
-			<div className="flex flex-row gap-1.5 justify-end items-center">
+			<div className="flex flex-row flex-wrap gap-1.5 justify-end items-center">
 				{event.status === "live" && (
 					<Button
 						onClick={handleEnterLiveFloor}
@@ -158,23 +212,16 @@ export function EventDetailsView({
 				{event.status !== "archived" && (
 					<Button
 						onClick={handleStatusButtonClick}
+						disabled={needsDateUpdate}
 						variant={event.status === "draft" ? "default" : "destructive"}
 						size={"lg"}
+						aria-describedby={needsDateUpdate ? "past-date-notice" : undefined}
 					>
 						{event.status === "draft" ? "Go Live" : "End Event"}
 					</Button>
 				)}
 				{event.status !== "archived" && (
-					<Button
-						onClick={() => {
-							navigate({
-								to: "/app/events/$eventId",
-								params: { eventId: eventId as string },
-							});
-						}}
-						variant={"secondary"}
-						size={"lg"}
-					>
+					<Button onClick={goToEditEvent} variant={"secondary"} size={"lg"}>
 						Edit Event
 					</Button>
 				)}
@@ -205,13 +252,18 @@ export function EventDetailsView({
 					)}
 				</div>
 				<h2 className="text-2xl font-bold text-zinc-100">{event.title}</h2>
-				<div className="flex flex-col">
-					<p
-						suppressHydrationWarning
-						className="text-zinc-100 font-mono text-xs"
-					>
-						{format(new Date(event.eventDate), "PPPP")}
-					</p>
+				<div className="flex flex-col gap-1">
+					<div className="flex flex-wrap items-center gap-2">
+						<p
+							suppressHydrationWarning
+							className={cn(
+								"font-mono text-xs",
+								needsDateUpdate ? "text-red-400" : "text-zinc-100",
+							)}
+						>
+							{format(eventDateFromMs(event.eventDate), "PPPP")}
+						</p>
+					</div>
 					<p
 						suppressHydrationWarning
 						className="text-zinc-400 font-mono italic text-xs"

@@ -4,6 +4,7 @@ import { Camera, Send, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
+import { CollapsibleBottomPanel } from "#/components/live/CollapsibleBottomPanel";
 import { Field, FieldContent, FieldError } from "#/components/ui/field";
 import { Textarea } from "#/components/ui/textarea";
 import { getStaffAccessToken } from "#/lib/staffToken";
@@ -87,7 +88,7 @@ export function AlertPanel({ isQueueFull = false }: { isQueueFull?: boolean }) {
 	};
 
 	return (
-		<div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-md bg-zinc-800 backdrop-blur-2xl rounded-2xl p-3 shadow-2xl z-40 flex flex-col gap-3 border-[0.5px] border-zinc-300">
+		<CollapsibleBottomPanel panelLabel="alert composer">
 			<div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
 				{ALERT_TYPES.map((tag) => (
 					<button
@@ -125,7 +126,7 @@ export function AlertPanel({ isQueueFull = false }: { isQueueFull?: boolean }) {
 
 			<form
 				noValidate
-				className="flex items-end gap-2"
+				className="flex items-start gap-2"
 				onSubmit={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
@@ -221,6 +222,6 @@ export function AlertPanel({ isQueueFull = false }: { isQueueFull?: boolean }) {
 					<Send className="size-4" />
 				</button>
 			</form>
-		</div>
+		</CollapsibleBottomPanel>
 	);
 }

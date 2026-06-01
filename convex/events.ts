@@ -52,6 +52,24 @@ export function isEventAccessClosed(event: Pick<Doc<"events">, "status" | "expir
   return event.status === "archived" || isLiveEventExpired(event);
 }
 
+function startOfUtcDayMs(timestampMs: number): number {
+  const d = new Date(timestampMs);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+function assertEventDateNotInPast(eventDate: number) {
+  const eventDay = startOfUtcDayMs(eventDate);
+  const today = startOfUtcDayMs(Date.now());
+  if (eventDay < today) {
+    throw new ConvexError({
+      title: "Invalid Event Date",
+      reason: "The event date cannot be in the past.",
+      actionNeeded: "Choose today or a future date before saving.",
+      errorType: 400,
+    });
+  }
+}
+
 async function archiveEventIfExpired(ctx: MutationCtx, eventId: Id<"events">) {
   const event = await ctx.db.get(eventId);
   if (!event || !isLiveEventExpired(event)) return false;
@@ -123,6 +141,8 @@ export const create = mutation({
         errorType: 403,
       });
     }
+
+    assertEventDateNotInPast(args.eventDate);
 
     // 2. Generate unique 6-character alphanumeric invite code
     let joinCode = "";
@@ -362,6 +382,8 @@ export const update = mutation({
       throw new Error("Unauthorized to modify this event");
     }
 
+    assertEventDateNotInPast(args.eventDate);
+
     // 1. Update the core event container
     await ctx.db.patch(args.eventId, {
       title: args.title,
@@ -572,6 +594,8 @@ export const updateStatus = mutation({
     const updateFields: any = { status: args.status };
 
     if (args.status === "live") {
+      assertEventDateNotInPast(event.eventDate);
+
       // 1. Concurrent Live Guard: Ensure the admin doesn't have another active live event
       const activeLiveEvent = await ctx.db
         .query("events")

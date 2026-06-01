@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useBlocker } from "@tanstack/react-router";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import { ChevronDownIcon, MinusIcon, PlusIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { tv } from "tailwind-variants";
@@ -35,6 +35,18 @@ import {
 } from "@/components/ui/native-select";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+	eventDateFromMs,
+	isEventDateOnOrAfterToday,
+	toEventDateMs,
+} from "#/lib/utils";
+
+const eventDateValidator = z
+	.date()
+	.refine(
+		isEventDateOnOrAfterToday,
+		"Event date must be today or in the future.",
+	);
 
 const formStyle = tv({
 	slots: {
@@ -95,6 +107,7 @@ export function EventEditor({
 	const isNavigationAllowedRef = useRef(false);
 
 	const [open, setOpen] = useState(false);
+	const minEventDate = startOfDay(new Date());
 	const [sections, setSections] = useState<
 		Array<{ name: string; startTime: string; endTime: string }>
 	>(initialData?.sections ?? []);
@@ -121,7 +134,7 @@ export function EventEditor({
 			location: initialData?.location ?? "",
 			description: initialData?.description ?? "",
 			date: initialData?.eventDate
-				? new Date(initialData.eventDate)
+				? eventDateFromMs(initialData.eventDate)
 				: new Date(),
 			time: initialData?.startTime ?? "10:30:00",
 		},
@@ -136,7 +149,7 @@ export function EventEditor({
 					title: value.title,
 					location: value.location,
 					description: value.description || undefined,
-					eventDate: value.date.getTime(),
+					eventDate: toEventDateMs(value.date),
 					startTime: value.time,
 					sections: sections,
 					jobScopes: jobScopes.map((job) => ({
@@ -453,44 +466,77 @@ export function EventEditor({
 						</FieldGroup>
 
 						<FieldGroup className="max-w-xs flex-row">
-							<form.Field name="date">
-								{(field) => (
-									<Field>
-										<FieldLabel htmlFor="date-picker-optional">Date</FieldLabel>
-										<Popover open={open} onOpenChange={setOpen}>
-											<PopoverTrigger asChild>
-												<Button
-													variant="outline"
-													type="button"
-													id="date-picker-optional"
-													className="w-32 justify-between font-normal"
+							<form.Field
+								name="date"
+								validators={{
+									onMount: eventDateValidator,
+									onChange: eventDateValidator,
+									onSubmit: eventDateValidator,
+								}}
+							>
+								{(field) => {
+									const hasDateErrors = field.state.meta.errors.length > 0;
+
+									return (
+										<Field>
+											<FieldLabel htmlFor="date-picker-optional">
+												Date
+											</FieldLabel>
+											<Popover open={open} onOpenChange={setOpen}>
+												<PopoverTrigger asChild>
+													<Button
+														variant="outline"
+														type="button"
+														id="date-picker-optional"
+														aria-invalid={hasDateErrors}
+														className="w-32 justify-between font-normal"
+													>
+														{field.state.value
+															? format(field.state.value, "PPP")
+															: "Select date"}
+														<ChevronDownIcon />
+													</Button>
+												</PopoverTrigger>
+												<PopoverContent
+													className="w-auto overflow-hidden p-0"
+													align="start"
 												>
-													{field.state.value
-														? format(field.state.value, "PPP")
-														: "Select date"}
-													<ChevronDownIcon />
-												</Button>
-											</PopoverTrigger>
-											<PopoverContent
-												className="w-auto overflow-hidden p-0"
-												align="start"
-											>
-												<Calendar
-													mode="single"
-													selected={field.state.value}
-													captionLayout="dropdown"
-													defaultMonth={field.state.value}
-													onSelect={(date) => {
-														if (date) {
-															field.handleChange(date);
-															setOpen(false);
+													<Calendar
+														mode="single"
+														selected={field.state.value}
+														captionLayout="dropdown"
+														defaultMonth={
+															field.state.value >= minEventDate
+																? field.state.value
+																: minEventDate
 														}
-													}}
-												/>
-											</PopoverContent>
-										</Popover>
-									</Field>
-								)}
+														disabled={{ before: minEventDate }}
+														onSelect={(date) => {
+															if (date) {
+																field.handleChange(date);
+																setOpen(false);
+															}
+														}}
+													/>
+												</PopoverContent>
+											</Popover>
+											{hasDateErrors ? (
+												<FieldDescription className="text-red-500 max-w-xs">
+													<em>
+														{field.state.meta.errors
+															.map((err) =>
+																typeof err === "string"
+																	? err
+																	: (err as { message?: string })?.message ||
+																		"Invalid date",
+															)
+															.join(", ")}
+													</em>
+												</FieldDescription>
+											) : null}
+										</Field>
+									);
+								}}
 							</form.Field>
 							<form.Field name="time">
 								{(field) => (
@@ -829,18 +875,31 @@ export function EventEditor({
 							</div>
 						)}
 
-						<Button
-							type="submit"
-							disabled={form.state.isSubmitting}
-							className="w-fit self-end mt-4"
-							size={"lg"}
+						<form.Subscribe
+							selector={(state) => ({
+								isSubmitting: state.isSubmitting,
+								date: state.values.date,
+								canSubmit: state.canSubmit,
+							})}
 						>
-							{form.state.isSubmitting
-								? "Submitting..."
-								: mode === "create"
-									? "Create Event"
-									: "Save Changes"}
-						</Button>
+							{({ isSubmitting, date, canSubmit }) => {
+								const dateValid = isEventDateOnOrAfterToday(date);
+								return (
+									<Button
+										type="submit"
+										disabled={isSubmitting || !canSubmit || !dateValid}
+										className="w-fit self-end mt-4"
+										size={"lg"}
+									>
+										{isSubmitting
+											? "Submitting..."
+											: mode === "create"
+												? "Create Event"
+												: "Save Changes"}
+									</Button>
+								);
+							}}
+						</form.Subscribe>
 					</div>
 				</form>
 			</section>

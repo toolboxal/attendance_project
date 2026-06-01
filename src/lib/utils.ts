@@ -32,6 +32,29 @@ export function formatRelativeTime(timestamp: number): string {
 	return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
 }
 
+/**
+ * Store the calendar day the user picked (local Y-M-D) as UTC midnight so
+ * client and Convex agree on the same day regardless of timezone.
+ */
+export function toEventDateMs(date: Date): number {
+	return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/** Rehydrate a stored event date for pickers and display. */
+export function eventDateFromMs(ms: number): Date {
+	const d = new Date(ms);
+	return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+/** True when the calendar day of eventDate is today or later. */
+export function isEventDateOnOrAfterToday(eventDateMs: number | Date): boolean {
+	const ms =
+		eventDateMs instanceof Date
+			? toEventDateMs(eventDateMs)
+			: eventDateMs;
+	return ms >= toEventDateMs(new Date());
+}
+
 export function formatFieldErrors(errors: unknown[]): string {
 	return errors
 		.map((err) =>

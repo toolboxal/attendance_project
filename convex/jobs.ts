@@ -1,7 +1,19 @@
 import { v } from "convex/values";
-import { MAX_ACTIVE_JOBS } from "./constants";
+import { MAX_ACTIVE_JOBS, MAX_JOB_DESCRIPTION_LENGTH } from "./constants";
 import { mutation, query } from "./_generated/server";
 import { getLiveContext } from "./liveAuth";
+
+function validateJobDescription(description: string | undefined): string | undefined {
+	if (description === undefined) return undefined;
+	const trimmed = description.trim();
+	if (trimmed.length === 0) return undefined;
+	if (trimmed.length > MAX_JOB_DESCRIPTION_LENGTH) {
+		throw new Error(
+			`Note must be at most ${MAX_JOB_DESCRIPTION_LENGTH} characters.`,
+		);
+	}
+	return trimmed;
+}
 
 // Retrieve active (pending and accepted) jobs for a specific event
 export const getActiveJobs = query({
@@ -109,7 +121,7 @@ export const dispatchJob = mutation({
 			originSectionId: staff.sectionId,
 			personCount: args.personCount,
 			requestType: args.requestType,
-			description: args.description,
+			description: validateJobDescription(args.description),
 			status: "pending",
 			createdAt: Date.now(),
 		});

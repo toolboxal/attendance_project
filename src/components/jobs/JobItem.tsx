@@ -105,109 +105,6 @@ export function JobItem({
 	};
 
 	return (
-		// <div className={card()}>
-		// 	<div className={header()}>
-		// 		<div className="flex flex-col items-start">
-		// 			<span className="font-semibold tracking-tight text-[13px]">
-		// 				{capitalizeWords(job.originSectionName)}
-		// 			</span>
-		// 			<span className="font-medium text-[10px]">
-		// 				{job.creatorRoleTitle}
-		// 			</span>
-		// 		</div>
-		// 		<div className="flex flex-row items-center gap-2">
-		// 			<div className="flex flex-col items-end">
-		// 				<span className="font-semibold tracking-tight text-[13px]">
-		// 					{job.creatorName}
-		// 				</span>
-
-		// 				<span className="font-medium text-[10px]">{job.creatorRole}</span>
-		// 			</div>
-		// 			<div
-		// 				className={`p-1.5 px-2.5 rounded-sm text-[10px] font-bold uppercase tracking-wider border ${
-		// 					job.status === "pending"
-		// 						? "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
-		// 						: job.status === "accepted"
-		// 							? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-		// 							: "bg-blue-400/20 text-blue-100 border-blue-400"
-		// 				}`}
-		// 			>
-		// 				{job.status}
-		// 			</div>
-		// 		</div>
-		// 	</div>
-		// 	<div className={middleSection()}>
-		// 		<div className="pl-1 flex items-center gap-6">
-		// 			<div className="flex items-center gap-2">
-		// 				<span className="text-lg"> {job.personCount}</span>
-		// 				<span className="font-light">pax</span>
-		// 			</div>
-		// 			<span className="font-light text-xs">{job.description}</span>
-		// 		</div>
-		// 		<div className=" p-1  rounded-xs flex items-center justify-center ">
-		// 			<span className="text-xs font-mono text-yellow-300 uppercase tracking-wider">
-		// 				{capitalizeWords(job.requestType)}
-		// 			</span>
-		// 		</div>
-		// 	</div>
-		// 	<div className={bottomSection()}>
-		// 		<div className="flex flex-row items-center justify-between flex-1">
-		// 			<div className="flex flex-col items-start">
-		// 				<span className="font-semibold tracking-tight text-[13px]">
-		// 					{capitalizeWords(job.destinationSectionName ?? "")}
-		// 				</span>
-		// 				<span className="font-medium text-[10px]">
-		// 					{job.claimerRoleTitle}
-		// 				</span>
-		// 			</div>
-		// 			<div className="flex flex-col items-end">
-		// 				<span className="font-semibold tracking-tight text-[13px]">
-		// 					{job.claimerName}
-		// 				</span>
-		// 				<span className="font-medium text-[10px]">{job.claimerRole}</span>
-		// 			</div>
-		// 		</div>
-		// 		{job.status === "pending" && job.creatorId === currentStaffId && (
-		// 			<div className="flex flex-row items-center gap-1.5 ml-auto">
-		// 				<button
-		// 					className="p-1 px-2 bg-red-800  text-zinc-50 text-sm font-semibold rounded-md"
-		// 					type="button"
-		// 					onClick={handleCancelJob}
-		// 				>
-		// 					Cancel
-		// 				</button>
-		// 			</div>
-		// 		)}
-		// 		{job.status === "pending" && job.creatorId !== currentStaffId && (
-		// 			<button
-		// 				className="p-1 px-2 bg-zinc-500 text-zinc-50 text-sm font-semibold rounded-md ml-auto"
-		// 				type="button"
-		// 				onClick={handleAcceptJob}
-		// 			>
-		// 				Accept Job
-		// 			</button>
-		// 		)}
-
-		// 		{job.status === "accepted" && job.claimerId === currentStaffId && (
-		// 			<div className="flex flex-row items-center gap-1.5 ml-auto">
-		// 				<button
-		// 					className="p-1 px-2 bg-zinc-50 text-zinc-950 text-sm font-semibold rounded-md"
-		// 					type="button"
-		// 					onClick={handleRejectJob}
-		// 				>
-		// 					Reject
-		// 				</button>
-		// 				<button
-		// 					className="p-1 px-2 bg-zinc-50 text-zinc-950 text-sm font-semibold rounded-md"
-		// 					type="button"
-		// 					onClick={handleResolveJob}
-		// 				>
-		// 					Resolve
-		// 				</button>
-		// 			</div>
-		// 		)}
-		// 	</div>
-		// </div>
 		<div className={card()}>
 			<div className="flex flex-row items-center justify-between px-2 py-0.5 border-b border-zinc-600">
 				<div className="flex flex-col leading-tight">
@@ -279,7 +176,7 @@ export function JobItem({
 				<span className="text-[13px] font-bold text-yellow-100 uppercase">
 					{job.requestType}
 				</span>
-				<span className="text-[13px] italic ">{job.description}</span>
+				<span className="text-[12px] italic ">{job.description}</span>
 			</div>
 			<div className="flex flex-row items-center justify-between px-2 py-0.5">
 				{job.status === "pending" && job.creatorId !== currentStaffId && (
