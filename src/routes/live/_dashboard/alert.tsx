@@ -7,12 +7,12 @@ import { tv } from "tailwind-variants";
 import { AlertItem } from "#/components/alerts/AlertItem";
 import { AlertPanel } from "#/components/alerts/AlertPanel";
 import {
+	type AlertReadMap,
 	getAlertReadMap,
 	setLastSeenForAlert,
-	type AlertReadMap,
 } from "#/lib/alertReadState";
-import { formatTime12h } from "#/lib/utils";
 import { getStaffAccessToken } from "#/lib/staffToken";
+import { formatTime12h } from "#/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { MAX_ACTIVE_ALERTS } from "../../../../convex/constants";
@@ -20,7 +20,7 @@ import { MAX_ACTIVE_ALERTS } from "../../../../convex/constants";
 const layoutStyles = tv({
 	slots: {
 		container:
-			"flex-1 overflow-y-auto py-2 space-y-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pr-0.5 pb-36",
+			"flex-1 overflow-y-auto py-2 space-y-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-0.5 pb-36",
 	},
 });
 
@@ -43,8 +43,9 @@ function AlertsTabComponent() {
 	);
 
 	const eventId = profile?.eventId;
-	const [expandedAlertId, setExpandedAlertId] =
-		useState<Id<"alerts"> | null>(null);
+	const [expandedAlertId, setExpandedAlertId] = useState<Id<"alerts"> | null>(
+		null,
+	);
 	const [readMap, setReadMap] = useState<AlertReadMap>(() =>
 		eventId ? getAlertReadMap(eventId) : {},
 	);
