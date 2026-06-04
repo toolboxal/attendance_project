@@ -142,7 +142,7 @@ function DashboardAuthLayout() {
 						localStorage.removeItem("asistir_staff_token");
 						if (wasAdmin && eventId) {
 							navigate({
-								to: "/app/events/$eventId",
+								to: "/app/events/$eventId/edit",
 								params: { eventId },
 							});
 							return;

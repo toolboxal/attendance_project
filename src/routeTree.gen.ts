@@ -28,7 +28,9 @@ import { Route as publicauthSignupRouteImport } from './routes/(public)/(auth)/s
 import { Route as publicauthSigninRouteImport } from './routes/(public)/(auth)/signin'
 import { Route as AuthenticatedAppEventsIndexRouteImport } from './routes/_authenticated/app/events/index'
 import { Route as AuthenticatedAppEventsCreateRouteImport } from './routes/_authenticated/app/events/create'
-import { Route as AuthenticatedAppEventsEventIdRouteImport } from './routes/_authenticated/app/events/$eventId'
+import { Route as AuthenticatedAppEventsEventIdIndexRouteImport } from './routes/_authenticated/app/events/$eventId/index'
+import { Route as AuthenticatedAppEventsEventIdWatchlistRouteImport } from './routes/_authenticated/app/events/$eventId/watchlist'
+import { Route as AuthenticatedAppEventsEventIdEditRouteImport } from './routes/_authenticated/app/events/$eventId/edit'
 
 const LiveRouteRoute = LiveRouteRouteImport.update({
   id: '/live',
@@ -126,10 +128,22 @@ const AuthenticatedAppEventsCreateRoute =
     path: '/events/create',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
-const AuthenticatedAppEventsEventIdRoute =
-  AuthenticatedAppEventsEventIdRouteImport.update({
-    id: '/events/$eventId',
-    path: '/events/$eventId',
+const AuthenticatedAppEventsEventIdIndexRoute =
+  AuthenticatedAppEventsEventIdIndexRouteImport.update({
+    id: '/events/$eventId/',
+    path: '/events/$eventId/',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppEventsEventIdWatchlistRoute =
+  AuthenticatedAppEventsEventIdWatchlistRouteImport.update({
+    id: '/events/$eventId/watchlist',
+    path: '/events/$eventId/watchlist',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppEventsEventIdEditRoute =
+  AuthenticatedAppEventsEventIdEditRouteImport.update({
+    id: '/events/$eventId/edit',
+    path: '/events/$eventId/edit',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
 
@@ -149,9 +163,11 @@ export interface FileRoutesByFullPath {
   '/live/roster': typeof LiveDashboardRosterRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/live/': typeof LiveDashboardIndexRoute
-  '/app/events/$eventId': typeof AuthenticatedAppEventsEventIdRoute
   '/app/events/create': typeof AuthenticatedAppEventsCreateRoute
   '/app/events/': typeof AuthenticatedAppEventsIndexRoute
+  '/app/events/$eventId/edit': typeof AuthenticatedAppEventsEventIdEditRoute
+  '/app/events/$eventId/watchlist': typeof AuthenticatedAppEventsEventIdWatchlistRoute
+  '/app/events/$eventId/': typeof AuthenticatedAppEventsEventIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/live': typeof LiveDashboardIndexRoute
@@ -167,9 +183,11 @@ export interface FileRoutesByTo {
   '/live/jobs': typeof LiveDashboardJobsRoute
   '/live/roster': typeof LiveDashboardRosterRoute
   '/app': typeof AuthenticatedAppIndexRoute
-  '/app/events/$eventId': typeof AuthenticatedAppEventsEventIdRoute
   '/app/events/create': typeof AuthenticatedAppEventsCreateRoute
   '/app/events': typeof AuthenticatedAppEventsIndexRoute
+  '/app/events/$eventId/edit': typeof AuthenticatedAppEventsEventIdEditRoute
+  '/app/events/$eventId/watchlist': typeof AuthenticatedAppEventsEventIdWatchlistRoute
+  '/app/events/$eventId': typeof AuthenticatedAppEventsEventIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -190,9 +208,11 @@ export interface FileRoutesById {
   '/live/_dashboard/roster': typeof LiveDashboardRosterRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/live/_dashboard/': typeof LiveDashboardIndexRoute
-  '/_authenticated/app/events/$eventId': typeof AuthenticatedAppEventsEventIdRoute
   '/_authenticated/app/events/create': typeof AuthenticatedAppEventsCreateRoute
   '/_authenticated/app/events/': typeof AuthenticatedAppEventsIndexRoute
+  '/_authenticated/app/events/$eventId/edit': typeof AuthenticatedAppEventsEventIdEditRoute
+  '/_authenticated/app/events/$eventId/watchlist': typeof AuthenticatedAppEventsEventIdWatchlistRoute
+  '/_authenticated/app/events/$eventId/': typeof AuthenticatedAppEventsEventIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -212,9 +232,11 @@ export interface FileRouteTypes {
     | '/live/roster'
     | '/app/'
     | '/live/'
-    | '/app/events/$eventId'
     | '/app/events/create'
     | '/app/events/'
+    | '/app/events/$eventId/edit'
+    | '/app/events/$eventId/watchlist'
+    | '/app/events/$eventId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/live'
@@ -230,9 +252,11 @@ export interface FileRouteTypes {
     | '/live/jobs'
     | '/live/roster'
     | '/app'
-    | '/app/events/$eventId'
     | '/app/events/create'
     | '/app/events'
+    | '/app/events/$eventId/edit'
+    | '/app/events/$eventId/watchlist'
+    | '/app/events/$eventId'
   id:
     | '__root__'
     | '/(public)'
@@ -252,9 +276,11 @@ export interface FileRouteTypes {
     | '/live/_dashboard/roster'
     | '/_authenticated/app/'
     | '/live/_dashboard/'
-    | '/_authenticated/app/events/$eventId'
     | '/_authenticated/app/events/create'
     | '/_authenticated/app/events/'
+    | '/_authenticated/app/events/$eventId/edit'
+    | '/_authenticated/app/events/$eventId/watchlist'
+    | '/_authenticated/app/events/$eventId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -399,11 +425,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppEventsCreateRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
-    '/_authenticated/app/events/$eventId': {
-      id: '/_authenticated/app/events/$eventId'
+    '/_authenticated/app/events/$eventId/': {
+      id: '/_authenticated/app/events/$eventId/'
       path: '/events/$eventId'
-      fullPath: '/app/events/$eventId'
-      preLoaderRoute: typeof AuthenticatedAppEventsEventIdRouteImport
+      fullPath: '/app/events/$eventId/'
+      preLoaderRoute: typeof AuthenticatedAppEventsEventIdIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/events/$eventId/watchlist': {
+      id: '/_authenticated/app/events/$eventId/watchlist'
+      path: '/events/$eventId/watchlist'
+      fullPath: '/app/events/$eventId/watchlist'
+      preLoaderRoute: typeof AuthenticatedAppEventsEventIdWatchlistRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/events/$eventId/edit': {
+      id: '/_authenticated/app/events/$eventId/edit'
+      path: '/events/$eventId/edit'
+      fullPath: '/app/events/$eventId/edit'
+      preLoaderRoute: typeof AuthenticatedAppEventsEventIdEditRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
   }
@@ -461,9 +501,11 @@ interface AuthenticatedAppRouteRouteChildren {
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppSuccessRoute: typeof AuthenticatedAppSuccessRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
-  AuthenticatedAppEventsEventIdRoute: typeof AuthenticatedAppEventsEventIdRoute
   AuthenticatedAppEventsCreateRoute: typeof AuthenticatedAppEventsCreateRoute
   AuthenticatedAppEventsIndexRoute: typeof AuthenticatedAppEventsIndexRoute
+  AuthenticatedAppEventsEventIdEditRoute: typeof AuthenticatedAppEventsEventIdEditRoute
+  AuthenticatedAppEventsEventIdWatchlistRoute: typeof AuthenticatedAppEventsEventIdWatchlistRoute
+  AuthenticatedAppEventsEventIdIndexRoute: typeof AuthenticatedAppEventsEventIdIndexRoute
 }
 
 const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
@@ -471,9 +513,14 @@ const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppSuccessRoute: AuthenticatedAppSuccessRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
-  AuthenticatedAppEventsEventIdRoute: AuthenticatedAppEventsEventIdRoute,
   AuthenticatedAppEventsCreateRoute: AuthenticatedAppEventsCreateRoute,
   AuthenticatedAppEventsIndexRoute: AuthenticatedAppEventsIndexRoute,
+  AuthenticatedAppEventsEventIdEditRoute:
+    AuthenticatedAppEventsEventIdEditRoute,
+  AuthenticatedAppEventsEventIdWatchlistRoute:
+    AuthenticatedAppEventsEventIdWatchlistRoute,
+  AuthenticatedAppEventsEventIdIndexRoute:
+    AuthenticatedAppEventsEventIdIndexRoute,
 }
 
 const AuthenticatedAppRouteRouteWithChildren =

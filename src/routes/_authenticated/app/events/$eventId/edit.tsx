@@ -14,10 +14,12 @@ import { ErrorView } from "#/components/error-view";
 import { Spinner } from "#/components/ui/spinner";
 import { parseStructuredError } from "#/lib/error-utils";
 import { useHeaderStore } from "#/lib/store/topHeaderStore";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import { api } from "../../../../../../convex/_generated/api";
+import type { Id } from "../../../../../../convex/_generated/dataModel";
 
-export const Route = createFileRoute("/_authenticated/app/events/$eventId")({
+export const Route = createFileRoute(
+	"/_authenticated/app/events/$eventId/edit",
+)({
 	component: EditRouteWrapper,
 	errorComponent: ({ error, reset }) => {
 		const router = useRouter();
@@ -46,7 +48,6 @@ export const Route = createFileRoute("/_authenticated/app/events/$eventId")({
 	},
 });
 
-// Wrapper to allow top-level suspense without blocking full shell
 function EditRouteWrapper() {
 	return (
 		<Suspense
@@ -66,19 +67,17 @@ function RouteComponent() {
 	const params = Route.useParams();
 	const updateEvent = useMutation(api.events.update);
 
-	// 1. Fetch data securely via local suspense
 	const { data } = useSuspenseQuery(
 		convexQuery(api.events.getDetails, {
 			eventId: params.eventId as Id<"events">,
 		}),
 	);
 
-	// 2. Standardized Global Header Assignment (HOISTED to obey Rules of Hooks!)
 	const setPageHeader = useHeaderStore((s) => s.setPageHeader);
 	const resetHeader = useHeaderStore((s) => s.resetHeader);
 
 	useEffect(() => {
-		if (!data?.event) return; // Safely skip inside effect, not above it!
+		if (!data?.event) return;
 		setPageHeader({
 			title: `Edit: ${data.event.title}`,
 			showBackButton: true,
@@ -86,24 +85,20 @@ function RouteComponent() {
 		return () => resetHeader();
 	}, [setPageHeader, resetHeader, data?.event?.title, data?.event]);
 
-	// 🛡️ Safety Guard: Now we can perform the early exit AFTER all hooks are registered!
 	if (!data) return <div>Event not found</div>;
 	const { event, sections, slots } = data;
 
-	// 2. Transform Raw DB rows back into the format InitialData expects
 	const initialData = {
 		title: event.title,
 		location: event.location,
 		description: event.description,
 		eventDate: event.eventDate,
 		startTime: event.startTime,
-		// Convert sections with safe fallbacks
 		sections: sections.map((sec) => ({
 			name: sec.name,
 			startTime: sec.startTime ?? "",
 			endTime: sec.endTime ?? "",
 		})),
-		// Map slots back to JobScopes by looking up parent section details!
 		jobScopes: slots.map((slot) => {
 			const parentSection = sections.find((s) => s._id === slot.sectionId);
 			return {
@@ -118,7 +113,6 @@ function RouteComponent() {
 		}),
 	};
 
-	// 4. Handshake function to commit updates
 	const handleUpdateEvent = async (submitData: EventSubmitData) => {
 		try {
 			await updateEvent({
@@ -128,14 +122,15 @@ function RouteComponent() {
 
 			toast.success("Event Updated Successfully!");
 
-			// Navigate back to dashboard after successful save
 			navigate({ to: "/app/events" });
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Event update failed:", error);
 			toast.error(
-				error?.message || "Failed to save changes. Please try again.",
+				error instanceof Error
+					? error.message
+					: "Failed to save changes. Please try again.",
 			);
-			throw error; // Force EventEditor form status to acknowledge fail
+			throw error;
 		}
 	};
 

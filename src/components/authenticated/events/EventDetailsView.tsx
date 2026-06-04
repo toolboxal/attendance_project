@@ -129,7 +129,14 @@ export function EventDetailsView({
 
 	const goToEditEvent = () => {
 		navigate({
-			to: "/app/events/$eventId",
+			to: "/app/events/$eventId/edit",
+			params: { eventId: eventId as string },
+		});
+	};
+
+	const goToWatchlist = () => {
+		navigate({
+			to: "/app/events/$eventId/watchlist",
 			params: { eventId: eventId as string },
 		});
 	};
@@ -221,8 +228,11 @@ export function EventDetailsView({
 						{event.status === "draft" ? "Go Live" : "End Event"}
 					</Button>
 				)}
+				<Button onClick={goToWatchlist} variant={"ghost"} size={"lg"}>
+					Security
+				</Button>
 				{event.status !== "archived" && (
-					<Button onClick={goToEditEvent} variant={"secondary"} size={"lg"}>
+					<Button onClick={goToEditEvent} variant={"ghost"} size={"lg"}>
 						Edit Event
 					</Button>
 				)}
