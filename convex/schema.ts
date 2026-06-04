@@ -149,6 +149,26 @@ export default defineSchema({
     content: v.string(),
   }).index("by_alert", ["alertId"]),
 
+  // Admin-published security watchlist (banned persons, prohibited items)
+  eventWatchlist: defineTable({
+    eventId: v.id("events"),
+    kind: v.union(v.literal("banned_person"), v.literal("prohibited_item")),
+    label: v.string(),
+    notes: v.optional(v.string()),
+    photoId: v.optional(v.id("_storage")),
+    status: v.union(v.literal("active"), v.literal("removed")),
+    createdByAdminId: v.id("users"),
+    removedAt: v.optional(v.number()),
+    removedByAdminId: v.optional(v.id("users")),
+  }).index("by_event", ["eventId"]),
+
+  watchlistUpdates: defineTable({
+    watchlistEntryId: v.id("eventWatchlist"),
+    eventId: v.id("events"),
+    authorId: v.id("liveStaff"),
+    content: v.string(),
+  }).index("by_entry", ["watchlistEntryId"]),
+
   // Discord-like Messages
   messages: defineTable({
     eventId: v.id("events"),

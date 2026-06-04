@@ -24,3 +24,13 @@ export const ALERT_TYPES = [
 	"general",
 ] as const;
 export type AlertType = (typeof ALERT_TYPES)[number];
+
+/** Max active watchlist entries per event. */
+export const MAX_WATCHLIST_ENTRIES = 25;
+
+export const WATCHLIST_KINDS = ["banned_person", "prohibited_item"] as const;
+export type WatchlistKind = (typeof WATCHLIST_KINDS)[number];
+
+export const MAX_WATCHLIST_LABEL_LENGTH = 80;
+export const MAX_WATCHLIST_NOTES_LENGTH = 300;
+export const MAX_WATCHLIST_UPDATE_LENGTH = MAX_ALERT_UPDATE_LENGTH;
