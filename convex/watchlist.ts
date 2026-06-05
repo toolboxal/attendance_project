@@ -131,6 +131,19 @@ function validateUpdateContent(content: string): string {
 	return trimmed;
 }
 
+function watchlistKindSortOrder(kind: Doc<"eventWatchlist">["kind"]): number {
+	return kind === "banned_person" ? 0 : 1;
+}
+
+function sortWatchlistEntries(
+	a: Doc<"eventWatchlist">,
+	b: Doc<"eventWatchlist">,
+): number {
+	const kindDiff = watchlistKindSortOrder(a.kind) - watchlistKindSortOrder(b.kind);
+	if (kindDiff !== 0) return kindDiff;
+	return b._creationTime - a._creationTime;
+}
+
 async function getActiveEntriesForEvent(
 	ctx: QueryCtx,
 	eventId: Id<"events">,
@@ -142,7 +155,7 @@ async function getActiveEntriesForEvent(
 
 	return entries
 		.filter((e) => e.status === "active")
-		.sort((a, b) => b._creationTime - a._creationTime);
+		.sort(sortWatchlistEntries);
 }
 
 async function enrichEntry(

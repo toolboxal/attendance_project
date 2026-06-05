@@ -97,7 +97,7 @@ export function WatchlistEntryDialog({
 		return storageId;
 	};
 
-	const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!label.trim()) {
 			toast.error("Label is required.");

@@ -3,9 +3,9 @@ import type { FunctionReturnType } from "convex/server";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
-import { cn } from "#/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
+import { cn } from "#/lib/utils";
 
 type WatchlistEntry = FunctionReturnType<
 	typeof api.watchlist.listForEvent
@@ -37,7 +37,7 @@ export function WatchlistEntryCard({
 	};
 
 	return (
-		<div className="flex gap-3  border border-zinc-800 bg-zinc-900/50 p-3">
+		<div className="flex gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
 			{entry.photoUrl ? (
 				<a
 					href={entry.photoUrl}
@@ -70,9 +70,7 @@ export function WatchlistEntryCard({
 						>
 							{KIND_LABELS[entry.kind]}
 						</span>
-						<p className="text-zinc-100 font-semibold truncate">
-							{entry.label}
-						</p>
+						<p className="text-zinc-100 font-semibold truncate">{entry.label}</p>
 					</div>
 					{!readOnly && (
 						<Button

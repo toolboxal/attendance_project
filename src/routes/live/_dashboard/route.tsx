@@ -118,7 +118,7 @@ function DashboardAuthLayout() {
 				{/* TAB 1: JOBS */}
 				<Link to="/live/jobs" className={tab()}>
 					{/* <Briefcase className="size-5" /> */}
-					<span>Jobs</span>
+					<span>Traffic</span>
 				</Link>
 
 				{/* TAB 2: CHAT */}

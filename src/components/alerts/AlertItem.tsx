@@ -6,9 +6,6 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { tv } from "tailwind-variants";
 import z from "zod";
-import { MAX_ALERT_UPDATE_LENGTH } from "../../../convex/constants";
-import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
 import { Field, FieldContent, FieldError } from "#/components/ui/field";
 import { Textarea } from "#/components/ui/textarea";
 import type { AlertReadMap } from "#/lib/alertReadState";
@@ -20,6 +17,9 @@ import {
 	formatFieldErrors,
 	formatRelativeTime,
 } from "#/lib/utils";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { MAX_ALERT_UPDATE_LENGTH } from "../../../convex/constants";
 
 type EnrichedAlert = FunctionReturnType<
 	typeof api.alerts.getActiveAlerts
@@ -27,12 +27,12 @@ type EnrichedAlert = FunctionReturnType<
 
 const alertStyles = tv({
 	slots: {
-		card: "bg-zinc-700 rounded-md overflow-hidden text-zinc-50 shadow-sm shadow-zinc-400",
+		card: "bg-zinc-500/50 rounded-md overflow-hidden text-zinc-50 shadow-sm shadow-zinc-400",
 	},
 	variants: {
 		pinned: {
 			true: {
-				card: "bg-zinc-700 rounded-md overflow-hidden text-zinc-50 ring-2 ring-red-800",
+				card: "overflow-hidden ring-1 ring-red-800",
 			},
 		},
 	},
@@ -140,14 +140,14 @@ export function AlertItem({
 
 	return (
 		<div className={card()}>
-			<button
-				type="button"
-				className="w-full text-left"
-				onClick={onToggleExpand}
-				aria-expanded={expanded}
-				aria-label={expandLabel}
-			>
-				<div className="flex flex-row items-start justify-between px-2 py-0.5 border-b border-zinc-600">
+			<div className="flex flex-row items-stretch border-b border-zinc-600">
+				<button
+					type="button"
+					className="min-w-0 flex-1 text-left px-2 py-0.5"
+					onClick={onToggleExpand}
+					aria-expanded={expanded}
+					aria-label={expandLabel}
+				>
 					<div className="flex flex-col leading-tight">
 						<div className="flex flex-row items-center gap-2">
 							<span className="text-sm font-bold text-red-300 uppercase">
@@ -181,70 +181,73 @@ export function AlertItem({
 							)}
 						</div>
 					</div>
-					<div className="flex shrink-0 flex-col items-end gap-1 self-stretch pb-0.5 ">
-						{unreadUpdateCount > 0 && (
-							<div className="flex flex-row items-start justify-center gap-1 pt-0.5">
-								<span className="text-[9px] font-medium italic text-zinc-50 leading-tight text-right">
-									new
-									<br />
-									messages
-								</span>
-								<span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-[11px] font-bold text-zinc-50">
-									{unreadUpdateCount}
-								</span>
-							</div>
-						)}
+				</button>
 
-						<div className="flex flex-row items-center justify-end gap-1.5 pb-0.5 mt-auto">
-							{alert.canPin && (
-								<button
-									type="button"
-									onClick={(e) => {
-										e.stopPropagation();
-										handlePin();
-									}}
-									className="p-1 px-2 bg-zinc-800 text-zinc-200 text-xs font-medium rounded-sm flex items-center gap-1"
-								>
-									{alert.isPinned ? (
-										<PinOff className="size-3" />
-									) : (
-										<Pin className="size-3" />
-									)}
-									{alert.isPinned ? "Unpin" : "Pin"}
-								</button>
-							)}
-							{alert.canResolve && (
-								<button
-									type="button"
-									onClick={(e) => {
-										e.stopPropagation();
-										handleResolve();
-									}}
-									className="p-1 px-2 bg-zinc-200 text-zinc-950 text-xs font-medium rounded-sm"
-								>
-									Resolve
-								</button>
-							)}
+				<div className="flex shrink-0 flex-col gap-1 self-stretch px-2 py-0.5">
+					{unreadUpdateCount > 0 && (
+						<div className="flex flex-row items-start justify-end gap-1 pt-0.5 shrink-0">
+							<span className="text-[9px] font-medium italic text-zinc-50 leading-tight text-right">
+								new
+								<br />
+								messages
+							</span>
+							<span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-[11px] font-bold text-zinc-50">
+								{unreadUpdateCount}
+							</span>
 						</div>
+					)}
+
+					<div className="mt-auto flex flex-row items-center justify-end gap-1.5 pb-0.5">
+						{alert.canPin && (
+							<button
+								type="button"
+								onClick={handlePin}
+								className="flex items-center gap-1 rounded-sm bg-zinc-800 p-1 px-2 text-xs font-medium text-zinc-200"
+							>
+								{alert.isPinned ? (
+									<PinOff className="size-3" />
+								) : (
+									<Pin className="size-3" />
+								)}
+								{alert.isPinned ? "Unpin" : "Pin"}
+							</button>
+						)}
+						{alert.canResolve && (
+							<button
+								type="button"
+								onClick={handleResolve}
+								className="rounded-sm bg-zinc-200 p-1 px-2 text-xs font-medium text-zinc-950"
+							>
+								Resolve
+							</button>
+						)}
 					</div>
 				</div>
+			</div>
 
-				<div className="px-2 py-1.5 space-y-2">
-					{alert.photoUrl && (
-						<a
-							href={alert.photoUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="block w-16 h-16 rounded-md ml-0.5 overflow-hidden border border-zinc-500"
-							onClick={(e) => e.stopPropagation()}
-						>
-							<img
-								src={alert.photoUrl}
-								alt="Alert attachment"
-								className="w-full h-full object-cover"
-							/>
-						</a>
-					)}
+			{alert.photoUrl && (
+				<a
+					href={alert.photoUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="mx-2 mt-1.5 block h-16 w-16 overflow-hidden rounded-md border border-zinc-500"
+				>
+					<img
+						src={alert.photoUrl}
+						alt="Alert attachment"
+						className="h-full w-full object-cover"
+					/>
+				</a>
+			)}
+
+			<button
+				type="button"
+				className="w-full text-left"
+				onClick={onToggleExpand}
+				tabIndex={-1}
+				aria-hidden
+			>
+				<div className="space-y-2 px-2 py-1.5">
 					<div className="flex flex-row items-center justify-between">
 						<div className="flex flex-col leading-tight">
 							<p className="text-sm text-red-300 font-semibold">{alert.body}</p>
