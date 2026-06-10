@@ -64,7 +64,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       "http://localhost:3000",
       "http://127.0.0.1:3000",
       "http://192.168.1.3:3000",
-      "http://192.168.1.5:3000",
+      "http://192.168.1.6:3000",
       "http://192.168.1.7:3000",
     ],
     socialProviders: {

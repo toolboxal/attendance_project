@@ -1,3 +1,6 @@
+export const FLOATING_SECTION_KEY = "floating";
+export const UNASSIGNED_SECTION_KEY = "unassigned";
+
 /** Max unresolved (pending + accepted) jobs per live event. */
 export const MAX_ACTIVE_JOBS = 10;
 

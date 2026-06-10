@@ -27,12 +27,12 @@ type EnrichedAlert = FunctionReturnType<
 
 const alertStyles = tv({
 	slots: {
-		card: "bg-zinc-500/50 rounded-md overflow-hidden text-zinc-50 shadow-sm shadow-zinc-400",
+		card: "bg-zinc-500/50 rounded-md overflow-hidden text-zinc-50",
 	},
 	variants: {
 		pinned: {
 			true: {
-				card: "overflow-hidden ring-1 ring-red-800",
+				card: "overflow-hidden ring-1 ring-red-500",
 			},
 		},
 	},
@@ -150,9 +150,10 @@ export function AlertItem({
 				>
 					<div className="flex flex-col leading-tight">
 						<div className="flex flex-row items-center gap-2">
-							<span className="text-sm font-bold text-red-300 uppercase">
+							{/* <span className="text-sm font-bold text-red-300 uppercase">
 								{alert.alertType.replace("_", " ")}
-							</span>
+							</span> */}
+							{/* <span>created by</span> */}
 							{alert.isPinned && (
 								<span className="text-[10px] font-bold text-amber-400 uppercase">
 									Pinned
@@ -225,66 +226,68 @@ export function AlertItem({
 				</div>
 			</div>
 
-			{alert.photoUrl && (
-				<a
-					href={alert.photoUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-					className="mx-2 mt-1.5 block h-16 w-16 overflow-hidden rounded-md border border-zinc-500"
-				>
-					<img
-						src={alert.photoUrl}
-						alt="Alert attachment"
-						className="h-full w-full object-cover"
-					/>
-				</a>
-			)}
-
 			<button
 				type="button"
-				className="w-full text-left"
+				className="w-full text-left pb-2 px-2"
 				onClick={onToggleExpand}
 				tabIndex={-1}
 				aria-hidden
 			>
-				<div className="space-y-2 px-2 py-1.5">
-					<div className="flex flex-row items-center justify-between">
-						<div className="flex flex-col leading-tight">
-							<p className="text-sm text-red-300 font-semibold">{alert.body}</p>
-							<p className="ml-0.5 text-[11px] text-zinc-400 italic">
-								{formatRelativeTime(alert._creationTime)}
-							</p>
-						</div>
-						{expanded ? (
-							<ChevronUp className="mt-auto size-5 shrink-0 text-zinc-300" />
-						) : (
-							<ChevronDown className="mt-auto size-5 shrink-0 text-zinc-300" />
-						)}
+				<div className="flex flex-row gap-2 items-start">
+					{alert.photoUrl && (
+						<a
+							href={alert.photoUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="mt-1.5 block h-18 w-18 overflow-hidden rounded-md border border-zinc-500"
+						>
+							<img
+								src={alert.photoUrl}
+								alt="Alert attachment"
+								className="h-full w-full object-cover"
+							/>
+						</a>
+					)}
+					<div className="flex flex-col leading-tight pt-1.5">
+						<span className="text-[11px] font-bold text-red-400 uppercase">
+							{alert.alertType.replace("_", " ")}
+						</span>
+						<p className="text-sm text-red-300 font-medium">{alert.body}</p>
+						<p className="text-[11px] text-zinc-400 italic">
+							{formatRelativeTime(alert._creationTime)}
+						</p>
 					</div>
-					{alert.latestUpdate && (
-						<div className="w-full text-left bg-zinc-800/50 rounded-md py-1 px-2">
-							<span className="text-[10px] text-zinc-300 italic block">
-								latest reply:
-							</span>
-							<span className="text-zinc-100 text-xs block line-clamp-1">
-								{alert.latestUpdate.content}
-							</span>
-
-							<div className="text-[11px] text-zinc-100 px-0.5 flex flex-row justify-between items-center gap-1">
-								<span className="font-medium text-zinc-400 block">
-									{alert.latestUpdate.authorName}
-								</span>
-								<span className="text-zinc-400 italic block">
-									{formatRelativeTime(alert.latestUpdate.createdAt)}
-								</span>
-							</div>
-						</div>
+				</div>
+				<div className="flex flex-row items-center justify-end mt-auto">
+					{expanded ? (
+						<ChevronUp className="mt-auto size-5 shrink-0 text-zinc-300" />
+					) : (
+						<ChevronDown className="mt-auto size-5 shrink-0 text-zinc-300" />
 					)}
 				</div>
+				{alert.latestUpdate && (
+					<div className="w-full text-left bg-zinc-800/50 rounded-md py-1 px-2">
+						<span className="text-[10px] text-zinc-300 italic block">
+							latest reply:
+						</span>
+						<span className="text-zinc-100 text-xs block line-clamp-1">
+							{alert.latestUpdate.content}
+						</span>
+
+						<div className="text-[11px] text-zinc-100 px-0.5 flex flex-row justify-between items-center gap-1">
+							<span className="font-medium text-zinc-400 block">
+								{alert.latestUpdate.authorName}
+							</span>
+							<span className="text-zinc-400 italic block">
+								{formatRelativeTime(alert.latestUpdate.createdAt)}
+							</span>
+						</div>
+					</div>
+				)}
 			</button>
 
 			{expanded && (
-				<div className="border-t border-zinc-600 bg-zinc-800 px-2 py-2 flex flex-col gap-2">
+				<div className=" bg-zinc-800 px-2 py-2 flex flex-col gap-2">
 					{thread === undefined ? (
 						<p className="text-xs text-zinc-500">Loading updates…</p>
 					) : thread.length === 0 ? (

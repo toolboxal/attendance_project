@@ -46,6 +46,11 @@ export function eventDateFromMs(ms: number): Date {
 	return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 
+export function startOfUtcDayMs(timestampMs: number): number {
+	const d = new Date(timestampMs);
+	return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
 /** True when the calendar day of eventDate is today or later. */
 export function isEventDateOnOrAfterToday(eventDateMs: number | Date): boolean {
 	const ms =

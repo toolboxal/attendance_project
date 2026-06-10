@@ -5,6 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { authComponent } from "./auth";
 import { ConvexError } from "convex/values";
+import { DEFAULT_SECTION_LIVE_FIELDS } from "./sectionDefaults";
 
 /**
  * Helper to get currently authenticated user from Better Auth and the database.
@@ -195,10 +196,9 @@ export const create = mutation({
       const sectionId = await ctx.db.insert("eventSections", {
         eventId,
         name: sec.name,
-        headcount: 0, // Starting population
-        status: "empty", // Current occupancy logic status
         startTime: sec.startTime,
         endTime: sec.endTime,
+        ...DEFAULT_SECTION_LIVE_FIELDS,
       });
       // Create a composite key to uniquely identify duplicate location names with separate times!
       sectionMap.set(`${sec.name}|${sec.startTime}|${sec.endTime}`, sectionId);
@@ -254,9 +254,18 @@ export const list = query({
       .order("desc")
       .take(10);
 
-    // 3. Combine and sort chronologically (newest first)
+    // 3. Combine and sort: live → draft → archived, earliest eventDate first
+    const statusOrder: Record<"live" | "draft" | "archived", number> = {
+      live: 0,
+      draft: 1,
+      archived: 2,
+    };
     const combined = [...activeEvents, ...archivedEvents];
-    combined.sort((a, b) => b.eventDate - a.eventDate);
+    combined.sort((a, b) => {
+      const byStatus = statusOrder[a.status] - statusOrder[b.status];
+      if (byStatus !== 0) return byStatus;
+      return a.eventDate - b.eventDate;
+    });
 
     return combined;
   },
@@ -431,10 +440,9 @@ export const update = mutation({
         const sectionId = await ctx.db.insert("eventSections", {
           eventId: args.eventId,
           name: sec.name,
-          headcount: 0,
-          status: "empty",
           startTime: sec.startTime,
           endTime: sec.endTime,
+          ...DEFAULT_SECTION_LIVE_FIELDS,
         });
         sectionMap.set(`${sec.name}|${sec.startTime}|${sec.endTime}`, sectionId);
       }
@@ -729,11 +737,9 @@ export const duplicate = mutation({
       const newSecId = await ctx.db.insert("eventSections", {
         eventId: newEventId,
         name: sec.name,
-        capacity: sec.capacity,
-        headcount: 0, // Resets headcount for the new event!
-        status: "empty", // Starts fresh
         startTime: sec.startTime,
         endTime: sec.endTime,
+        ...DEFAULT_SECTION_LIVE_FIELDS,
       });
       sectionIdMap.set(sec._id, newSecId);
     }

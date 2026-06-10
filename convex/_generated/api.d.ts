@@ -17,6 +17,8 @@ import type * as jobs from "../jobs.js";
 import type * as liveAuth from "../liveAuth.js";
 import type * as liveStaff from "../liveStaff.js";
 import type * as payments from "../payments.js";
+import type * as sectionDefaults from "../sectionDefaults.js";
+import type * as sections from "../sections.js";
 import type * as test from "../test.js";
 import type * as watchlist from "../watchlist.js";
 
@@ -36,6 +38,8 @@ declare const fullApi: ApiFromModules<{
   liveAuth: typeof liveAuth;
   liveStaff: typeof liveStaff;
   payments: typeof payments;
+  sectionDefaults: typeof sectionDefaults;
+  sections: typeof sections;
   test: typeof test;
   watchlist: typeof watchlist;
 }>;

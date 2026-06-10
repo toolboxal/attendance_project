@@ -54,29 +54,29 @@ export default defineSchema({
   .index("by_joinCode", ["joinCode"])
   .index("by_admin", ["adminId", "eventDate"]),
 
-  // 🔥 NEW TABLE: Sections belonging to an Event (Track real-time capacities here)
   eventSections: defineTable({
     eventId: v.id("events"),
-    name: v.string(),                 // e.g. "Main Foyer", "Gate A"
-    
-    // LIVE TRACKING PARAMETERS
-    capacity: v.optional(v.number()),  // Optional seating/standing limit
-    headcount: v.number(),            // Running live count report
-    
-    // Rapid reporting status
-    status: v.union(
-      v.literal("empty"), 
-      v.literal("filling"), 
-      v.literal("full"), 
-      v.literal("overflow")
+    name: v.string(),
+    headcount: v.number(),
+    occupancyFill: v.union(
+      v.literal("0"),
+      v.literal("25"),
+      v.literal("75"),
+      v.literal("full"),
+      v.literal("overflow"),
     ),
-    
-    // Shift Times for the entire group
-    startTime: v.optional(v.string()),  // "08:00"
-    endTime: v.optional(v.string()),    // "13:00"
-
+    activity: v.union(
+      v.literal("low"),
+      v.literal("normal"),
+      v.literal("busy"),
+      v.literal("overload"),
+    ),
+    headcountReporting: v.boolean(),
+    includeInTotal: v.boolean(),
+    startTime: v.optional(v.string()),
+    endTime: v.optional(v.string()),
     lastUpdatedAt: v.optional(v.number()),
-    lastUpdatedBy: v.optional(v.id("liveStaff")), // Which usher last reported
+    lastUpdatedBy: v.optional(v.id("liveStaff")),
   }).index("by_event", ["eventId"]),
 
   // Job Scopes / Role Slots (Pre-created by Admins, claimed by liveStaff)

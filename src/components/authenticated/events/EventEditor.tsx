@@ -3,8 +3,8 @@ import { useBlocker } from "@tanstack/react-router";
 import { format, startOfDay } from "date-fns";
 import { ChevronDownIcon, MinusIcon, PlusIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { tv } from "tailwind-variants";
 import { toast } from "sonner";
+import { tv } from "tailwind-variants";
 import z from "zod";
 import { Button } from "#/components/ui/button";
 import { Calendar } from "#/components/ui/calendar";
@@ -28,6 +28,11 @@ import {
 	PopoverTrigger,
 } from "#/components/ui/popover";
 import { Textarea } from "#/components/ui/textarea";
+import {
+	eventDateFromMs,
+	isEventDateOnOrAfterToday,
+	toEventDateMs,
+} from "#/lib/utils";
 import { ButtonGroup } from "@/components/ui/button-group";
 import {
 	NativeSelect,
@@ -35,11 +40,6 @@ import {
 } from "@/components/ui/native-select";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-	eventDateFromMs,
-	isEventDateOnOrAfterToday,
-	toEventDateMs,
-} from "#/lib/utils";
 
 const eventDateValidator = z
 	.date()
@@ -80,7 +80,11 @@ export type EventSubmitData = {
 	description?: string;
 	eventDate: number;
 	startTime: string;
-	sections: Array<{ name: string; startTime: string; endTime: string }>;
+	sections: Array<{
+		name: string;
+		startTime: string;
+		endTime: string;
+	}>;
 	jobScopes: Array<JobScope>;
 };
 
@@ -92,7 +96,11 @@ type EventEditorProps = {
 		description?: string;
 		eventDate: number; // unix ms
 		startTime: string;
-		sections: Array<{ name: string; startTime: string; endTime: string }>;
+		sections: Array<{
+			name: string;
+			startTime: string;
+			endTime: string;
+		}>;
 		jobScopes: Array<JobScope>;
 	};
 	onSubmit: (data: EventSubmitData) => Promise<void>;
@@ -109,7 +117,11 @@ export function EventEditor({
 	const [open, setOpen] = useState(false);
 	const minEventDate = startOfDay(new Date());
 	const [sections, setSections] = useState<
-		Array<{ name: string; startTime: string; endTime: string }>
+		Array<{
+			name: string;
+			startTime: string;
+			endTime: string;
+		}>
 	>(initialData?.sections ?? []);
 	const [sectionInput, setSectionInput] = useState("");
 	const [jobRole, setJobRole] = useState<"staff" | "supervisor">("staff");
@@ -235,7 +247,6 @@ export function EventEditor({
 
 		// Enforce strict lowercasing for absolute bulletproof comparisons and db storage!
 		const finalName = rawName.toLowerCase();
-
 		// Use Functional Updater to guarantee serial execution and lock out race conditions!
 		setSections((prev) => {
 			const exists = prev.some(
@@ -327,6 +338,14 @@ export function EventEditor({
 			<section className="spine min-h-screen py-12 bg-zinc-950">
 				<form
 					noValidate
+					onKeyDown={(e) => {
+						if (
+							e.key === "Enter" &&
+							(e.target as HTMLElement).tagName !== "TEXTAREA"
+						) {
+							e.preventDefault();
+						}
+					}}
 					onSubmit={(e) => {
 						e.preventDefault();
 						e.stopPropagation();
