@@ -131,7 +131,15 @@ function RosterTabComponent() {
 					</div>
 					<SectionHeadcountBreakdown sections={breakdownSections} />
 				</div>
-			) : null}
+			) : (
+				<div className="flex flex-col px-1 pb-2">
+					<p className="text-md font-bold text-zinc-50">Event Roster</p>
+					<p className="text-xs text-zinc-300">
+						Section reporting of busyness,
+						<br /> occupancy level and headcount for each section.
+					</p>
+				</div>
+			)}
 
 			<div className={container()}>
 				{layout.sections.length === 0 ? (

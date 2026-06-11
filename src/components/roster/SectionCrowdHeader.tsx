@@ -58,7 +58,7 @@ export function SectionCrowdHeader({
 						{displayName}
 					</span>
 					{shift ? (
-						<span className="text-[11px] font-mono text-yellow-200">
+						<span className="text-[12px] font-mono text-yellow-200 ml-auto">
 							{shift}
 						</span>
 					) : null}
