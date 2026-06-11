@@ -49,6 +49,9 @@ export function SectionIncludeInTotalSwitch({
 
 	return (
 		<div className="flex shrink-0 flex-col items-end gap-0.5 pr-1">
+			<span className="pointer-events-none text-[10px] text-zinc-300">
+				inc total
+			</span>
 			<Switch
 				checked={checked}
 				disabled={!canToggle || isSaving}
@@ -60,9 +63,6 @@ export function SectionIncludeInTotalSwitch({
 				onKeyDown={stopAccordionToggle}
 				aria-label="Include in event total"
 			/>
-			<span className="pointer-events-none text-[9px] text-zinc-500">
-				In total
-			</span>
 		</div>
 	);
 }

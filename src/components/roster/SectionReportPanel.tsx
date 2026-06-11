@@ -1,8 +1,9 @@
 import { useMutation } from "convex/react";
-import { Minus, Plus, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CollapsibleBottomPanel } from "#/components/live/CollapsibleBottomPanel";
+import { Input } from "#/components/ui/input";
 import { Switch } from "#/components/ui/switch";
 import {
 	ACTIVITY_OPTIONS,
@@ -41,12 +42,17 @@ export function SectionReportPanel({
 }: SectionReportPanelProps) {
 	const reportSectionStatus = useMutation(api.sections.reportSectionStatus);
 	const [form, setForm] = useState<SectionReportFormState>(serverState);
+	const [headcountInput, setHeadcountInput] = useState(
+		String(serverState.headcount),
+	);
 	const [isDirty, setIsDirty] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isPanelOpen, setIsPanelOpen] = useState(false);
 
 	useEffect(() => {
 		if (!isDirty) {
 			setForm(serverState);
+			setHeadcountInput(String(serverState.headcount));
 		}
 	}, [serverState, isDirty]);
 
@@ -55,7 +61,31 @@ export function SectionReportPanel({
 		setForm((prev) => ({ ...prev, ...patch }));
 	};
 
+	const parseHeadcount = (value: string) => {
+		if (value === "") return 0;
+		const parsed = Number.parseInt(value, 10);
+		return Number.isNaN(parsed) || parsed < 0 ? 0 : parsed;
+	};
+
+	const commitHeadcount = (value: string) => {
+		const headcount = parseHeadcount(value);
+		setHeadcountInput(String(headcount));
+		updateForm({ headcount });
+		return headcount;
+	};
+
+	const handleHeadcountChange = (value: string) => {
+		if (!/^\d*$/.test(value)) return;
+		setIsDirty(true);
+		setHeadcountInput(value);
+		setForm((prev) => ({
+			...prev,
+			headcount: value === "" ? 0 : parseHeadcount(value),
+		}));
+	};
+
 	const handleSubmit = async () => {
+		const headcount = commitHeadcount(headcountInput);
 		setIsSubmitting(true);
 		try {
 			await reportSectionStatus({
@@ -66,11 +96,12 @@ export function SectionReportPanel({
 				...(form.headcountReporting
 					? {
 							occupancyFill: form.occupancyFill,
-							headcount: form.headcount,
+							headcount,
 						}
 					: {}),
 			});
 			setIsDirty(false);
+			setIsPanelOpen(false);
 			toast.success("Section report updated");
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Failed to save");
@@ -84,7 +115,11 @@ export function SectionReportPanel({
 	const shift = formatShiftRange(startTime, endTime);
 
 	return (
-		<CollapsibleBottomPanel panelLabel="section report">
+		<CollapsibleBottomPanel
+			panelLabel="section report"
+			open={isPanelOpen}
+			onOpenChange={setIsPanelOpen}
+		>
 			<p className="text-sm font-medium text-zinc-300">
 				Reporting for <span className="text-zinc-100">{displayName}</span>
 				{shift ? (
@@ -95,7 +130,7 @@ export function SectionReportPanel({
 			</p>
 
 			<div className="space-y-1.5">
-				<p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+				<p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
 					Activity
 				</p>
 				<div className="flex flex-wrap gap-1.5">
@@ -120,8 +155,8 @@ export function SectionReportPanel({
 			<div className="flex items-center justify-between gap-2">
 				<div>
 					<p className="text-xs font-medium text-zinc-200">Report headcount</p>
-					<p className="text-[10px] text-zinc-500">
-						Enable crowd count and occupancy
+					<p className="text-[11px] text-zinc-300">
+						Only if relevant to your section
 					</p>
 				</div>
 				<Switch
@@ -135,7 +170,7 @@ export function SectionReportPanel({
 			{form.headcountReporting ? (
 				<>
 					<div className="space-y-1.5">
-						<p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+						<p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
 							Occupancy
 						</p>
 						<div className="flex flex-wrap gap-1.5">
@@ -158,31 +193,19 @@ export function SectionReportPanel({
 					</div>
 
 					<div className="flex items-center justify-between gap-2">
-						<p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+						<p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
 							Headcount
 						</p>
-						<div className="flex items-center rounded-lg border border-zinc-800 bg-zinc-950/50 overflow-hidden">
-							<button
-								type="button"
-								disabled={form.headcount <= 0}
-								onClick={() =>
-									updateForm({ headcount: Math.max(0, form.headcount - 1) })
-								}
-								className="px-2.5 py-1.5 text-zinc-400 hover:text-zinc-100"
-							>
-								<Minus className="size-3.5" />
-							</button>
-							<span className="min-w-10 text-center text-sm font-bold text-zinc-100">
-								{form.headcount}
-							</span>
-							<button
-								type="button"
-								onClick={() => updateForm({ headcount: form.headcount + 1 })}
-								className="px-2.5 py-1.5 text-zinc-400 hover:text-zinc-100"
-							>
-								<Plus className="size-3.5" />
-							</button>
-						</div>
+						<Input
+							type="text"
+							inputMode="numeric"
+							pattern="[0-9]*"
+							value={headcountInput}
+							onChange={(e) => handleHeadcountChange(e.target.value)}
+							onBlur={() => commitHeadcount(headcountInput)}
+							className="w-24 text-center text-sm font-bold "
+							aria-label="Headcount"
+						/>
 					</div>
 				</>
 			) : null}
@@ -192,7 +215,7 @@ export function SectionReportPanel({
 				disabled={!isDirty || isSubmitting}
 				onClick={() => void handleSubmit()}
 				className={cn(
-					"flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all",
+					"flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all mt-1",
 					!isDirty || isSubmitting
 						? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
 						: "bg-zinc-100 text-zinc-950 hover:bg-zinc-200 active:scale-[0.98]",

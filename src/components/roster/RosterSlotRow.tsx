@@ -15,12 +15,12 @@ export type RosterSlotRowData = {
 
 function OccupantLine({ slot }: { slot: RosterSlotRowData }) {
 	if (!slot.assignedStaffId) {
-		return <p className="text-[11px] text-zinc-500 italic">Vacant</p>;
+		return <p className="text-xs font-bold text-zinc-500 italic">Vacant</p>;
 	}
 
 	if (slot.staffStatus === "checked_out") {
 		return (
-			<p className="text-[11px] text-zinc-500">
+			<p className="text-xs font-bold text-zinc-500 mb-0.5">
 				<span className="line-through opacity-70">{slot.staffName}</span>
 				<span className="ml-1.5 not-italic">· Checked out</span>
 			</p>
@@ -29,7 +29,7 @@ function OccupantLine({ slot }: { slot: RosterSlotRowData }) {
 
 	if (slot.staffStatus === "unclaimed") {
 		return (
-			<p className="text-[11px] text-zinc-400">
+			<p className="text-xs font-bold text-zinc-400 mb-0.5">
 				{slot.staffName}
 				<span className="ml-1.5 text-zinc-500">· Not checked in</span>
 			</p>
@@ -38,56 +38,44 @@ function OccupantLine({ slot }: { slot: RosterSlotRowData }) {
 
 	if (slot.staffStatus === "active") {
 		return (
-			<p className="text-[11px] text-emerald-300/90">
+			<p className="text-xs font-bold text-yellow-300 mb-0.5">
 				{slot.staffName}
-				<span className="ml-1.5 text-emerald-400/80">· Active</span>
+				<span className="ml-1.5 text-zinc-300">· Active</span>
 			</p>
 		);
 	}
 
 	return (
-		<p className="text-[11px] text-zinc-400">{slot.staffName ?? "Assigned"}</p>
+		<p className="text-[11px] text-zinc-400 mb-0.5">
+			{slot.staffName ?? "Assigned"}
+		</p>
 	);
 }
 
 export function RosterSlotRow({ slot }: { slot: RosterSlotRowData }) {
 	return (
 		<div
-			className={cn(
-				"rounded-lg bg-zinc-900/80 border px-2.5 py-2 space-y-1",
-				slot.isViewer
-					? "border-yellow-500/50 ring-1 ring-yellow-500/20"
-					: "border-zinc-800/80",
-			)}
+			className={
+				" bg-zinc-950 border p-2 flex flex-row items-start justify-between"
+			}
 		>
-			<div className="flex items-start justify-between gap-2">
-				<p className="text-sm font-semibold text-zinc-100 leading-tight">
-					{slot.title}
-				</p>
-				<div className="flex items-center gap-1.5 shrink-0">
-					{slot.isViewer && (
-						<span className="text-[9px] font-bold uppercase tracking-wider text-yellow-400 bg-yellow-400/10 px-1.5 py-0.5 rounded">
-							You
-						</span>
-					)}
-					<span
-						className={cn(
-							"text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
-							slot.role === "supervisor"
-								? "text-emerald-400 bg-emerald-400/10"
-								: "text-yellow-400 bg-yellow-400/10",
-						)}
-					>
-						{slot.role}
-					</span>
-				</div>
+			<div className="flex flex-col">
+				<OccupantLine slot={slot} />
+				<p className="text-xs font-semibold text-zinc-100">{slot.title}</p>
+				{slot.description ? (
+					<p className="text-[12px] text-zinc-300">{slot.description}</p>
+				) : null}
 			</div>
-			{slot.description ? (
-				<p className="text-[11px] text-zinc-500 leading-snug">
-					{slot.description}
-				</p>
-			) : null}
-			<OccupantLine slot={slot} />
+
+			<div className="flex items-center gap-1.5 shrink-0">
+				<span
+					className={
+						"text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+					}
+				>
+					{slot.role}
+				</span>
+			</div>
 		</div>
 	);
 }

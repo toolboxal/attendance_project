@@ -55,7 +55,7 @@ function AccordionContent({
 			className="overflow-hidden text-sm"
 			{...props}
 		>
-			<div className={cn("pb-3 pt-0", className)}>{children}</div>
+			<div className={cn("pt-0", className)}>{children}</div>
 		</AccordionPrimitive.Content>
 	);
 }

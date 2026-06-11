@@ -5,11 +5,28 @@ import { cn } from "#/lib/utils";
 export function CollapsibleBottomPanel({
 	children,
 	panelLabel,
+	open,
+	onOpenChange,
 }: {
 	children: React.ReactNode;
 	panelLabel: string;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
 }) {
-	const [isOpen, setIsOpen] = useState(false);
+	const [internalOpen, setInternalOpen] = useState(false);
+	const isControlled = open !== undefined;
+	const isOpen = isControlled ? open : internalOpen;
+
+	const setIsOpen = (next: boolean | ((prev: boolean) => boolean)) => {
+		const resolved =
+			typeof next === "function"
+				? next(isControlled ? (open ?? false) : internalOpen)
+				: next;
+		if (!isControlled) {
+			setInternalOpen(resolved);
+		}
+		onOpenChange?.(resolved);
+	};
 
 	return (
 		<div className="fixed bottom-16 left-1/2 z-40 flex w-[calc(100%-1rem)] max-w-md -translate-x-1/2 flex-col items-start">

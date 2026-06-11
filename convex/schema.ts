@@ -61,9 +61,10 @@ export default defineSchema({
     occupancyFill: v.union(
       v.literal("0"),
       v.literal("25"),
+      v.literal("50"),
       v.literal("75"),
+      v.literal("90"),
       v.literal("full"),
-      v.literal("overflow"),
     ),
     activity: v.union(
       v.literal("low"),

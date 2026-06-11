@@ -9,10 +9,28 @@ const UNASSIGNED_KEY = UNASSIGNED_SECTION_KEY;
 const occupancyFillValidator = v.union(
 	v.literal("0"),
 	v.literal("25"),
+	v.literal("50"),
 	v.literal("75"),
+	v.literal("90"),
 	v.literal("full"),
-	v.literal("overflow"),
 );
+
+function normalizeOccupancyFill(
+	value: string,
+): Doc<"eventSections">["occupancyFill"] {
+	if (value === "overflow") return "50";
+	if (
+		value === "0" ||
+		value === "25" ||
+		value === "50" ||
+		value === "75" ||
+		value === "90" ||
+		value === "full"
+	) {
+		return value;
+	}
+	return "0";
+}
 
 const activityValidator = v.union(
 	v.literal("low"),
@@ -146,7 +164,7 @@ export const getRosterLayout = query({
 				includeInTotal: section.includeInTotal,
 				headcount: section.headcount,
 				activity: section.activity,
-				occupancyFill: section.occupancyFill,
+				occupancyFill: normalizeOccupancyFill(section.occupancyFill),
 			});
 		}
 
@@ -280,7 +298,7 @@ export const getSectionReport = query({
 
 		return {
 			activity: section.activity,
-			occupancyFill: section.occupancyFill,
+			occupancyFill: normalizeOccupancyFill(section.occupancyFill),
 			headcount: section.headcount,
 			headcountReporting: section.headcountReporting,
 			includeInTotal: section.includeInTotal,

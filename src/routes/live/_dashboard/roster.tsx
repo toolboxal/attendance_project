@@ -1,11 +1,12 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { format } from "date-fns";
 import { useMemo } from "react";
 import { tv } from "tailwind-variants";
 import { RosterSectionAccordion } from "#/components/roster/RosterSectionAccordion";
+import { SectionHeadcountBreakdown } from "#/components/roster/SectionHeadcountBreakdown";
 import { SectionReportPanel } from "#/components/roster/SectionReportPanel";
+import type { OccupancyFill } from "#/lib/sectionReport";
 import { Accordion } from "#/components/ui/accordion";
 import { getStaffAccessToken } from "#/lib/staffToken";
 import { api } from "../../../../convex/_generated/api";
@@ -70,18 +71,34 @@ function RosterTabComponent() {
 		);
 	}, [layout, viewerAssignedSectionKeys]);
 
-	const { totalHeadcount, includedCount } = useMemo(() => {
-		if (!layout) return { totalHeadcount: 0, includedCount: 0 };
+	const { totalHeadcount, breakdownSections } = useMemo(() => {
+		if (!layout) return { totalHeadcount: 0, breakdownSections: [] };
 		let total = 0;
-		let count = 0;
+		const breakdown: Array<{
+			sectionKey: string;
+			name: string;
+			headcount: number;
+			occupancyFill: OccupancyFill;
+		}> = [];
+
 		for (const section of layout.sections) {
 			if (!isNamedSection(section.sectionKey)) continue;
 			if (section.includeInTotal) {
 				total += section.headcount;
-				count += 1;
+				if (section.headcount > 0) {
+					breakdown.push({
+						sectionKey: section.sectionKey,
+						name: section.name,
+						headcount: section.headcount,
+						occupancyFill: section.occupancyFill,
+					});
+				}
 			}
 		}
-		return { totalHeadcount: total, includedCount: count };
+
+		breakdown.sort((a, b) => b.headcount - a.headcount);
+
+		return { totalHeadcount: total, breakdownSections: breakdown };
 	}, [layout]);
 
 	if (!layout || !staffData) {
@@ -99,25 +116,22 @@ function RosterTabComponent() {
 
 	return (
 		<div className="h-[calc(100dvh-5.5rem)] flex flex-col bg-zinc-950 overflow-hidden">
-			<div className="flex flex-col gap-1 px-1 pb-2 shrink-0">
-				<div className="flex flex-row items-start justify-between gap-2">
-					<div>
-						<p className="text-xs font-semibold text-zinc-100">Roster</p>
-						{profile?.eventDate ? (
-							<p className="text-[11px] text-zinc-500">
-								{format(new Date(profile.eventDate), "PPPP")}
-							</p>
-						) : null}
-					</div>
-					<p className="text-[11px] text-zinc-400 text-right">
-						Total reported · {totalHeadcount.toLocaleString()} pax
-						<br />
-						<span className="text-zinc-600">
-							({includedCount} section{includedCount === 1 ? "" : "s"})
+			{breakdownSections.length > 0 ? (
+				<div className="flex flex-row gap-5 px-1 pb-2 shrink-0">
+					<div className="flex flex-col px-2">
+						<span className="text-[10px] text-zinc-300 text-nowrap">
+							Total Headcount
 						</span>
-					</p>
+						<div className="flex flex-row items-center gap-1">
+							<span className="text-xl font-bold text-blue-400">
+								{totalHeadcount.toLocaleString()}
+							</span>
+							<span className="text-zinc-500 text-sm">pax</span>
+						</div>
+					</div>
+					<SectionHeadcountBreakdown sections={breakdownSections} />
 				</div>
-			</div>
+			) : null}
 
 			<div className={container()}>
 				{layout.sections.length === 0 ? (
@@ -125,7 +139,7 @@ function RosterTabComponent() {
 						No sections configured for this event.
 					</p>
 				) : (
-					<Accordion type="multiple" className="w-full">
+					<Accordion type="multiple" className="w-full ">
 						{layout.sections.map((section) => (
 							<RosterSectionAccordion
 								key={section.sectionKey}
