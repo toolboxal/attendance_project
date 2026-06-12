@@ -170,6 +170,15 @@ export default defineSchema({
     content: v.string(),
   }).index("by_entry", ["watchlistEntryId"]),
 
+  // Admin live-floor broadcasts (one active at a time per event)
+  broadcasts: defineTable({
+    eventId: v.id("events"),
+    content: v.string(),
+    createdByStaffId: v.id("liveStaff"),
+    createdAt: v.number(),
+    status: v.union(v.literal("active"), v.literal("inactive")),
+  }).index("by_event", ["eventId"]),
+
   // Discord-like Messages
   messages: defineTable({
     eventId: v.id("events"),

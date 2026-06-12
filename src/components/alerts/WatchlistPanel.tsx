@@ -25,9 +25,8 @@ export function WatchlistPanel({
 
 	if (entries.length === 0) {
 		return (
-			<p className="text-center text-zinc-500 text-sm py-8">
-				No watchlist entries for this event. Your admin has not published any
-				banned persons or prohibited items yet.
+			<p className="text-center text-zinc-400 text-sm py-8">
+				Your admin has not published any banned persons or prohibited items yet.
 			</p>
 		);
 	}

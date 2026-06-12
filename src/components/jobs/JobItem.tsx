@@ -21,7 +21,7 @@ type EnrichedJob = Doc<"jobs"> & {
 
 const jobStyles = tv({
 	slots: {
-		card: "bg-zinc-700 rounded-md overflow-hidden text-zinc-100 shadow-sm shadow-zinc-400",
+		card: "bg-zinc-700 rounded-md overflow-hidden text-zinc-100 pb-0.5",
 		header:
 			" py-0.5 px-2  flex flex-row items-center justify-between font-normal ",
 		middleSection:
@@ -33,7 +33,7 @@ const jobStyles = tv({
 		status: {
 			pending: "",
 			accepted: {
-				card: "bg-emerald-700/40 shadow-sm shadow-emerald-500",
+				card: "bg-emerald-700/50 ",
 			},
 			resolved: {
 				card: "bg-zinc-950 opacity-40",

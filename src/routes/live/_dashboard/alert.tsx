@@ -103,8 +103,7 @@ function AlertsTabComponent() {
 		() =>
 			activeAlerts.reduce(
 				(sum, alert) =>
-					sum +
-					getUnreadUpdateCount(alert.updateCount, alert._id, readMap),
+					sum + getUnreadUpdateCount(alert.updateCount, alert._id, readMap),
 				0,
 			),
 		[activeAlerts, readMap],
@@ -233,8 +232,9 @@ function AlertsTabComponent() {
 
 					<div className={cn(container(), alertsContainer())}>
 						{activeAlerts.length === 0 ? (
-							<p className="text-center text-zinc-500 text-sm py-8">
-								No active alerts. Send one below.
+							<p className="text-center text-zinc-400 text-sm py-8">
+								Incident reporting is for issues like security,
+								<br /> medical, lost person, broken chairs, etc.
 							</p>
 						) : (
 							activeAlerts.map((alert) => (
@@ -257,7 +257,7 @@ function AlertsTabComponent() {
 					className="flex flex-1 flex-col min-h-0 mt-0 data-[state=inactive]:hidden"
 				>
 					<div className="flex flex-row items-center justify-between py-2 border-b border-zinc-800 shrink-0">
-						<p className="text-zinc-400 font-semibold text-xs">
+						<p className="text-zinc-400 font-semibold text-sm leading-tight">
 							Keep a lookout for these banned persons <br /> or prohibited
 							items.
 						</p>

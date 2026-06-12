@@ -566,6 +566,15 @@ export const deleteEvent = mutation({
       await ctx.db.delete(msg._id);
     }
 
+    // 4b. Delete associated broadcasts
+    const broadcasts = await ctx.db
+      .query("broadcasts")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+    for (const broadcast of broadcasts) {
+      await ctx.db.delete(broadcast._id);
+    }
+
     // 5. Delete associated eventSections
     const sections = await ctx.db
       .query("eventSections")

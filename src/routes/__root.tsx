@@ -86,7 +86,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<body className="bg-neutral-950 text-neutral-50">
 				{children}
 				<Toaster />
-				<TanStackDevtools
+				{/* <TanStackDevtools
 					config={{
 						position: "bottom-right",
 					}}
@@ -96,7 +96,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 							render: <TanStackRouterDevtoolsPanel />,
 						},
 					]}
-				/>
+				/> */}
 				<Scripts />
 			</body>
 		</html>

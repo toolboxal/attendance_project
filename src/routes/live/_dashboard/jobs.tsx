@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { tv } from "tailwind-variants";
 import { DispatchPanel } from "#/components/jobs/DispatchPanel";
 import { JobItem } from "#/components/jobs/JobItem";
-import { formatTime12h } from "#/lib/utils";
+import { capitalizeWords, formatTime12h } from "#/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import { MAX_ACTIVE_JOBS } from "../../../../convex/constants";
 
@@ -58,7 +58,7 @@ function JobsTabComponent() {
 									{message}
 								</p>
 								<p className="text-[11px] text-emerald-200">
-									{relevantJob.originSectionName}
+									{capitalizeWords(relevantJob.originSectionName)}
 									{relevantJob.personCount >= 1
 										? ` · ${relevantJob.personCount} pax`
 										: ""}
@@ -113,7 +113,7 @@ function JobsTabComponent() {
 			{/* Queue Header Counter */}
 			<div className="flex flex-row items-center justify-between pb-2 border-b border-zinc-800 mt-2">
 				<span className="text-zinc-400 font-black text-sm uppercase">
-					Active Jobs ({" "}
+					Traffic Jobs ({" "}
 					<span
 						className={`font-bold ${activeJobs.length >= MAX_ACTIVE_JOBS ? "text-red-500" : "text-green-400"}`}
 					>

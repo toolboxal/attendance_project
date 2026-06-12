@@ -150,10 +150,6 @@ export function AlertItem({
 				>
 					<div className="flex flex-col leading-tight">
 						<div className="flex flex-row items-center gap-2">
-							{/* <span className="text-sm font-bold text-red-300 uppercase">
-								{alert.alertType.replace("_", " ")}
-							</span> */}
-							{/* <span>created by</span> */}
 							{alert.isPinned && (
 								<span className="text-[10px] font-bold text-amber-400 uppercase">
 									Pinned
@@ -252,7 +248,7 @@ export function AlertItem({
 						<span className="text-[11px] font-bold text-red-400 uppercase">
 							{alert.alertType.replace("_", " ")}
 						</span>
-						<p className="text-sm text-red-300 font-medium">{alert.body}</p>
+						<p className="text-sm text-red-100 font-medium">{alert.body}</p>
 						<p className="text-[11px] text-zinc-400 italic">
 							{formatRelativeTime(alert._creationTime)}
 						</p>

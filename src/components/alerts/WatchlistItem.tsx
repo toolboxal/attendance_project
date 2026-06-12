@@ -124,7 +124,7 @@ export function WatchlistItem({
 				aria-expanded={expanded}
 				aria-label={expandLabel}
 			>
-				<div className="flex flex-row p-2 gap-3 h-full">
+				<div className="flex flex-row p-2 pb-0 gap-3 h-full">
 					<div>
 						{entry.photoUrl && (
 							<a
