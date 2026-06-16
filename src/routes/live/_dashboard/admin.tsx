@@ -9,6 +9,7 @@ import { tv } from "tailwind-variants";
 import { BroadcastPanel } from "#/components/broadcast/BroadcastPanel";
 import { AdminEventControls } from "#/components/admin/AdminEventControls";
 import { AdminSituationOverview } from "#/components/admin/AdminSituationOverview";
+import { AdminStaffManagement } from "#/components/admin/AdminStaffManagement";
 import { Button } from "#/components/ui/button";
 import { getStaffAccessToken } from "#/lib/staffToken";
 import { cn } from "#/lib/utils";
@@ -95,17 +96,19 @@ function AdminTabComponent() {
 
 	return (
 		<div className={container()}>
-			<AdminSituationOverview />
 			<AdminEventControls />
-
-			<div className="flex flex-col px-1 pb-2 shrink-0">
-				<p className="text-md font-bold text-zinc-50">Broadcasts</p>
-				<p className="text-xs text-zinc-300">
-					Send a message to all staff. Only one broadcast is active at a time.
-				</p>
-			</div>
+			<AdminSituationOverview />
 
 			<div className={scroll()}>
+				<AdminStaffManagement />
+
+				<div className="flex flex-col px-0 pb-2 shrink-0 pt-2">
+					<p className="text-md font-bold text-zinc-50">Broadcasts</p>
+					<p className="text-xs text-zinc-300">
+						Send a message to all staff. Only one broadcast is active at a time.
+					</p>
+				</div>
+
 				{history.length === 0 ? (
 					<p className="text-xs text-zinc-500 px-1">No broadcasts yet.</p>
 				) : (

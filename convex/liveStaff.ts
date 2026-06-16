@@ -1,5 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { getAuthenticatedUser, isEventAccessClosed } from "./events";
 import { getLiveContext, requireAdmin } from "./liveAuth";
 import { ConvexError } from "convex/values";
@@ -9,6 +11,103 @@ function generateAccessToken() {
 		Math.random().toString(36).substring(2, 15) +
 		Math.random().toString(36).substring(2, 15)
 	);
+}
+
+function generateInviteToken() {
+	return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+async function assignStaffToSlotInternal(
+	ctx: MutationCtx,
+	slotId: Id<"roleSlots">,
+	staffName: string,
+) {
+	const trimmedName = staffName.trim();
+	if (!trimmedName) throw new Error("Staff name cannot be empty.");
+
+	const slot = await ctx.db.get(slotId);
+	if (!slot) throw new Error("Role slot not found.");
+
+	let liveStaffId = slot.assignedStaffId;
+	const existingStaff = liveStaffId ? await ctx.db.get(liveStaffId) : null;
+
+	if (!existingStaff) {
+		const secureAccessToken = generateAccessToken();
+		liveStaffId = await ctx.db.insert("liveStaff", {
+			eventId: slot.eventId,
+			staffName: trimmedName,
+			role: slot.role,
+			sectionId: slot.sectionId,
+			accessToken: secureAccessToken,
+			lastActive: Date.now(),
+			status: "unclaimed",
+		});
+	} else {
+		await ctx.db.patch(existingStaff._id, {
+			staffName: trimmedName,
+			lastActive: Date.now(),
+		});
+		liveStaffId = existingStaff._id;
+
+		// Already claimed and on the floor — name-only update; do not restore invite token.
+		if (existingStaff.status === "active") {
+			return {
+				staffId: liveStaffId,
+				success: true as const,
+			};
+		}
+	}
+
+	let token = slot.inviteToken;
+	if (!token) {
+		token = generateInviteToken();
+	}
+
+	await ctx.db.patch(slotId, {
+		assignedStaffId: liveStaffId,
+		inviteToken: token,
+	});
+
+	return {
+		inviteToken: token,
+		staffId: liveStaffId,
+		success: true as const,
+	};
+}
+
+async function revokeStaffFromSlotInternal(
+	ctx: MutationCtx,
+	slotId: Id<"roleSlots">,
+) {
+	const slot = await ctx.db.get(slotId);
+	if (!slot) {
+		throw new ConvexError({
+			title: "Slot Not Found",
+			reason: "The requested role slot does not exist.",
+			actionNeeded: "Please refresh and try again.",
+			errorType: 404,
+		});
+	}
+
+	if (slot.assignedStaffId) {
+		const staff = await ctx.db.get(slot.assignedStaffId);
+		if (staff?.adminUserId != null) {
+			throw new ConvexError({
+				title: "Cannot Revoke",
+				reason: "Admin floor sessions cannot be revoked from this action.",
+				actionNeeded: "Use the dashboard to manage your admin session.",
+				errorType: 403,
+			});
+		}
+		await ctx.db.delete(slot.assignedStaffId);
+	}
+
+	await ctx.db.patch(slotId, {
+		assignedStaffId: undefined,
+		inviteToken: undefined,
+	});
+
+	return { success: true as const };
 }
 
 /**
@@ -25,7 +124,6 @@ export const createStaffInvitation = mutation({
 		const trimmedName = args.staffName.trim();
 		if (!trimmedName) throw new Error("Staff name cannot be empty.");
 
-		// 1. Validate slot ownership
 		const slot = await ctx.db.get(args.slotId);
 		if (!slot) throw new Error("Role slot not found.");
 
@@ -36,50 +134,7 @@ export const createStaffInvitation = mutation({
 			throw new Error("Unauthorized to manage staffing for this event.");
 		}
 
-		let liveStaffId = slot.assignedStaffId;
-		const existingStaff = liveStaffId ? await ctx.db.get(liveStaffId) : null;
-
-		// 2. CASE A: This slot is brand new/unclaimed or the referenced record was deleted. Create the record!
-		if (!existingStaff) {
-			// Generate secure internal credential for persistent session storage later
-			const secureAccessToken = generateAccessToken();
-
-			liveStaffId = await ctx.db.insert("liveStaff", {
-				eventId: slot.eventId,
-				staffName: trimmedName,
-				role: slot.role,
-				sectionId: slot.sectionId, // Link physical duty location immediately!
-				accessToken: secureAccessToken,
-				lastActive: Date.now(),
-				status: "unclaimed", // Start off as unclaimed until they open the link
-			});
-		} else {
-			// CASE B: Already assigned. Admin is just renaming/updating the entry!
-			await ctx.db.patch(liveStaffId!, {
-				staffName: trimmedName,
-				lastActive: Date.now(),
-			});
-		}
-
-		// 3. Generate/Retrieve Invite Token
-		// If an inviteToken doesn't exist yet, generate one now!
-		let token = slot.inviteToken;
-		if (!token) {
-			// Generate a shorter, cleaner 6-character uppercase code
-			token = Math.random().toString(36).substring(2, 8).toUpperCase();
-		}
-
-		// 4. Seal the linkage
-		await ctx.db.patch(args.slotId, {
-			assignedStaffId: liveStaffId,
-			inviteToken: token,
-		});
-
-		return {
-			inviteToken: token,
-			staffId: liveStaffId,
-			success: true,
-		};
+		return assignStaffToSlotInternal(ctx, args.slotId, trimmedName);
 	},
 });
 
@@ -249,18 +304,7 @@ export const revokeStaffAccess = mutation({
 			});
 		}
 
-		// 2. Delete the actual liveStaff profile record if linked
-		if (slot.assignedStaffId) {
-			await ctx.db.delete(slot.assignedStaffId);
-		}
-
-		// 3. Wipe assignment link and invite token on the slot
-		await ctx.db.patch(args.slotId, {
-			assignedStaffId: undefined,
-			inviteToken: undefined,
-		});
-
-		return { success: true };
+		return revokeStaffFromSlotInternal(ctx, args.slotId);
 	},
 });
 
@@ -484,5 +528,174 @@ export const endEventFromLiveFloor = mutation({
 		await ctx.db.patch(live.event._id, { status: "archived" });
 
 		return { success: true };
+	},
+});
+
+/** Staff management data for the live-floor Admin tab (admin only). */
+export const getLiveFloorStaffManagement = query({
+	args: { accessToken: v.string() },
+	handler: async (ctx, args) => {
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) return null;
+
+		requireAdmin(live);
+
+		const { event } = live;
+		const eventId = event._id;
+
+		const [sections, slots, allStaff] = await Promise.all([
+			ctx.db
+				.query("eventSections")
+				.withIndex("by_event", (q) => q.eq("eventId", eventId))
+				.collect(),
+			ctx.db
+				.query("roleSlots")
+				.withIndex("by_event", (q) => q.eq("eventId", eventId))
+				.collect(),
+			ctx.db
+				.query("liveStaff")
+				.withIndex("by_event", (q) => q.eq("eventId", eventId))
+				.collect(),
+		]);
+
+		const staffById = new Map(
+			allStaff
+				.filter((s) => s.adminUserId == null)
+				.map((s) => [s._id, s] as const),
+		);
+
+		type SlotAssignmentStatus = "vacant" | "pending" | "active";
+
+		const resolveStatus = (
+			assignedStaffId: Id<"liveStaff"> | undefined,
+			inviteToken: string | undefined,
+		): SlotAssignmentStatus => {
+			if (!assignedStaffId) return "vacant";
+			const staff = staffById.get(assignedStaffId);
+			if (!staff) return "vacant";
+			if (staff.status === "active" && !inviteToken) return "active";
+			return "pending";
+		};
+
+		const slotsBySectionKey = new Map<
+			string,
+			Array<{
+				slotId: Id<"roleSlots">;
+				title: string;
+				role: "supervisor" | "staff";
+				assignmentStatus: SlotAssignmentStatus;
+				staffId?: Id<"liveStaff">;
+				staffName?: string;
+				lastActive?: number;
+				inviteToken?: string;
+			}>
+		>();
+
+		const addSlot = (
+			sectionKey: string,
+			entry: (typeof slotsBySectionKey extends Map<string, infer V> ? V : never)[number],
+		) => {
+			const list = slotsBySectionKey.get(sectionKey) ?? [];
+			list.push(entry);
+			slotsBySectionKey.set(sectionKey, list);
+		};
+
+		for (const slot of slots) {
+			const staff = slot.assignedStaffId
+				? staffById.get(slot.assignedStaffId)
+				: undefined;
+			const sectionKey = slot.sectionId ?? "__floating__";
+			addSlot(sectionKey, {
+				slotId: slot._id,
+				title: slot.title,
+				role: slot.role,
+				assignmentStatus: resolveStatus(
+					slot.assignedStaffId,
+					slot.inviteToken,
+				),
+				staffId: staff?._id,
+				staffName: staff?.staffName,
+				lastActive: staff?.lastActive,
+				inviteToken: slot.inviteToken,
+			});
+		}
+
+		const groupedSections: Array<{
+			sectionKey: string;
+			name: string;
+			startTime?: string;
+			endTime?: string;
+			slots: NonNullable<ReturnType<typeof slotsBySectionKey.get>>;
+		}> = [];
+
+		for (const section of sections.sort((a, b) => a.name.localeCompare(b.name))) {
+			const sectionSlots = slotsBySectionKey.get(section._id);
+			if (!sectionSlots?.length) continue;
+			sectionSlots.sort((a, b) => a.title.localeCompare(b.title));
+			groupedSections.push({
+				sectionKey: section._id,
+				name: section.name,
+				startTime: section.startTime,
+				endTime: section.endTime,
+				slots: sectionSlots,
+			});
+		}
+
+		const floatingSlots = slotsBySectionKey.get("__floating__");
+		if (floatingSlots?.length) {
+			floatingSlots.sort((a, b) => a.title.localeCompare(b.title));
+			groupedSections.push({
+				sectionKey: "__floating__",
+				name: "Floating",
+				slots: floatingSlots,
+			});
+		}
+
+		return {
+			sections: groupedSections,
+		};
+	},
+});
+
+/** Assign or rename staff on a slot from the live floor (admin only). */
+export const createStaffInvitationFromLiveFloor = mutation({
+	args: {
+		accessToken: v.string(),
+		slotId: v.id("roleSlots"),
+		staffName: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) throw new Error("Invalid session");
+
+		requireAdmin(live);
+
+		const slot = await ctx.db.get(args.slotId);
+		if (!slot || slot.eventId !== live.event._id) {
+			throw new Error("Slot not found for this event");
+		}
+
+		return assignStaffToSlotInternal(ctx, args.slotId, args.staffName);
+	},
+});
+
+/** Revoke staff access from the live floor (admin only). */
+export const revokeStaffFromLiveFloor = mutation({
+	args: {
+		accessToken: v.string(),
+		slotId: v.id("roleSlots"),
+	},
+	handler: async (ctx, args) => {
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) throw new Error("Invalid session");
+
+		requireAdmin(live);
+
+		const slot = await ctx.db.get(args.slotId);
+		if (!slot || slot.eventId !== live.event._id) {
+			throw new Error("Slot not found for this event");
+		}
+
+		return revokeStaffFromSlotInternal(ctx, args.slotId);
 	},
 });

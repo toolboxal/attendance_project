@@ -149,7 +149,6 @@ export const cloneEvent = mutation({
     const newEventId = await ctx.db.insert("events", {
       adminId: original.adminId,
       title: args.newTitle,
-      joinCode: generateUniqueJoinCode(), // Fresh join code
       maxStaff: original.maxStaff,
       status: "draft",                    // Must start in draft
       tier: original.tier,
@@ -210,22 +209,22 @@ To keep URLs clean and simple for mobile users, we avoid placing complex databas
 
 ```
 /
-├── join/
-│   └── $joinCode              <-- Onboarding / Slot Selection page (public)
 └── live/
-    ├── index.tsx          <-- Helper Dashboard (My active tasks, announcements)
-    ├── jobs.tsx           <-- Helper Job Queue (View & report tasks)
-    ├── chat.tsx           <-- Real-time Chat Rooms (Announcements, general)
-    └── profile.tsx        <-- Current Slot details & self checkout
+    ├── $inviteToken.tsx   <-- Public invite gate (per-slot link from admin)
+    └── _dashboard/
+        ├── jobs.tsx       <-- Traffic / job queue
+        ├── alert.tsx      <-- Alerts & watchlist
+        ├── roster.tsx     <-- Roster & headcount
+        └── admin.tsx      <-- Admin command center (broadcasts, staff)
 ```
 
 ### Detailed Route Breakdown
 
-#### 1. Onboarding (`/join/$joinCode?token=...`)
+#### 1. Onboarding (`/live/$inviteToken`)
 *   **Type:** Public Route.
-*   **Purpose:** The entry point from WhatsApp/Email. It displays the event details (Wedding name, date, venue, dress code) and shows the specific slot they are claiming.
-*   **Action:** Helper inputs their name and taps **"Claim Role & Join"**. The app triggers `slots:claimSlot` and saves the returned `helperSessionToken` in `localStorage`.
-*   **Redirect:** Redirects them straight into the live dashboard: `/live`.
+*   **Purpose:** The entry point from WhatsApp/Email. Admin assigns a name to a role slot on the dashboard (or live-floor Admin tab) and shares the generated link. The page displays event details and the specific slot being claimed.
+*   **Action:** Helper taps **Accept** to claim the assignment. The app triggers `liveStaff:claimStaffInvite`, consumes the one-time `inviteToken`, and saves the returned `accessToken` in `localStorage`.
+*   **Redirect:** Redirects into the live floor dashboard (e.g. `/live/jobs`).
 
 #### 2. Live Layout (`/live`)
 *   **Type:** Ephemeral Staff Guard Route.
