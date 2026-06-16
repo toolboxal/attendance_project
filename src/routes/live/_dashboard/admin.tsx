@@ -7,6 +7,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { tv } from "tailwind-variants";
 import { BroadcastPanel } from "#/components/broadcast/BroadcastPanel";
+import { AdminEventControls } from "#/components/admin/AdminEventControls";
+import { AdminSituationOverview } from "#/components/admin/AdminSituationOverview";
 import { Button } from "#/components/ui/button";
 import { getStaffAccessToken } from "#/lib/staffToken";
 import { cn } from "#/lib/utils";
@@ -93,6 +95,9 @@ function AdminTabComponent() {
 
 	return (
 		<div className={container()}>
+			<AdminSituationOverview />
+			<AdminEventControls />
+
 			<div className="flex flex-col px-1 pb-2 shrink-0">
 				<p className="text-md font-bold text-zinc-50">Broadcasts</p>
 				<p className="text-xs text-zinc-300">
@@ -121,7 +126,9 @@ function AdminTabComponent() {
 									{format(item.createdAt, "MMM d, h:mm a")}
 								</span>
 							</div>
-							<p className="text-sm text-zinc-200 line-clamp-3">{item.content}</p>
+							<p className="text-sm text-zinc-200 line-clamp-3">
+								{item.content}
+							</p>
 							<div className="flex flex-wrap gap-2">
 								{item.status === "active" ? (
 									<Button

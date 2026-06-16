@@ -11,6 +11,7 @@ import { BroadcastBanner } from "#/components/broadcast/BroadcastBanner";
 import { ErrorView } from "#/components/error-view";
 import { Spinner } from "#/components/ui/spinner";
 import { parseStructuredError } from "#/lib/error-utils";
+import { clearStaffAccessToken } from "#/lib/staffToken";
 import { api } from "../../../../convex/_generated/api";
 
 const navBarItem = tv({
@@ -68,26 +69,46 @@ function DashboardAuthLayout() {
 		accessToken: token || "",
 	});
 
+	const sessionStatus = useQuery(
+		api.liveStaff.getLiveSessionStatus,
+		token && profile === null ? { accessToken: token } : "skip",
+	);
+
 	useEffect(() => {
 		if (profile === undefined) return;
 
-		if (!token || profile === null) {
+		if (!token) {
 			setHasToken(false);
 			setIsAuthenticating(false);
-
-			if (token && profile === null) {
-				localStorage.removeItem("asistir_staff_token");
-			}
-
 			navigate({
 				to: "/live/$inviteToken",
 				params: { inviteToken: "invalid" },
 			});
-		} else {
+			return;
+		}
+
+		if (profile !== null) {
 			setHasToken(true);
 			setIsAuthenticating(false);
+			return;
 		}
-	}, [navigate, token, profile]);
+
+		if (sessionStatus === undefined) return;
+
+		setIsAuthenticating(false);
+
+		if (sessionStatus.status === "ended") {
+			navigate({ to: "/live/ended" });
+			return;
+		}
+
+		clearStaffAccessToken();
+		setHasToken(false);
+		navigate({
+			to: "/live/$inviteToken",
+			params: { inviteToken: "invalid" },
+		});
+	}, [navigate, token, profile, sessionStatus]);
 
 	if (isAuthenticating) {
 		return (

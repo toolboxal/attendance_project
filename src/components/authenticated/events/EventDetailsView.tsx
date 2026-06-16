@@ -4,8 +4,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { format } from "date-fns";
 import { CircleAlert, Timer } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
+import { useLiveCountdown } from "#/hooks/use-live-countdown";
 import { Button } from "#/components/ui/button";
 import {
 	Dialog,
@@ -28,30 +29,7 @@ import { ManageStaffDialog } from "./ManageStaffDialog";
 
 // High-performance isolated countdown timer to avoid parent details view re-renders
 export function LiveCountdown({ expiresAt }: { expiresAt?: number }) {
-	const [timeLeft, setTimeLeft] = useState<string>("");
-
-	useEffect(() => {
-		if (!expiresAt) return;
-
-		const updateTimer = () => {
-			const diff = expiresAt - Date.now();
-			if (diff <= 0) {
-				setTimeLeft("Expired");
-				return;
-			}
-
-			const hours = Math.floor(diff / (1000 * 60 * 60));
-			const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-			const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-			const pad = (n: number) => String(n).padStart(2, "0");
-			setTimeLeft(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
-		};
-
-		updateTimer();
-		const interval = setInterval(updateTimer, 1000);
-		return () => clearInterval(interval);
-	}, [expiresAt]);
+	const timeLeft = useLiveCountdown(expiresAt ?? null);
 
 	if (!expiresAt) return null;
 

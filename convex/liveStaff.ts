@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthenticatedUser, isEventAccessClosed } from "./events";
+import { getLiveContext, requireAdmin } from "./liveAuth";
 import { ConvexError } from "convex/values";
 
 function generateAccessToken() {
@@ -387,5 +388,101 @@ export const getProfile = query({
 			isAdmin,
 			isSupervisor,
 		};
+	},
+});
+
+/**
+ * Session gate for the live floor layout and /live/ended page.
+ * Distinguishes active sessions from gracefully ended events vs invalid tokens.
+ */
+export const getLiveSessionStatus = query({
+	args: { accessToken: v.string() },
+	handler: async (ctx, args) => {
+		const staff = await ctx.db
+			.query("liveStaff")
+			.withIndex("by_accessToken", (q) => q.eq("accessToken", args.accessToken))
+			.first();
+
+		if (!staff || staff.status === "checked_out") {
+			return { status: "invalid" as const };
+		}
+
+		const event = await ctx.db.get(staff.eventId);
+		if (!event) {
+			return { status: "invalid" as const };
+		}
+
+		if (event.status !== "live" || isEventAccessClosed(event)) {
+			return {
+				status: "ended" as const,
+				eventTitle: event.title,
+				isAdmin: staff.adminUserId != null,
+			};
+		}
+
+		return { status: "active" as const };
+	},
+});
+
+/** Read-only command-center metrics for the Admin tab. */
+export const getAdminSituationOverview = query({
+	args: { accessToken: v.string() },
+	handler: async (ctx, args) => {
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) return null;
+
+		requireAdmin(live);
+
+		const { event } = live;
+		const eventId = event._id;
+
+		const [sections, openAlerts, activeJobs, activeStaff] = await Promise.all([
+			ctx.db
+				.query("eventSections")
+				.withIndex("by_event", (q) => q.eq("eventId", eventId))
+				.collect(),
+			ctx.db
+				.query("alerts")
+				.withIndex("by_event", (q) => q.eq("eventId", eventId))
+				.filter((q) => q.eq(q.field("status"), "open"))
+				.collect(),
+			ctx.db
+				.query("jobs")
+				.withIndex("by_event", (q) => q.eq("eventId", eventId))
+				.filter((q) => q.neq(q.field("status"), "resolved"))
+				.collect(),
+			ctx.db
+				.query("liveStaff")
+				.withIndex("by_event", (q) => q.eq("eventId", eventId))
+				.filter((q) => q.eq(q.field("status"), "active"))
+				.collect(),
+		]);
+
+		const totalHeadcount = sections
+			.filter((s) => s.includeInTotal)
+			.reduce((sum, s) => sum + s.headcount, 0);
+
+		return {
+			totalHeadcount,
+			openAlertsCount: openAlerts.length,
+			activeJobsCount: activeJobs.length,
+			activeStaffCount: activeStaff.length,
+			expiresAt: event.expiresAt ?? null,
+		};
+	},
+});
+
+/** Archive the event from the live floor (admin only). */
+export const endEventFromLiveFloor = mutation({
+	args: { accessToken: v.string() },
+	handler: async (ctx, args) => {
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) throw new Error("Invalid session");
+
+		requireAdmin(live);
+
+		await ctx.db.patch(live.event._id, { status: "archived" });
+
+		return { success: true };
 	},
 });

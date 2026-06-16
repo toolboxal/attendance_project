@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LiveRouteRouteImport } from './routes/live/route'
 import { Route as publicRouteRouteImport } from './routes/(public)/route'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
+import { Route as LiveEndedRouteImport } from './routes/live/ended'
 import { Route as LiveInviteTokenRouteImport } from './routes/live/$inviteToken'
 import { Route as LiveDashboardRouteRouteImport } from './routes/live/_dashboard/route'
 import { Route as AuthenticatedAppRouteRouteImport } from './routes/_authenticated/app/route'
@@ -46,6 +47,11 @@ const publicIndexRoute = publicIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => publicRouteRoute,
+} as any)
+const LiveEndedRoute = LiveEndedRouteImport.update({
+  id: '/ended',
+  path: '/ended',
+  getParentRoute: () => LiveRouteRoute,
 } as any)
 const LiveInviteTokenRoute = LiveInviteTokenRouteImport.update({
   id: '/$inviteToken',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/live': typeof LiveDashboardRouteRouteWithChildren
   '/app': typeof AuthenticatedAppRouteRouteWithChildren
   '/live/$inviteToken': typeof LiveInviteTokenRoute
+  '/live/ended': typeof LiveEndedRoute
   '/': typeof publicIndexRoute
   '/signin': typeof publicauthSigninRoute
   '/signup': typeof publicauthSignupRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/live': typeof LiveDashboardIndexRoute
   '/live/$inviteToken': typeof LiveInviteTokenRoute
+  '/live/ended': typeof LiveEndedRoute
   '/': typeof publicIndexRoute
   '/signin': typeof publicauthSigninRoute
   '/signup': typeof publicauthSignupRoute
@@ -204,6 +212,7 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRouteRouteWithChildren
   '/live/_dashboard': typeof LiveDashboardRouteRouteWithChildren
   '/live/$inviteToken': typeof LiveInviteTokenRoute
+  '/live/ended': typeof LiveEndedRoute
   '/(public)/': typeof publicIndexRoute
   '/(public)/(auth)/signin': typeof publicauthSigninRoute
   '/(public)/(auth)/signup': typeof publicauthSignupRoute
@@ -229,6 +238,7 @@ export interface FileRouteTypes {
     | '/live'
     | '/app'
     | '/live/$inviteToken'
+    | '/live/ended'
     | '/'
     | '/signin'
     | '/signup'
@@ -251,6 +261,7 @@ export interface FileRouteTypes {
   to:
     | '/live'
     | '/live/$inviteToken'
+    | '/live/ended'
     | '/'
     | '/signin'
     | '/signup'
@@ -275,6 +286,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/live/_dashboard'
     | '/live/$inviteToken'
+    | '/live/ended'
     | '/(public)/'
     | '/(public)/(auth)/signin'
     | '/(public)/(auth)/signup'
@@ -324,6 +336,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof publicIndexRouteImport
       parentRoute: typeof publicRouteRoute
+    }
+    '/live/ended': {
+      id: '/live/ended'
+      path: '/ended'
+      fullPath: '/live/ended'
+      preLoaderRoute: typeof LiveEndedRouteImport
+      parentRoute: typeof LiveRouteRoute
     }
     '/live/$inviteToken': {
       id: '/live/$inviteToken'
@@ -506,11 +525,13 @@ const LiveDashboardRouteRouteWithChildren =
 interface LiveRouteRouteChildren {
   LiveDashboardRouteRoute: typeof LiveDashboardRouteRouteWithChildren
   LiveInviteTokenRoute: typeof LiveInviteTokenRoute
+  LiveEndedRoute: typeof LiveEndedRoute
 }
 
 const LiveRouteRouteChildren: LiveRouteRouteChildren = {
   LiveDashboardRouteRoute: LiveDashboardRouteRouteWithChildren,
   LiveInviteTokenRoute: LiveInviteTokenRoute,
+  LiveEndedRoute: LiveEndedRoute,
 }
 
 const LiveRouteRouteWithChildren = LiveRouteRoute._addFileChildren(
