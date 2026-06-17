@@ -62,6 +62,17 @@ function RosterTabComponent() {
 
 	const viewerSection = useMemo(() => {
 		if (!layout) return null;
+
+		if (profile?.isAdmin && profile.sectionId) {
+			return (
+				layout.sections.find(
+					(section) =>
+						section.sectionKey === profile.sectionId &&
+						isNamedSection(section.sectionKey),
+				) ?? null
+			);
+		}
+
 		return (
 			layout.sections.find(
 				(section) =>
@@ -69,7 +80,7 @@ function RosterTabComponent() {
 					viewerAssignedSectionKeys.has(section.sectionKey),
 			) ?? null
 		);
-	}, [layout, viewerAssignedSectionKeys]);
+	}, [layout, profile?.isAdmin, profile?.sectionId, viewerAssignedSectionKeys]);
 
 	const { totalHeadcount, breakdownSections } = useMemo(() => {
 		if (!layout) return { totalHeadcount: 0, breakdownSections: [] };

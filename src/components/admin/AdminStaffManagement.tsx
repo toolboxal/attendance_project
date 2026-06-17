@@ -481,16 +481,16 @@ function SlotRow({
 
 	return (
 		<>
-			<div className="flex items-center gap-2 py-2 border-b border-zinc-800/80 last:border-0">
+			<div className="flex items-center gap-2 py-2 border-b border-zinc-700 last:border-0">
 				<div className="flex-1 min-w-0">
 					<p className="text-sm text-zinc-200 truncate font-medium">
 						{slot.title}
 					</p>
 					<p className="text-[10px] font-medium text-zinc-400">
 						{slot.role.toUpperCase()}
-						{slot.staffName ? ` · ${slot.staffName}` : ""}·{" "}
+						{slot.staffName ? ` · ${slot.staffName}` : ""} ·{" "}
 						<span
-							className={`${slot.assignmentStatus === "active" ? "text-green-600" : slot.assignmentStatus === "pending" ? "text-yellow-600" : "text-zinc-300"} font-semibold`}
+							className={`${slot.assignmentStatus === "active" ? "text-green-500" : slot.assignmentStatus === "pending" ? "text-yellow-500" : "text-zinc-300"} font-semibold`}
 						>
 							{statusLabel}
 						</span>
@@ -554,7 +554,7 @@ export function AdminStaffManagement() {
 	return (
 		<div className="shrink-0 px-1 pb-4 space-y-3">
 			<div>
-				<p className="text-md font-bold text-zinc-50">Staff</p>
+				<p className="text-md font-bold text-zinc-50">Staff Management</p>
 				<p className="text-xs text-zinc-300">
 					Assign roles and share invites by section.
 				</p>
@@ -567,7 +567,7 @@ export function AdminStaffManagement() {
 							{section.name}
 						</p>
 						{section.startTime && section.endTime ? (
-							<p className="text-[10px] font-mono text-yellow-200/80">
+							<p className="text-[11px] font-mono font-bold text-yellow-200">
 								{formatTime12h(section.startTime)} –{" "}
 								{formatTime12h(section.endTime)}
 							</p>

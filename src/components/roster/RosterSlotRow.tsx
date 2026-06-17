@@ -11,6 +11,7 @@ export type RosterSlotRowData = {
 	staffName?: string;
 	staffStatus?: "unclaimed" | "active" | "checked_out";
 	isViewer: boolean;
+	isAdminCover?: boolean;
 };
 
 function OccupantLine({ slot }: { slot: RosterSlotRowData }) {
@@ -69,11 +70,12 @@ export function RosterSlotRow({ slot }: { slot: RosterSlotRowData }) {
 
 			<div className="flex items-center gap-1.5 shrink-0">
 				<span
-					className={
-						"text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
-					}
+					className={cn(
+						"text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
+						slot.isAdminCover ? " text-yellow-400" : "text-zinc-400",
+					)}
 				>
-					{slot.role}
+					{slot.isAdminCover ? "Admin" : slot.role}
 				</span>
 			</div>
 		</div>

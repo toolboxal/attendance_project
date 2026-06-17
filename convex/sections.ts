@@ -49,6 +49,7 @@ export type SlotRow = {
 	staffName?: string;
 	staffStatus?: "unclaimed" | "active" | "checked_out";
 	isViewer: boolean;
+	isAdminCover?: boolean;
 };
 
 function compareSlots(a: SlotRow, b: SlotRow): number {
@@ -122,7 +123,7 @@ export const getRosterLayout = query({
 		const { staff: viewer, event } = live;
 		const eventId = event._id;
 
-		const [slots, sections] = await Promise.all([
+		const [slots, sections, allStaff] = await Promise.all([
 			ctx.db
 				.query("roleSlots")
 				.withIndex("by_event", (q) => q.eq("eventId", eventId))
@@ -131,11 +132,25 @@ export const getRosterLayout = query({
 				.query("eventSections")
 				.withIndex("by_event", (q) => q.eq("eventId", eventId))
 				.collect(),
+			ctx.db
+				.query("liveStaff")
+				.withIndex("by_event", (q) => q.eq("eventId", eventId))
+				.collect(),
 		]);
 
 		const sectionKeysWithSlots = new Set<string>();
 		for (const slot of slots) {
 			sectionKeysWithSlots.add(slot.sectionId ?? FLOATING_KEY);
+		}
+
+		for (const staff of allStaff) {
+			if (
+				staff.adminUserId != null &&
+				staff.status === "active" &&
+				staff.sectionId != null
+			) {
+				sectionKeysWithSlots.add(staff.sectionId);
+			}
 		}
 
 		const layoutSections: Array<{
@@ -258,13 +273,39 @@ export const getRosterStaff = query({
 			addToSection(UNASSIGNED_KEY, buildOrphanRow(orphan, viewer._id));
 		}
 
+		const adminCovers = allStaff.filter(
+			(s) =>
+				s.adminUserId != null &&
+				s.status === "active" &&
+				s.sectionId != null,
+		);
+
+		for (const admin of adminCovers) {
+			const sectionKey = admin.sectionId!;
+			const row: SlotRow = {
+				rowKey: `admin-cover:${admin._id}`,
+				title: admin.operationalRoleTitle ?? "Covering post",
+				role: "supervisor",
+				assignedStaffId: admin._id,
+				staffName: admin.staffName,
+				staffStatus: "active",
+				isViewer: admin._id === viewer._id,
+				isAdminCover: true,
+			};
+			addToSection(sectionKey, row);
+		}
+
 		for (const [key, sectionSlots] of slotsBySectionKey) {
 			if (key === UNASSIGNED_KEY) {
 				sectionSlots.sort((a, b) =>
 					(a.staffName ?? "").localeCompare(b.staffName ?? ""),
 				);
 			} else {
-				sectionSlots.sort(compareSlots);
+				sectionSlots.sort((a, b) => {
+					if (a.isAdminCover && !b.isAdminCover) return 1;
+					if (!a.isAdminCover && b.isAdminCover) return -1;
+					return compareSlots(a, b);
+				});
 			}
 		}
 
@@ -335,12 +376,18 @@ export const reportSectionStatus = mutation({
 			args.headcount !== undefined;
 
 		if (updatingSectionReport) {
-			await requireSectionAssignment(
-				ctx,
-				live.event._id,
-				args.sectionId,
-				live.staff._id,
-			);
+			if (live.isAdmin) {
+				if (live.staff.sectionId !== args.sectionId) {
+					throw new Error("Not assigned to this section");
+				}
+			} else {
+				await requireSectionAssignment(
+					ctx,
+					live.event._id,
+					args.sectionId,
+					live.staff._id,
+				);
+			}
 		}
 
 		if (updatingIncludeInTotal) {

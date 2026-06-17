@@ -3,14 +3,17 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { format } from "date-fns";
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { tv } from "tailwind-variants";
-import { BroadcastPanel } from "#/components/broadcast/BroadcastPanel";
 import { AdminEventControls } from "#/components/admin/AdminEventControls";
-import { AdminSituationOverview } from "#/components/admin/AdminSituationOverview";
+import { AdminOperationalPost } from "#/components/admin/AdminOperationalPost";
 import { AdminStaffManagement } from "#/components/admin/AdminStaffManagement";
+import { BroadcastPanel } from "#/components/broadcast/BroadcastPanel";
 import { Button } from "#/components/ui/button";
+import { Separator } from "#/components/ui/separator";
+import { useLiveCountdown } from "#/hooks/use-live-countdown";
 import { getStaffAccessToken } from "#/lib/staffToken";
 import { cn } from "#/lib/utils";
 import { api } from "../../../../convex/_generated/api";
@@ -47,6 +50,7 @@ function AdminTabComponent() {
 	const deleteBroadcast = useMutation(api.broadcasts.deleteBroadcast);
 
 	const [pendingId, setPendingId] = useState<Id<"broadcasts"> | null>(null);
+	const timeRemaining = useLiveCountdown(profile?.expiresAt ?? null);
 
 	if (!profile?.isAdmin) {
 		return <Navigate to="/live/jobs" replace />;
@@ -96,10 +100,20 @@ function AdminTabComponent() {
 
 	return (
 		<div className={container()}>
+			{profile.expiresAt != null ? (
+				<div className="shrink-0 flex px-1 py-1">
+					<div className="flex items-center gap-1.5 text-sm font-mono font-bold text-zinc-400">
+						<span>Event ends in</span>
+						<span className="underline underline-offset-4">
+							{timeRemaining}
+						</span>
+					</div>
+				</div>
+			) : null}
 			<AdminEventControls />
-			<AdminSituationOverview />
-
 			<div className={scroll()}>
+				<AdminOperationalPost />
+				<Separator />
 				<AdminStaffManagement />
 
 				<div className="flex flex-col px-0 pb-2 shrink-0 pt-2">

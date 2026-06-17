@@ -414,21 +414,32 @@ export const getProfile = query({
 					)
 					.first();
 
+		const adminHasOperationalPost = isAdmin && staff.sectionId != null;
+
 		return {
 			_id: staff._id,
 			eventId: staff.eventId,
 			name: staff.staffName,
 			role: isAdmin ? staff.role : roleSlot?.role ?? staff.role,
-			roleTitle: isAdmin ? "Event Admin" : roleSlot?.title || "",
+			roleTitle: isAdmin
+				? adminHasOperationalPost
+					? staff.operationalRoleTitle ?? "Covering post"
+					: "Event Admin"
+				: roleSlot?.title || "",
 			status: staff.status,
 			sectionId: staff.sectionId,
 			sectionName: isAdmin
-				? "Event Control"
+				? adminHasOperationalPost && section
+					? section.name
+					: "Event Control"
 				: section?.name || "Floating",
 			sectionStartTime: section?.startTime || "",
 			sectionEndTime: section?.endTime || "",
+			operationalRoleTitle: staff.operationalRoleTitle,
+			hasOperationalPost: adminHasOperationalPost,
 			eventDate: event?.eventDate || "",
 			eventTime: event?.startTime || "",
+			expiresAt: event?.expiresAt ?? null,
 			isAdmin,
 			isSupervisor,
 		};
@@ -468,8 +479,8 @@ export const getLiveSessionStatus = query({
 	},
 });
 
-/** Read-only command-center metrics for the Admin tab. */
-export const getAdminSituationOverview = query({
+/** Event sections for admin operational-post picker (admin only). */
+export const getAdminEventSections = query({
 	args: { accessToken: v.string() },
 	handler: async (ctx, args) => {
 		const live = await getLiveContext(ctx, args.accessToken);
@@ -477,42 +488,78 @@ export const getAdminSituationOverview = query({
 
 		requireAdmin(live);
 
-		const { event } = live;
-		const eventId = event._id;
+		const sections = await ctx.db
+			.query("eventSections")
+			.withIndex("by_event", (q) => q.eq("eventId", live.event._id))
+			.collect();
 
-		const [sections, openAlerts, activeJobs, activeStaff] = await Promise.all([
-			ctx.db
-				.query("eventSections")
-				.withIndex("by_event", (q) => q.eq("eventId", eventId))
-				.collect(),
-			ctx.db
-				.query("alerts")
-				.withIndex("by_event", (q) => q.eq("eventId", eventId))
-				.filter((q) => q.eq(q.field("status"), "open"))
-				.collect(),
-			ctx.db
-				.query("jobs")
-				.withIndex("by_event", (q) => q.eq("eventId", eventId))
-				.filter((q) => q.neq(q.field("status"), "resolved"))
-				.collect(),
-			ctx.db
-				.query("liveStaff")
-				.withIndex("by_event", (q) => q.eq("eventId", eventId))
-				.filter((q) => q.eq(q.field("status"), "active"))
-				.collect(),
-		]);
+		return sections
+			.sort((a, b) => {
+				const byName = a.name.localeCompare(b.name);
+				if (byName !== 0) return byName;
+				return (a.startTime ?? "").localeCompare(b.startTime ?? "");
+			})
+			.map((section) => ({
+				_id: section._id,
+				name: section.name,
+				startTime: section.startTime,
+				endTime: section.endTime,
+			}));
+	},
+});
 
-		const totalHeadcount = sections
-			.filter((s) => s.includeInTotal)
-			.reduce((sum, s) => sum + s.headcount, 0);
+/** Set or clear the admin's temporary operational post (admin only). */
+export const setAdminOperationalPost = mutation({
+	args: {
+		accessToken: v.string(),
+		sectionId: v.optional(v.union(v.id("eventSections"), v.null())),
+		staffName: v.optional(v.string()),
+		operationalRoleTitle: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) throw new Error("Invalid session");
 
-		return {
-			totalHeadcount,
-			openAlertsCount: openAlerts.length,
-			activeJobsCount: activeJobs.length,
-			activeStaffCount: activeStaff.length,
-			expiresAt: event.expiresAt ?? null,
-		};
+		requireAdmin(live);
+
+		if (args.sectionId === null || args.sectionId === undefined) {
+			const adminUser = live.staff.adminUserId
+				? await ctx.db.get(live.staff.adminUserId)
+				: null;
+
+			await ctx.db.patch(live.staff._id, {
+				sectionId: undefined,
+				operationalRoleTitle: undefined,
+				staffName: adminUser?.name ?? "Event Admin",
+			});
+			return { success: true };
+		}
+
+		const section = await ctx.db.get(args.sectionId);
+		if (!section || section.eventId !== live.event._id) {
+			throw new Error("Section not found for this event");
+		}
+
+		const name = args.staffName?.trim();
+		if (!name) {
+			throw new Error("Name is required");
+		}
+
+		const title = args.operationalRoleTitle?.trim();
+		if (!title) {
+			throw new Error("Role description is required");
+		}
+		if (title.length > 60) {
+			throw new Error("Role description must be 60 characters or fewer");
+		}
+
+		await ctx.db.patch(live.staff._id, {
+			sectionId: args.sectionId,
+			staffName: name,
+			operationalRoleTitle: title,
+		});
+
+		return { success: true };
 	},
 });
 
