@@ -302,9 +302,9 @@ export function AdminOperationalPost() {
 	};
 
 	return (
-		<div className="rounded-md  bg-zinc-700/80 p-3 space-y-3">
+		<div className="py-2">
 			<div>
-				<p className="text-sm font-bold text-zinc-50">Your Own Assignment</p>
+				<p className="text-md font-bold text-zinc-50">Your Own Assignment</p>
 				<p className="text-xs text-zinc-50">
 					Set for yourself where you are covering on the floor.
 				</p>
@@ -336,7 +336,7 @@ export function AdminOperationalPost() {
 				</p>
 			) : null}
 
-			<div className="flex flex-wrap gap-2">
+			<div className="flex flex-wrap gap-2 justify-end mt-2">
 				<Button
 					type="button"
 					size="sm"

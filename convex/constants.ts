@@ -39,4 +39,4 @@ export const MAX_WATCHLIST_NOTES_LENGTH = 300;
 export const MAX_WATCHLIST_UPDATE_LENGTH = MAX_ALERT_UPDATE_LENGTH;
 
 /** Max characters for admin live-floor broadcast message. */
-export const MAX_BROADCAST_LENGTH = 280;
+export const MAX_BROADCAST_LENGTH = 300;

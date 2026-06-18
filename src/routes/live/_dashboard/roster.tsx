@@ -8,6 +8,7 @@ import { SectionHeadcountBreakdown } from "#/components/roster/SectionHeadcountB
 import { SectionReportPanel } from "#/components/roster/SectionReportPanel";
 import type { OccupancyFill } from "#/lib/sectionReport";
 import { Accordion } from "#/components/ui/accordion";
+import { useLiveCountdown } from "#/hooks/use-live-countdown";
 import { getStaffAccessToken } from "#/lib/staffToken";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -46,6 +47,8 @@ function RosterTabComponent() {
 	const { data: staffData } = useSuspenseQuery(
 		convexQuery(api.sections.getRosterStaff, { accessToken }),
 	);
+
+	const timeRemaining = useLiveCountdown(profile?.expiresAt ?? null);
 
 	const viewerAssignedSectionKeys = useMemo(() => {
 		if (!layout || !staffData) return new Set<string>();
@@ -129,15 +132,15 @@ function RosterTabComponent() {
 		<div className="h-[calc(100dvh-5.5rem)] flex flex-col bg-zinc-950 overflow-hidden">
 			{breakdownSections.length > 0 ? (
 				<div className="flex flex-row gap-5 px-1 pb-2 shrink-0">
-					<div className="flex flex-col px-2">
+					<div className="flex flex-col px-1">
 						<span className="text-[10px] text-zinc-300 text-nowrap">
 							Total Headcount
 						</span>
 						<div className="flex flex-row items-center gap-1">
-							<span className="text-xl font-bold text-blue-400">
+							<span className="text-2xl font-bold text-yellow-100">
 								{totalHeadcount.toLocaleString()}
 							</span>
-							<span className="text-zinc-500 text-sm">pax</span>
+							<span className="text-zinc-400 text-sm">pax</span>
 						</div>
 					</div>
 					<SectionHeadcountBreakdown sections={breakdownSections} />
@@ -151,6 +154,14 @@ function RosterTabComponent() {
 					</p>
 				</div>
 			)}
+			{profile?.expiresAt != null ? (
+				<div className="shrink-0 flex px-1">
+					<div className="flex items-center gap-1.5 text-sm font-mono font-bold text-zinc-400">
+						<span>Event ends in</span>
+						<span>{timeRemaining}</span>
+					</div>
+				</div>
+			) : null}
 
 			<div className={container()}>
 				{layout.sections.length === 0 ? (

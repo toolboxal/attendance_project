@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { LayoutDashboard, Power } from "lucide-react";
+import { ArrowRight, Power } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
@@ -41,24 +41,21 @@ export function AdminEventControls() {
 			<div className="px-1">
 				<p className="text-md font-bold text-zinc-50">Admin controls</p>
 				<p className="text-xs text-zinc-300">
-					Navigate back to admin dashboard or{" "}
-					<span className="text-red-400">
-						end the event (irreversible action)
-					</span>
-					.
+					Navigate back to account Dashboard or{" "}
+					<span className="text-red-400">end the event.</span>.
 				</p>
 			</div>
-			<div className="shrink-0  px-1 pt-2 pb-4 flex gap-2">
+			<div className="shrink-0  px-1 pt-2 pb-1 flex gap-2">
 				<Button
 					type="button"
-					variant="default"
+					variant="secondary"
 					size="lg"
-					className="flex-1 text-zinc-950 hover:bg-zinc-800"
+					className="flex-1"
 					asChild
 				>
 					<Link to="/app/dashboard" search={{ checkoutSlug: undefined }}>
-						<LayoutDashboard className="size-3.5 mr-1.5" />
-						Dashboard
+						<ArrowRight className="size-3.5 mr-1.5" />
+						Go to Account
 					</Link>
 				</Button>
 				<Button

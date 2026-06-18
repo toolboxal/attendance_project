@@ -4,28 +4,31 @@ import { Megaphone, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "#/lib/utils";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
 
 export function BroadcastBanner({ accessToken }: { accessToken: string }) {
 	const activeBroadcast = useQuery(api.broadcasts.getActiveBroadcast, {
 		accessToken,
 	});
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [lastSeenActiveId, setLastSeenActiveId] =
-		useState<Id<"broadcasts"> | null>(null);
+	const [lastSeenSignature, setLastSeenSignature] = useState<string | null>(
+		null,
+	);
 
-	const activeId = activeBroadcast?._id ?? null;
+	const activeSignature =
+		activeBroadcast != null
+			? `${activeBroadcast._id}:${activeBroadcast.content}`
+			: null;
 
 	useEffect(() => {
-		if (activeId === null) {
+		if (activeSignature === null) {
 			setIsExpanded(false);
 			return;
 		}
-		if (activeId !== lastSeenActiveId) {
-			setLastSeenActiveId(activeId);
+		if (activeSignature !== lastSeenSignature) {
+			setLastSeenSignature(activeSignature);
 			setIsExpanded(true);
 		}
-	}, [activeId, lastSeenActiveId]);
+	}, [activeSignature, lastSeenSignature]);
 
 	if (activeBroadcast === undefined || activeBroadcast === null) {
 		return null;
@@ -58,9 +61,9 @@ export function BroadcastBanner({ accessToken }: { accessToken: string }) {
 				<div className="rounded-2xl  bg-red-200 p-4">
 					<div className="mb-2 flex items-start justify-between gap-2">
 						<div className="flex items-center gap-2 text-red-700">
-							<Megaphone className="size-4 shrink-0" strokeWidth={2.5} />
+							{/* <Megaphone className="size-4 shrink-0" strokeWidth={2.5} /> */}
 							<span className="text-xs font-bold uppercase tracking-wide">
-								Important Broadcast From Admin!
+								Important Broadcast From Admin
 							</span>
 						</div>
 						<button
@@ -72,10 +75,10 @@ export function BroadcastBanner({ accessToken }: { accessToken: string }) {
 							<X className="size-4" />
 						</button>
 					</div>
-					<p className="text-sm font-medium leading-snug text-red-900">
+					<p className="text-sm font-medium leading-snug text-red-800">
 						{activeBroadcast.content}
 					</p>
-					<p className="mt-2 text-[10px] text-zinc-800">
+					<p className="mt-2 text-[10px] text-red-800">
 						{activeBroadcast.createdByName} ·{" "}
 						{format(activeBroadcast.createdAt, "h:mm a")}
 					</p>

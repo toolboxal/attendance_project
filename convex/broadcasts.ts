@@ -60,11 +60,11 @@ export const getActiveBroadcast = query({
 	},
 });
 
-export const getBroadcastHistory = query({
+export const getEventBroadcast = query({
 	args: { accessToken: v.string() },
 	handler: async (ctx, args) => {
 		const live = await getLiveContext(ctx, args.accessToken);
-		if (!live || !live.isAdmin) return [];
+		if (!live || !live.isAdmin) return null;
 
 		const broadcasts = await ctx.db
 			.query("broadcasts")
@@ -72,12 +72,15 @@ export const getBroadcastHistory = query({
 			.order("desc")
 			.collect();
 
-		return broadcasts.map((broadcast) => ({
+		const broadcast = broadcasts[0];
+		if (!broadcast) return null;
+
+		return {
 			_id: broadcast._id,
 			content: broadcast.content,
 			createdAt: broadcast.createdAt,
 			status: broadcast.status,
-		}));
+		};
 	},
 });
 
@@ -92,9 +95,18 @@ export const createBroadcast = mutation({
 
 		requireAdmin(live);
 
-		const content = validateBroadcastContent(args.content);
+		const existing = await ctx.db
+			.query("broadcasts")
+			.withIndex("by_event", (q) => q.eq("eventId", live.staff.eventId))
+			.first();
 
-		await demoteActiveBroadcasts(ctx, live.staff.eventId);
+		if (existing) {
+			throw new Error(
+				"A broadcast already exists. Edit the current message instead.",
+			);
+		}
+
+		const content = validateBroadcastContent(args.content);
 
 		return await ctx.db.insert("broadcasts", {
 			eventId: live.staff.eventId,
@@ -103,6 +115,28 @@ export const createBroadcast = mutation({
 			createdAt: Date.now(),
 			status: "active",
 		});
+	},
+});
+
+export const updateBroadcast = mutation({
+	args: {
+		accessToken: v.string(),
+		broadcastId: v.id("broadcasts"),
+		content: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const live = await getLiveContext(ctx, args.accessToken);
+		if (!live) throw new Error("Invalid session");
+
+		requireAdmin(live);
+
+		const broadcast = await ctx.db.get(args.broadcastId);
+		if (!broadcast || broadcast.eventId !== live.staff.eventId) {
+			throw new Error("Broadcast not found.");
+		}
+
+		const content = validateBroadcastContent(args.content);
+		await ctx.db.patch(args.broadcastId, { content, status: "active" });
 	},
 });
 
