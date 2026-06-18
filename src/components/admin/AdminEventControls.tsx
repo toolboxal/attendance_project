@@ -48,7 +48,7 @@ export function AdminEventControls() {
 					.
 				</p>
 			</div>
-			<div className="shrink-0 border-t border-zinc-800 px-1 pt-2 pb-4 flex gap-2">
+			<div className="shrink-0  px-1 pt-2 pb-4 flex gap-2">
 				<Button
 					type="button"
 					variant="default"

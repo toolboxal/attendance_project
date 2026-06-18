@@ -44,3 +44,10 @@ export function requireSupervisor(live: LiveContext) {
 		throw new Error("Supervisor only");
 	}
 }
+
+/** Admin must set a temp section post before floor actions (dispatch, accept, alert). */
+export function requireAdminOperationalPost(live: LiveContext) {
+	if (live.isAdmin && live.staff.sectionId == null) {
+		throw new Error("Assign yourself to a section on the Admin tab first.");
+	}
+}

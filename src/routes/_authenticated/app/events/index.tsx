@@ -12,7 +12,7 @@ import { Spinner } from "#/components/ui/spinner";
 import { ErrorView } from "#/components/error-view";
 import { useHeaderStore } from "#/lib/store/topHeaderStore";
 import { parseStructuredError } from "#/lib/error-utils";
-import { formatTime12h } from "#/lib/utils";
+import { formatTime12h, eventDateFromMs } from "#/lib/utils";
 import { api } from "../../../../../convex/_generated/api";
 import { EventDetailsView } from "#/components/authenticated/events/EventDetailsView";
 
@@ -90,16 +90,10 @@ function RouteComponent() {
 										: "hover:bg-zinc-800/50 bg-transparent"
 								}`}
 							>
-								<p
-									suppressHydrationWarning
-									className="text-zinc-100 font-mono text-xs"
-								>
-									{format(new Date(event.eventDate), "PP")}
+								<p className="text-zinc-100 font-mono text-xs">
+									{format(eventDateFromMs(event.eventDate), "PP")}
 								</p>
-								<p
-									suppressHydrationWarning
-									className="text-zinc-400 font-mono italic text-xs"
-								>
+								<p className="text-zinc-400 font-mono italic text-xs">
 									{formatTime12h(event.startTime)}
 								</p>
 								<p className="text-zinc-300 font-medium text-[13px] overflow-hidden line-clamp-1">

@@ -1,7 +1,33 @@
 import { v } from "convex/values";
+import type { Doc } from "./_generated/dataModel";
 import { MAX_ACTIVE_JOBS, MAX_JOB_DESCRIPTION_LENGTH } from "./constants";
 import { mutation, query } from "./_generated/server";
-import { getLiveContext } from "./liveAuth";
+import { getLiveContext, requireAdminOperationalPost } from "./liveAuth";
+
+function adminRoleTitle(staff: Doc<"liveStaff">): string {
+	if (staff.sectionId) {
+		return staff.operationalRoleTitle ?? "Covering post";
+	}
+	return "Event Admin";
+}
+
+function staffRoleTitle(
+	staff: Doc<"liveStaff"> | null,
+	roleSlotTitle: string | undefined,
+): string {
+	if (!staff) return "";
+	if (staff.adminUserId) return adminRoleTitle(staff);
+	return roleSlotTitle ?? "";
+}
+
+function staffRoleLabel(
+	staff: Doc<"liveStaff"> | null,
+	roleSlotRole: string | undefined,
+): string | undefined {
+	if (!staff) return undefined;
+	if (staff.adminUserId) return "admin";
+	return roleSlotRole ?? staff.role;
+}
 
 function validateJobDescription(description: string | undefined): string | undefined {
 	if (description === undefined) return undefined;
@@ -67,18 +93,14 @@ export const getActiveJobs = query({
 					...job,
 					creatorMissing: creator === null,
 					creatorName: creator?.staffName ?? "Revoked staff",
-					creatorRole: creatorRoleSlot?.role || creator?.role,
-					creatorRoleTitle: creator?.adminUserId
-						? "Event Admin"
-						: creatorRoleSlot?.title || "",
+					creatorRole: staffRoleLabel(creator, creatorRoleSlot?.role),
+					creatorRoleTitle: staffRoleTitle(creator, creatorRoleSlot?.title),
 					claimerMissing: job.claimerId != null && claimer === null,
 					claimerName:
 						claimer?.staffName ??
 						(job.claimerId ? "Revoked staff" : undefined),
-					claimerRole: claimerRoleSlot?.role || claimer?.role,
-					claimerRoleTitle: claimer?.adminUserId
-						? "Event Admin"
-						: claimerRoleSlot?.title || "",
+					claimerRole: staffRoleLabel(claimer, claimerRoleSlot?.role),
+					claimerRoleTitle: staffRoleTitle(claimer, claimerRoleSlot?.title),
 					originSectionName: originSection?.name || "Unknown Gate",
 					destinationSectionName: destinationSection?.name,
 				};
@@ -108,6 +130,8 @@ export const dispatchJob = mutation({
 	handler: async (ctx, args) => {
 		const live = await getLiveContext(ctx, args.accessToken);
 		if (!live) throw new Error("Unauthorized or session expired.");
+
+		requireAdminOperationalPost(live);
 
 		const { staff } = live;
 
@@ -147,6 +171,8 @@ export const acceptJob = mutation({
 	handler: async (ctx, args) => {
 		const live = await getLiveContext(ctx, args.accessToken);
 		if (!live) throw new Error("Unauthorized or session expired.");
+
+		requireAdminOperationalPost(live);
 
 		const { staff } = live;
 

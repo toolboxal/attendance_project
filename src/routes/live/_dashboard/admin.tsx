@@ -113,10 +113,11 @@ function AdminTabComponent() {
 			<AdminEventControls />
 			<div className={scroll()}>
 				<AdminOperationalPost />
-				<Separator />
+
+				<div className="h-px bg-zinc-700 my-4" />
 				<AdminStaffManagement />
 
-				<div className="flex flex-col px-0 pb-2 shrink-0 pt-2">
+				<div className="flex flex-col px-0 pb-2 shrink-0">
 					<p className="text-md font-bold text-zinc-50">Broadcasts</p>
 					<p className="text-xs text-zinc-300">
 						Send a message to all staff. Only one broadcast is active at a time.

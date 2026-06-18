@@ -1,22 +1,25 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { format, formatDistanceToNow, parse } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
-// Bulletproof date-fns parser that handles 24h format cleanly
+// Deterministic 24h → 12h formatting (no Date()/timezone — safe for SSR).
 export function formatTime12h(timeStr: string) {
 	if (!timeStr) return "";
-	try {
-		// Strip seconds if they exist to normalize before parsing
-		const cleanTime = timeStr.substring(0, 5);
-		const parsedDate = parse(cleanTime, "HH:mm", new Date());
-		return format(parsedDate, "h:mm a");
-	} catch (e) {
-		return timeStr;
-	}
+	const cleanTime = timeStr.substring(0, 5);
+	const match = /^(\d{1,2}):(\d{2})$/.exec(cleanTime);
+	if (!match) return timeStr;
+
+	const hours = Number.parseInt(match[1], 10);
+	const minutes = Number.parseInt(match[2], 10);
+	if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return timeStr;
+
+	const period = hours >= 12 ? "PM" : "AM";
+	const hour12 = hours % 12 || 12;
+	return `${hour12}:${String(minutes).padStart(2, "0")} ${period}`;
 }
 
 export function capitalizeWords(str: string) {
@@ -54,9 +57,7 @@ export function startOfUtcDayMs(timestampMs: number): number {
 /** True when the calendar day of eventDate is today or later. */
 export function isEventDateOnOrAfterToday(eventDateMs: number | Date): boolean {
 	const ms =
-		eventDateMs instanceof Date
-			? toEventDateMs(eventDateMs)
-			: eventDateMs;
+		eventDateMs instanceof Date ? toEventDateMs(eventDateMs) : eventDateMs;
 	return ms >= toEventDateMs(new Date());
 }
 
@@ -65,7 +66,8 @@ export function formatFieldErrors(errors: unknown[]): string {
 		.map((err) =>
 			typeof err === "string"
 				? err
-				: (err as { message?: string; issue?: { message?: string } })?.message ||
+				: (err as { message?: string; issue?: { message?: string } })
+						?.message ||
 					(err as { issue?: { message?: string } })?.issue?.message ||
 					"Invalid input",
 		)

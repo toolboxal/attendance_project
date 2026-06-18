@@ -46,10 +46,12 @@ export function JobItem({
 	job,
 	currentStaffId,
 	isSupervisor = false,
+	canParticipateOnFloor = true,
 }: {
 	job: EnrichedJob;
 	currentStaffId?: string;
 	isSupervisor?: boolean;
+	canParticipateOnFloor?: boolean;
 }) {
 	const { card } = jobStyles({
 		status: job.status,
@@ -108,8 +110,9 @@ export function JobItem({
 	};
 
 	const isCreator = job.creatorId === currentStaffId;
-	const showCreatorCancel = job.status === "pending" && isCreator;
-	const showSupervisorCancel = isSupervisor;
+	const showCancel =
+		(job.status === "pending" && isCreator) ||
+		(isSupervisor && !isCreator);
 
 	const staffNameClass = (isSelf: boolean, isRevoked: boolean) => {
 		if (isSelf) return "text-yellow-400 font-semibold";
@@ -204,8 +207,7 @@ export function JobItem({
 			</div>
 			<div className="flex flex-row items-center justify-between px-2 py-0.5">
 				<div className="ml-auto flex flex-row items-center gap-1.5">
-					{(showCreatorCancel ||
-						(showSupervisorCancel && job.status !== "accepted")) && (
+					{showCancel && (
 						<button
 							className="rounded-sm bg-red-300 p-1 px-2 text-xs font-medium text-zinc-950"
 							type="button"
@@ -214,7 +216,10 @@ export function JobItem({
 							Cancel
 						</button>
 					)}
-					{job.status === "pending" && !isCreator && !job.creatorMissing && (
+					{job.status === "pending" &&
+						!isCreator &&
+						!job.creatorMissing &&
+						canParticipateOnFloor && (
 						<button
 							className="rounded-sm bg-zinc-200 p-1 px-2 text-xs font-medium text-zinc-950"
 							type="button"
@@ -225,7 +230,7 @@ export function JobItem({
 					)}
 					{job.status === "pending" &&
 						job.creatorMissing &&
-						!showSupervisorCancel && (
+						!isSupervisor && (
 							<p className="text-[11px] italic text-red-400/90">
 								Waiting for supervisor or admin to clear
 							</p>

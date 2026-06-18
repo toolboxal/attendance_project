@@ -244,7 +244,6 @@ export function EventDetailsView({
 				<div className="flex flex-col gap-1">
 					<div className="flex flex-wrap items-center gap-2">
 						<p
-							suppressHydrationWarning
 							className={cn(
 								"font-mono text-xs",
 								needsDateUpdate ? "text-red-400" : "text-zinc-100",
@@ -253,10 +252,7 @@ export function EventDetailsView({
 							{format(eventDateFromMs(event.eventDate), "PPPP")}
 						</p>
 					</div>
-					<p
-						suppressHydrationWarning
-						className="text-zinc-400 font-mono italic text-xs"
-					>
+					<p className="text-zinc-400 font-mono italic text-xs">
 						{formatTime12h(event.startTime)}
 					</p>
 				</div>

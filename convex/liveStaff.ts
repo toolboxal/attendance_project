@@ -420,7 +420,7 @@ export const getProfile = query({
 			_id: staff._id,
 			eventId: staff.eventId,
 			name: staff.staffName,
-			role: isAdmin ? staff.role : roleSlot?.role ?? staff.role,
+			role: isAdmin ? "admin" : roleSlot?.role ?? staff.role,
 			roleTitle: isAdmin
 				? adminHasOperationalPost
 					? staff.operationalRoleTitle ?? "Covering post"

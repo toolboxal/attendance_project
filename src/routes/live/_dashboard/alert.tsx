@@ -124,6 +124,9 @@ function AlertsTabComponent() {
 		[watchlistEntries, watchlistReadMap],
 	);
 
+	const canParticipateOnFloor =
+		!profile?.isAdmin || profile.hasOperationalPost === true;
+
 	return (
 		<div className="h-[calc(100dvh-5.5rem)] flex flex-col bg-zinc-950 overflow-hidden">
 			<div className="flex flex-col gap-4 shrink-0">
@@ -230,6 +233,13 @@ function AlertsTabComponent() {
 						</span>
 					</div>
 
+					{profile?.isAdmin && !canParticipateOnFloor && (
+						<p className="text-xs text-yellow-100 mt-2 px-0.5">
+							To Admin: assign yourself to a role and section on the Admin tab
+							to raise alerts from the floor.
+						</p>
+					)}
+
 					<div className={cn(container(), alertsContainer())}>
 						{activeAlerts.length === 0 ? (
 							<p className="text-center text-zinc-400 text-sm py-8">
@@ -274,7 +284,7 @@ function AlertsTabComponent() {
 				</TabsContent>
 			</Tabs>
 
-			{activeTab === "alerts" && (
+			{activeTab === "alerts" && canParticipateOnFloor && (
 				<AlertPanel isQueueFull={activeAlerts.length >= MAX_ACTIVE_ALERTS} />
 			)}
 		</div>

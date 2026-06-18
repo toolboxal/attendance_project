@@ -9,7 +9,7 @@ import {
 	MAX_ALERT_UPDATE_LENGTH,
 	MAX_PINNED_ALERTS,
 } from "./constants";
-import { getLiveContext, type LiveContext } from "./liveAuth";
+import { getLiveContext, requireAdminOperationalPost, type LiveContext } from "./liveAuth";
 
 function isAlertType(value: string): boolean {
 	return (ALERT_TYPES as readonly string[]).includes(value);
@@ -62,10 +62,13 @@ async function enrichLiveStaff(
 	}
 
 	if (staffDoc.adminUserId) {
+		const roleTitle = staffDoc.sectionId
+			? staffDoc.operationalRoleTitle ?? "Covering post"
+			: "Event Admin";
 		return {
 			name: staffDoc.staffName,
-			role: staffDoc.role,
-			roleTitle: "Event Admin",
+			role: "admin",
+			roleTitle,
 		};
 	}
 
@@ -259,6 +262,8 @@ export const createAlert = mutation({
 	handler: async (ctx, args) => {
 		const live = await getLiveContext(ctx, args.accessToken);
 		if (!live) throw new Error("Unauthorized or session expired.");
+
+		requireAdminOperationalPost(live);
 
 		const { staff } = live;
 

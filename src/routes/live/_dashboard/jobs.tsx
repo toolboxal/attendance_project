@@ -39,6 +39,9 @@ function JobsTabComponent() {
 			job.status === "accepted",
 	);
 
+	const canParticipateOnFloor =
+		!profile?.isAdmin || profile.hasOperationalPost === true;
+
 	return (
 		<div className="h-[calc(100dvh-5.5rem)] flex flex-col bg-zinc-950 overflow-hidden">
 			{relevantJobs.length > 0 ? (
@@ -123,6 +126,13 @@ function JobsTabComponent() {
 				</span>
 			</div>
 
+			{profile?.isAdmin && !canParticipateOnFloor && (
+				<p className="text-xs text-yellow-100 mt-2 px-0.5">
+					To Admin: assign yourself to a role and section on the Admin tab to be
+					able to dispatch jobs from the floor.
+				</p>
+			)}
+
 			{/* Queue Stream */}
 			<div className={container()}>
 				{activeJobs.map((job) => (
@@ -131,11 +141,14 @@ function JobsTabComponent() {
 						job={job}
 						currentStaffId={profile?._id}
 						isSupervisor={profile?.isSupervisor}
+						canParticipateOnFloor={canParticipateOnFloor}
 					/>
 				))}
 			</div>
 
-			<DispatchPanel isQueueFull={activeJobs.length >= MAX_ACTIVE_JOBS} />
+			{canParticipateOnFloor && (
+				<DispatchPanel isQueueFull={activeJobs.length >= MAX_ACTIVE_JOBS} />
+			)}
 		</div>
 	);
 }

@@ -13,9 +13,8 @@ export function formatLiveCountdown(expiresAt: number): string {
 }
 
 export function useLiveCountdown(expiresAt?: number | null): string {
-	const [timeLeft, setTimeLeft] = useState(() =>
-		expiresAt != null ? formatLiveCountdown(expiresAt) : "—",
-	);
+	// Defer Date.now() until after mount so SSR and first client render match.
+	const [timeLeft, setTimeLeft] = useState("—");
 
 	useEffect(() => {
 		if (expiresAt == null) {
