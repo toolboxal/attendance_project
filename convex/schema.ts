@@ -125,7 +125,6 @@ export default defineSchema({
     requestType: v.string(),         // "vip", "wheelchair", "regular", etc.
     description: v.optional(v.string()),
     status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("resolved")),
-    createdAt: v.number(),
   }).index("by_event", ["eventId"]),
 
   // Live incident alerts (radio-style queue)

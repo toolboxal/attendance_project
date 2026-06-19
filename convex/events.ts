@@ -58,6 +58,65 @@ function startOfUtcDayMs(timestampMs: number): number {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 
+function parseEventStartTimeMs(eventDateMs: number, startTime: string): number {
+  const dayStart = startOfUtcDayMs(eventDateMs);
+  const match = /^(\d{1,2}):(\d{2})/.exec(startTime);
+  if (!match) return dayStart;
+
+  const hours = Number.parseInt(match[1], 10);
+  const minutes = Number.parseInt(match[2], 10);
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return dayStart;
+
+  return dayStart + hours * 60 * 60 * 1000 + minutes * 60 * 1000;
+}
+
+const DASHBOARD_JOB_CHART_HOURS = 3;
+const DASHBOARD_JOB_CHART_WINDOW_MS = DASHBOARD_JOB_CHART_HOURS * 60 * 60 * 1000;
+const DASHBOARD_JOB_MIN_WINDOW_MS = 5 * 60 * 1000;
+
+function dashboardJobWindowMs(
+  event: Doc<"events">,
+  jobCreationTimes: number[],
+  now: number,
+): { windowStart: number; windowEnd: number } {
+  const windowStart =
+    event.liveAt ?? parseEventStartTimeMs(event.eventDate, event.startTime);
+
+  const lastJobTime =
+    jobCreationTimes.length > 0 ? Math.max(...jobCreationTimes) : windowStart;
+
+  const defaultChartEnd = windowStart + DASHBOARD_JOB_CHART_WINDOW_MS;
+
+  let windowEnd =
+    lastJobTime + 1 > defaultChartEnd ? lastJobTime + 1 : defaultChartEnd;
+
+  if (event.status === "live" && lastJobTime + 1 <= defaultChartEnd) {
+    windowEnd = Math.min(defaultChartEnd, now);
+  }
+
+  windowEnd = Math.max(windowEnd, windowStart + DASHBOARD_JOB_MIN_WINDOW_MS);
+
+  if (event.expiresAt != null) {
+    windowEnd = Math.min(windowEnd, event.expiresAt);
+  }
+
+  return { windowStart, windowEnd };
+}
+
+function pickBusiestEntry(
+  counts: Map<string, number>,
+): { key: string; count: number } | null {
+  let best: { key: string; count: number } | null = null;
+
+  for (const [key, count] of counts) {
+    if (!best || count > best.count) {
+      best = { key, count };
+    }
+  }
+
+  return best;
+}
+
 function assertEventDateNotInPast(eventDate: number) {
   const eventDay = startOfUtcDayMs(eventDate);
   const today = startOfUtcDayMs(Date.now());
@@ -777,6 +836,201 @@ export const duplicate = mutation({
     }
 
     return { newEventId };
+  },
+});
+
+export const getDashboardShell = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    const liveEvent = await ctx.db
+      .query("events")
+      .withIndex("by_admin", (q) => q.eq("adminId", user._id))
+      .filter((q) => q.eq(q.field("status"), "live"))
+      .first();
+
+    if (liveEvent) {
+      return {
+        mode: "live" as const,
+        event: liveEvent,
+      };
+    }
+
+    const [draftEvents, archivedEvents] = await Promise.all([
+      ctx.db
+        .query("events")
+        .withIndex("by_admin", (q) => q.eq("adminId", user._id))
+        .filter((q) => q.eq(q.field("status"), "draft"))
+        .collect(),
+      ctx.db
+        .query("events")
+        .withIndex("by_admin", (q) => q.eq("adminId", user._id))
+        .filter((q) => q.eq(q.field("status"), "archived"))
+        .order("desc")
+        .take(10),
+    ]);
+
+    draftEvents.sort((a, b) => a.eventDate - b.eventDate);
+    archivedEvents.sort((a, b) => b.eventDate - a.eventDate);
+
+    return {
+      mode: "idle" as const,
+      archivedEvents,
+      nextDraft: draftEvents[0] ?? null,
+      credits: {
+        monthlyCredits: user.monthlyCredits ?? 0,
+        oneTimeCredits: user.oneTimeCredits ?? 0,
+        billingPlan: user.billingPlan ?? "free",
+      },
+    };
+  },
+});
+
+export const getDashboardSections = query({
+  args: { eventId: v.id("events") },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    const event = await ctx.db.get(args.eventId);
+    if (!event || event.adminId !== user._id) return null;
+
+    const sections = await ctx.db
+      .query("eventSections")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+
+    let totalHeadcount = 0;
+    const breakdownSections: Array<{
+      sectionKey: string;
+      name: string;
+      headcount: number;
+      occupancyFill: Doc<"eventSections">["occupancyFill"];
+    }> = [];
+
+    for (const section of sections) {
+      if (section.includeInTotal) {
+        totalHeadcount += section.headcount;
+        if (section.headcount > 0) {
+          breakdownSections.push({
+            sectionKey: section._id,
+            name: section.name,
+            headcount: section.headcount,
+            occupancyFill: section.occupancyFill,
+          });
+        }
+      }
+    }
+
+    breakdownSections.sort((a, b) => b.headcount - a.headcount);
+
+    return { totalHeadcount, breakdownSections };
+  },
+});
+
+export const getDashboardJobs = query({
+  args: { eventId: v.id("events") },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    const event = await ctx.db.get(args.eventId);
+    if (!event || event.adminId !== user._id) return null;
+
+    const jobs = await ctx.db
+      .query("jobs")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+
+    const creationTimes = jobs.map((job) => job._creationTime);
+    const { windowStart, windowEnd } = dashboardJobWindowMs(
+      event,
+      creationTimes,
+      Date.now(),
+    );
+
+    const sectionCounts = new Map<string, number>();
+    const creatorCounts = new Map<string, number>();
+
+    for (const job of jobs) {
+      if (job.originSectionId) {
+        const sectionId = job.originSectionId;
+        sectionCounts.set(sectionId, (sectionCounts.get(sectionId) ?? 0) + 1);
+      }
+
+      const creatorId = job.creatorId;
+      creatorCounts.set(creatorId, (creatorCounts.get(creatorId) ?? 0) + 1);
+    }
+
+    const topSection = pickBusiestEntry(sectionCounts);
+    const topCreator = pickBusiestEntry(creatorCounts);
+
+    const [sectionDoc, creatorDoc] = await Promise.all([
+      topSection
+        ? ctx.db.get(topSection.key as Id<"eventSections">)
+        : Promise.resolve(null),
+      topCreator
+        ? ctx.db.get(topCreator.key as Id<"liveStaff">)
+        : Promise.resolve(null),
+    ]);
+
+    return {
+      jobsOpen: jobs.filter(
+        (job) => job.status === "pending" || job.status === "accepted",
+      ).length,
+      jobsTotal: jobs.length,
+      creationTimes,
+      windowStart,
+      windowEnd,
+      busiestSection:
+        topSection && sectionDoc
+          ? { name: sectionDoc.name, count: topSection.count }
+          : topSection
+            ? { name: "Unknown section", count: topSection.count }
+            : null,
+      busiestCreator: topCreator
+        ? {
+            name: creatorDoc?.staffName ?? "Revoked staff",
+            count: topCreator.count,
+          }
+        : null,
+    };
+  },
+});
+
+export const getDashboardIncidents = query({
+  args: { eventId: v.id("events") },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    const event = await ctx.db.get(args.eventId);
+    if (!event || event.adminId !== user._id) return null;
+
+    const alerts = await ctx.db
+      .query("alerts")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+
+    return {
+      incidentsOpen: alerts.filter((alert) => alert.status === "open").length,
+      incidentsTotal: alerts.length,
+    };
+  },
+});
+
+export const getDashboardStaff = query({
+  args: { eventId: v.id("events") },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    const event = await ctx.db.get(args.eventId);
+    if (!event || event.adminId !== user._id) return null;
+
+    const staff = await ctx.db
+      .query("liveStaff")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+
+    const activeStaffCount = staff.filter(
+      (s) => s.status === "active" && s.adminUserId == null,
+    ).length;
+
+    return { activeStaffCount };
   },
 });
 

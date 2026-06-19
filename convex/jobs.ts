@@ -112,7 +112,7 @@ export const getActiveJobs = query({
 		enrichedJobs.sort((a, b) => {
 			const byStatus = statusOrder[a.status] - statusOrder[b.status];
 			if (byStatus !== 0) return byStatus;
-			return b.createdAt - a.createdAt;
+			return b._creationTime - a._creationTime;
 		});
 
 		return enrichedJobs;
@@ -155,7 +155,6 @@ export const dispatchJob = mutation({
 			requestType: args.requestType,
 			description: validateJobDescription(args.description),
 			status: "pending",
-			createdAt: Date.now(),
 		});
 
 		return jobId;

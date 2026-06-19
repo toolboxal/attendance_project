@@ -6,7 +6,6 @@ import { format } from "date-fns";
 import { CircleAlert, Timer } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useLiveCountdown } from "#/hooks/use-live-countdown";
 import { Button } from "#/components/ui/button";
 import {
 	Dialog,
@@ -16,6 +15,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "#/components/ui/dialog";
+import { useLiveCountdown } from "#/hooks/use-live-countdown";
 import {
 	cn,
 	eventDateFromMs,
