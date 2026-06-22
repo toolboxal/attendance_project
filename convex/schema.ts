@@ -11,12 +11,12 @@ export default defineSchema({
     
     // MONETIZATION FIELDS
     billingPlan: v.optional(v.union(v.literal("free"), v.literal("pay_as_you_go"), v.literal("pro_monthly"))),
-    subscriptionExpiresAt: v.optional(v.number()), // Unix timestamp for sub end
+    subscriptionExpiresAt: v.optional(v.number()), // Polar current_period_end (cached from webhooks)
     
     // Separated Credit Pools (Model A)
+    freeTrialCredits: v.optional(v.number()), // Signup gift only (5 staff events, never pro)
     oneTimeCredits: v.optional(v.number()), // Lifetime credits (Single Pass & Weekend Bundle)
-    monthlyCredits: v.optional(v.number()), // Subscription credits (resets monthly, no rollover)
-    monthlyCreditsResetAt: v.optional(v.number()), // Timestamp for next monthly credit reset
+    monthlyCredits: v.optional(v.number()), // Subscription credits (reset on order.paid renewal)
     
     polarCustomerId: v.optional(v.string()),
     polarSubscriptionId: v.optional(v.string()),

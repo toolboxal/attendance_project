@@ -6,6 +6,16 @@ import type { MutationCtx } from "./_generated/server";
 import { authComponent } from "./auth";
 import { ConvexError } from "convex/values";
 import { DEFAULT_SECTION_LIVE_FIELDS } from "./sectionDefaults";
+import {
+  assertDraftLimit,
+  assertSlotCountWithinLimit,
+  assertStaffCapacity,
+  consumeGoLiveCredit,
+  countRoleSlots,
+  peekGoLiveCreditPool,
+  resolveDraftLimits,
+  resolveLimitsForCreditPool,
+} from "./credits";
 
 /**
  * Helper to get currently authenticated user from Better Auth and the database.
@@ -186,21 +196,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
 
-    // 1. Draft Limit Guard: Enforce max 10 drafts at any time
-    const existingDrafts = await ctx.db
-      .query("events")
-      .withIndex("by_admin", (q) => q.eq("adminId", user._id))
-      .filter((q) => q.eq(q.field("status"), "draft"))
-      .collect();
-
-    if (existingDrafts.length >= 10) {
-      throw new ConvexError({
-        title: "Draft Limit Reached",
-        reason: "You have reached the maximum limit of 10 draft events.",
-        actionNeeded: "Please delete or activate an existing draft before creating a new one.",
-        errorType: 403,
-      });
-    }
+    await assertDraftLimit(ctx, user._id, user.billingPlan);
 
     assertEventDateNotInPast(args.eventDate);
 
@@ -215,17 +211,11 @@ export const create = mutation({
         .first();
       if (!existing) isUnique = true;
     }
-    // 3. Determine user tier status and hard limits
-    const isPaidUser = 
-      user.billingPlan === "pro_monthly" || 
-      user.billingPlan === "pay_as_you_go";
-      
-    const tier = isPaidUser ? "pro" : "free";
-    
-    // 🚀 Safety: 50 staff is completely safe and will not impact operational costs!
-    const maxStaff = isPaidUser ? 50 : 5; 
+    const { tier, maxStaff } = resolveDraftLimits(user.billingPlan);
 
-    // 2. SAVE PARENT: Create the core event container
+    assertSlotCountWithinLimit(args.jobScopes.length, maxStaff);
+
+    // SAVE PARENT: Create the core event container
     const eventId = await ctx.db.insert("events", {
       adminId: user._id,
       title: args.title,
@@ -293,7 +283,7 @@ export const list = query({
 
     const user = await getAuthenticatedUser(ctx);
 
-    // 1. Fetch active events (draft or live) - usually very few (hard-capped at 10 drafts & 1 live)
+    // 1. Fetch active events (draft or live) - usually very few (1 draft free / 10 paid & 1 live)
     const activeEvents = await ctx.db
       .query("events")
       .withIndex("by_admin", (q) => q.eq("adminId", user._id))
@@ -470,6 +460,8 @@ export const update = mutation({
       ...scope,
       section: scope.section.trim().toLowerCase(),
     }));
+
+    await assertStaffCapacity(ctx, args.eventId, sanitizedJobScopes.length);
 
     // 2. SYNC SECTIONS NON-DESTRUCTIVELY
     // Fetch all existing sections from the database
@@ -691,22 +683,23 @@ export const updateStatus = mutation({
 
       // Deduct event pass credits ONLY when transitioning from draft to live
       if (event.status === "draft") {
-        const monthlyCredits = user.monthlyCredits ?? 0;
-        const oneTimeCredits = user.oneTimeCredits ?? 0;
-        const totalCredits = monthlyCredits + oneTimeCredits;
-
-        if (totalCredits <= 0) {
+        const creditPool = peekGoLiveCreditPool(user);
+        if (!creditPool) {
           throw new Error("Insufficient pass credits. Please top up or upgrade to go live.");
         }
 
-        // Credit consumption priority:
-        // 1. Expiring Monthly subscription credits (consume first)
-        // 2. Lifetime One-time purchase credits (falls back next)
-        if (monthlyCredits > 0) {
-          await ctx.db.patch(user._id, { monthlyCredits: monthlyCredits - 1 });
-        } else {
-          await ctx.db.patch(user._id, { oneTimeCredits: oneTimeCredits - 1 });
-        }
+        const goLiveLimits = resolveLimitsForCreditPool(creditPool);
+        await assertStaffCapacity(
+          ctx,
+          event._id,
+          await countRoleSlots(ctx, event._id),
+          goLiveLimits.maxStaff,
+        );
+
+        await consumeGoLiveCredit(ctx, user);
+
+        updateFields.tier = goLiveLimits.tier;
+        updateFields.maxStaff = goLiveLimits.maxStaff;
       }
 
       updateFields.liveAt = Date.now();
@@ -744,16 +737,7 @@ export const duplicate = mutation({
       throw new Error("Unauthorized to duplicate this event");
     }
 
-    // 1. Enforce max 10 drafts cap!
-    const existingDrafts = await ctx.db
-      .query("events")
-      .withIndex("by_admin", (q) => q.eq("adminId", user._id))
-      .filter((q) => q.eq(q.field("status"), "draft"))
-      .collect();
-
-    if (existingDrafts.length >= 10) {
-      throw new Error("You have reached the maximum limit of 10 draft events. Please delete or activate an existing draft first.");
-    }
+    await assertDraftLimit(ctx, user._id, user.billingPlan);
 
     // 2. Generate new unique joinCode
     let joinCode = "";
@@ -779,6 +763,15 @@ export const duplicate = mutation({
       newTitle = `${sourceEvent.title} (Copy)`;
     }
 
+    const draftLimits = resolveDraftLimits(user.billingPlan);
+
+    const sourceSlots = await ctx.db
+      .query("roleSlots")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+
+    assertSlotCountWithinLimit(sourceSlots.length, draftLimits.maxStaff);
+
     // 4. Clone the Event document (resets status to draft, liveAt/expiresAt to undefined)
     const newEventId = await ctx.db.insert("events", {
       adminId: user._id,
@@ -787,13 +780,13 @@ export const duplicate = mutation({
       eventDate: sourceEvent.eventDate,
       startTime: sourceEvent.startTime,
       description: sourceEvent.description,
-      maxStaff: sourceEvent.maxStaff,
+      maxStaff: draftLimits.maxStaff,
       joinCode,
       status: "draft",
-      tier: sourceEvent.tier,
+      tier: draftLimits.tier,
     });
 
-    // 4. Clone all Sections and keep an ID mapping
+    // Clone all Sections and keep an ID mapping
     const sourceSections = await ctx.db
       .query("eventSections")
       .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
@@ -813,11 +806,6 @@ export const duplicate = mutation({
     }
 
     // 5. Clone all Role Slots (linking them to the new Section IDs and clearing assignments)
-    const sourceSlots = await ctx.db
-      .query("roleSlots")
-      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-      .collect();
-
     for (const slot of sourceSlots) {
       const newSectionId = slot.sectionId 
         ? sectionIdMap.get(slot.sectionId) 
@@ -847,9 +835,9 @@ export const getDashboardShell = query({
     const credits = {
       monthlyCredits: user.monthlyCredits ?? 0,
       oneTimeCredits: user.oneTimeCredits ?? 0,
+      freeTrialCredits: user.freeTrialCredits ?? 0,
       billingPlan: user.billingPlan ?? "free",
       subscriptionExpiresAt: user.subscriptionExpiresAt ?? null,
-      monthlyCreditsResetAt: user.monthlyCreditsResetAt ?? null,
     };
 
     const [archivedEvents, draftEvents, liveEvent] = await Promise.all([

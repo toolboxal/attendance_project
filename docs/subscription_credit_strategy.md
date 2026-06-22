@@ -48,7 +48,7 @@ You keep the marketing power of the word "Unlimited," but put strict technical b
 
 *   **The Caps**:
     *   **Max 1 Concurrently Active Live Event**: They cannot run two live events at the same time. To go live with Event B, Event A must be archived.
-    *   **Max Staff Seats**: Cap the number of live staff members per event on the monthly plan to **15 seats** (while credit-based events can go up to 50+ staff).
+    *   **Max Staff Seats**: Cap the number of live staff members per event to **50 seats** on paid tiers.
 *   **Pros**:
     *   Allows you to advertise **"Unlimited Pro Events"** on the landing page.
     *   Naturally limits abuse (one human team can generally only run one event at a time).
@@ -93,8 +93,8 @@ For **Asistir**, we recommend starting with **Model A (Capped Credits)** or a **
 > [!IMPORTANT]
 > **Recommended Tier Configuration for $39/mo:**
 > *   **8 Pro Event Credits per Month** (resetting monthly, no rollover).
-> *   **Concurrency limit**: Max **2 active concurrent live events** (prevents sharing a single login across large multi-venue agencies).
-> *   **Staff Seat limit**: Max **20 live staff seats per event** (forces giant events onto custom enterprise plans).
+> *   **Concurrency limit**: Max **1 active concurrent live event** (prevents sharing a single login across large multi-venue agencies).
+> *   **Staff Seat limit**: Max **50 live staff seats per event** (forces giant events onto custom enterprise plans).
 
 ### Why this is the safest and most profitable move:
 1.  **Prevents Convex Overages**: You guarantee that a $39 subscriber cannot cost you more than 8 events' worth of database bandwidth.

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import {
 	ArrowUpRight,
 	Calendar,
@@ -10,7 +10,7 @@ import {
 	ShieldCheck,
 	Sparkles,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
 import { authClient } from "#/lib/auth-client";
@@ -22,32 +22,11 @@ export const Route = createFileRoute("/_authenticated/app/billing")({
 
 function BillingComponent() {
 	const user = useQuery(api.auth.getCurrentUser);
-	const evaluateStatus = useMutation(api.payments.evaluateUserStatus);
 
 	const [isPortalLoading, setIsPortalLoading] = useState(false);
 	const [activeCheckoutSlug, setActiveCheckoutSlug] = useState<string | null>(
 		null,
 	);
-
-	// 🚀 JIT (Just-in-Time) Status/Credit Evaluation on mount
-	useEffect(() => {
-		if (user) {
-			const now = Date.now();
-			const isSubActive = user.billingPlan === "pro_monthly";
-			const isExpired =
-				isSubActive &&
-				user.subscriptionExpiresAt &&
-				now >= user.subscriptionExpiresAt;
-			const isResetDue =
-				isSubActive &&
-				user.monthlyCreditsResetAt &&
-				now >= user.monthlyCreditsResetAt;
-
-			if (isExpired || isResetDue) {
-				evaluateStatus({ authUserId: user.authUserId });
-			}
-		}
-	}, [user, evaluateStatus]);
 
 	if (!user) {
 		return (
@@ -118,7 +97,7 @@ function BillingComponent() {
 	const isProSubscriber = user.billingPlan === "pro_monthly";
 
 	return (
-		<div className="flex-1 p-6 space-y-8 bg-zinc-950 text-white min-h-[calc(100vh-4rem)]">
+		<div className="spine flex-1 p-6 space-y-8 bg-zinc-950 text-white min-h-[calc(100vh-4rem)]">
 			{/* Header */}
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-zinc-800/80 pb-6">
 				<div>
@@ -148,7 +127,7 @@ function BillingComponent() {
 			</div>
 
 			{/* Grid of Credit Pools */}
-			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
 				{/* Card 1: Subscription Credits */}
 				<div className="relative overflow-hidden rounded-xl bg-zinc-900/40 border border-zinc-800/80 p-6 flex flex-col justify-between gap-6">
 					<div className="space-y-2">
@@ -163,23 +142,23 @@ function BillingComponent() {
 							<span className="text-sm font-normal text-zinc-400">/ 8</span>
 						</h3>
 						<p className="text-xs text-zinc-400">
-							Subscription credits for live Pro event sessions.
+							Resets to 8 on each successful renewal (Polar order.paid).
 						</p>
 					</div>
 					<div className="border-t border-zinc-800/60 pt-4 text-xs text-zinc-500 flex justify-between">
-						<span>Next Reset:</span>
+						<span>Current period ends:</span>
 						<span className="font-medium text-zinc-300">
-							{isProSubscriber ? formatDate(user.monthlyCreditsResetAt) : "N/A"}
+							{isProSubscriber ? formatDate(user.subscriptionExpiresAt) : "N/A"}
 						</span>
 					</div>
 				</div>
 
-				{/* Card 2: One-Time Credits */}
+				{/* Card 2: Purchased Credits */}
 				<div className="relative overflow-hidden rounded-xl bg-zinc-900/40 border border-zinc-800/80 p-6 flex flex-col justify-between gap-6">
 					<div className="space-y-2">
 						<div className="flex justify-between items-start">
 							<span className="text-xs font-semibold text-amber-400 uppercase tracking-widest">
-								Lifetime Pool
+								Purchased Pool
 							</span>
 							<InfinityIcon className="size-4 text-zinc-500" />
 						</div>
@@ -187,7 +166,7 @@ function BillingComponent() {
 							{user.oneTimeCredits ?? 0}
 						</h3>
 						<p className="text-xs text-zinc-400">
-							Permanent credits purchased as bundles. Never expire.
+							Single pass &amp; bundle credits. Up to 50 staff per event.
 						</p>
 					</div>
 					<div className="border-t border-zinc-800/60 pt-4 text-xs text-zinc-500 flex justify-between">
@@ -198,8 +177,30 @@ function BillingComponent() {
 					</div>
 				</div>
 
-				{/* Card 3: Billing Plan Summary */}
-				<div className="relative overflow-hidden rounded-xl bg-zinc-900/40 border border-zinc-800/80 p-6 flex flex-col justify-between gap-6 md:col-span-2 lg:col-span-1">
+				{/* Card 3: Free Trial Credits */}
+				<div className="relative overflow-hidden rounded-xl bg-zinc-900/40 border border-zinc-800/80 p-6 flex flex-col justify-between gap-6">
+					<div className="space-y-2">
+						<div className="flex justify-between items-start">
+							<span className="text-xs font-semibold text-sky-400 uppercase tracking-widest">
+								Free Trial
+							</span>
+							<Sparkles className="size-4 text-zinc-500" />
+						</div>
+						<h3 className="text-2xl font-bold font-mono">
+							{user.freeTrialCredits ?? 0}
+						</h3>
+						<p className="text-xs text-zinc-400">
+							Signup gift. Limited to 5 staff per live event.
+						</p>
+					</div>
+					<div className="border-t border-zinc-800/60 pt-4 text-xs text-zinc-500 flex justify-between">
+						<span>Staff cap:</span>
+						<span className="font-medium text-zinc-300">5 seats</span>
+					</div>
+				</div>
+
+				{/* Card 4: Billing Plan Summary */}
+				<div className="relative overflow-hidden rounded-xl bg-zinc-900/40 border border-zinc-800/80 p-6 flex flex-col justify-between gap-6">
 					<div className="space-y-2">
 						<div className="flex justify-between items-start">
 							<span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">

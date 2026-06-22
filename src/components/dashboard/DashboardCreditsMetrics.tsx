@@ -7,9 +7,9 @@ import { capitalizeWords } from "#/lib/utils";
 export type DashboardCredits = {
 	monthlyCredits: number;
 	oneTimeCredits: number;
+	freeTrialCredits: number;
 	billingPlan: string;
 	subscriptionExpiresAt: number | null;
-	monthlyCreditsResetAt: number | null;
 };
 
 type DashboardCreditsMetricsProps = {
@@ -24,28 +24,34 @@ function formatBillingDate(timestamp: number | null): string | undefined {
 export function DashboardCreditsMetrics({ credits }: DashboardCreditsMetricsProps) {
 	const navigate = useNavigate();
 	const isPro = credits.billingPlan === "pro_monthly";
-	const totalCredits = credits.monthlyCredits + credits.oneTimeCredits;
+	const totalCredits =
+		credits.monthlyCredits + credits.oneTimeCredits + credits.freeTrialCredits;
 	const creditsLow = totalCredits === 0 && !isPro;
 
-	const monthlyResetLabel = formatBillingDate(credits.monthlyCreditsResetAt);
+	const monthlyPeriodEndLabel = formatBillingDate(credits.subscriptionExpiresAt);
 	const renewalLabel = formatBillingDate(credits.subscriptionExpiresAt);
 
 	return (
 		<div className="flex flex-col gap-2">
-			<div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+			<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 				<DashboardCreditsMetricCard
 					label="Monthly credits"
 					value={credits.monthlyCredits}
 					subtitle={
-						isPro && monthlyResetLabel
-							? `Resets ${monthlyResetLabel}`
+						isPro && monthlyPeriodEndLabel
+							? `Renews via Polar · period ends ${monthlyPeriodEndLabel}`
 							: "Pro subscription only"
 					}
 				/>
 				<DashboardCreditsMetricCard
-					label="One-time credits"
+					label="Purchased credits"
 					value={credits.oneTimeCredits}
-					subtitle="Never expires"
+					subtitle="Single pass & bundles"
+				/>
+				<DashboardCreditsMetricCard
+					label="Free trial"
+					value={credits.freeTrialCredits}
+					subtitle="Up to 5 staff per event"
 				/>
 				<DashboardCreditsMetricCard
 					label={isPro ? "Subscription" : "Plan"}

@@ -1,88 +1,78 @@
-# Implementation Plan: Separate Credit Tracking & Lazy Reset
+# Implementation Plan: Separate Credit Tracking & Polar Renewal
 
-To successfully implement **Model A**, we must separate **Monthly Subscription Credits** (which reset monthly and do not roll over) from **One-Time Purchase Credits** (which remain on the account forever until consumed).
+Three credit pools on the user record. Staff limits at go-live follow the **credit pool consumed**, not just billing plan.
+
+Implementation: `convex/credits.ts`, `convex/payments.ts`, `convex/auth.ts`, `convex/events.ts`.
 
 ---
 
-## 1. Database Schema Design
+## 1. Database Schema (`convex/schema.ts`)
 
-We will modify the monetization fields in `convex/schema.ts` to cleanly separate these two credit pools and track the subscription cycle.
-
-### Proposed Schema Fields
 ```typescript
-// inside users defineTable
 billingPlan: v.optional(v.union(v.literal("free"), v.literal("pay_as_you_go"), v.literal("pro_monthly"))),
-subscriptionExpiresAt: v.optional(v.number()), // Unix timestamp for subscription end
+subscriptionExpiresAt: v.optional(v.number()), // Cached Polar subscription.current_period_end
 
-// 1. One-Time Purchase Credits (Lifetime, no expiration)
-oneTimeCredits: v.optional(v.number()), // E.g. purchased from Single Pass or Weekend Bundle
-
-// 2. Subscription Credits (Resets monthly, no rollover)
-monthlyCredits: v.optional(v.number()), // E.g. 8 credits per month
-monthlyCreditsResetAt: v.optional(v.number()), // Unix timestamp of when the credits should next reset
+freeTrialCredits: v.optional(v.number()),   // Signup gift (5 staff)
+oneTimeCredits: v.optional(v.number()),       // Purchased passes (50 staff)
+monthlyCredits: v.optional(v.number()),     // Reset to 8 on each order.paid renewal
 ```
+
+No `monthlyCreditsResetAt` — credits reset only when Polar fires `order.paid`.
 
 ---
 
-## 2. The Golden Rule of Consumption (UX & Economy)
+## 2. Go-live waterfall
 
-When a user triggers a Pro event, the system must decide which credit pool to deduct from first. 
+```
+monthlyCredits → oneTimeCredits → freeTrialCredits
+```
 
-> [!IMPORTANT]
-> **Deduction Priority Flow:**
-> 1. **Check Subscription Credits first:** Always deduct from `monthlyCredits` first, because they are "use-it-or-lose-it" and will expire at the end of the billing cycle.
-> 2. **Check One-Time Credits second:** Only deduct from `oneTimeCredits` if `monthlyCredits` is `0` (or if they are not subscribed).
-> 3. **Reject if both are 0:** Prompt the user to either upgrade or buy a top-up credit.
+| Pool consumed | `tier` | `maxStaff` |
+| :--- | :--- | :--- |
+| monthly | pro | 50 |
+| purchased | pro | 50 |
+| free_trial | free | 5 |
 
 ---
 
-## 3. The "Lazy Evaluation" Reset Pattern (Elegant Serverless)
+## 3. Subscription renewal (Polar-first)
 
-Instead of running a heavy, complex background cron job on the 1st of every month to reset credits for all subscribers, use a **lazy evaluation pattern**. 
+**Polar** auto-charges recurring subscriptions and sends **`order.paid`** on each successful payment (initial + renewals).
 
-Whenever a user logs in, visits their dashboard, or attempts to go live with an event, run a quick check:
+**Your app** (`onOrderPaid` in `convex/auth.ts`):
 
-```typescript
-const now = Date.now();
+1. Read `order.subscription.currentPeriodEnd` from the webhook payload
+2. Call `grantSubscription`:
+   - `monthlyCredits: 8`
+   - `subscriptionExpiresAt: currentPeriodEnd` (ms)
+   - `billingPlan: "pro_monthly"`
 
-// If the user is a subscriber and the current time has passed their reset timestamp:
-if (user.billingPlan === "pro_monthly" && user.monthlyCreditsResetAt && now >= user.monthlyCreditsResetAt) {
-  // 1. Calculate how many months have elapsed since the last reset (usually 1)
-  // 2. Reset monthlyCredits back to 8
-  // 3. Advance monthlyCreditsResetAt to the next month's billing date
-  await ctx.db.patch(user._id, {
-    monthlyCredits: 8,
-    monthlyCreditsResetAt: calculateNextBillingDate(user.monthlyCreditsResetAt),
-  });
-}
-```
-
-### Why Lazy Evaluation Wins:
-*   **Zero Serverless Overhead:** You only execute the database write when the user is actually active.
-*   **Perfect Accuracy:** The exact millisecond the user returns after their billing cycle ends, their credits are cleanly updated before they can perform any action.
-*   **No Cron Failures:** Traditional cron jobs can fail, skip, or drift. This code executes in the request cycle, making it deterministic.
+No local 30-day timers. No lazy evaluation. If `currentPeriodEnd` is missing, log an error and skip the grant.
 
 ---
 
-## 4. How Polar Webhooks Handle Both Purchases
+## 4. Draft limits & staff enforcement
 
-In `convex/auth.ts`, your Polar webhook handles `order.paid`. Here is how the two different products distribute credits under this model:
+| Account | Max drafts | Pro staff | Trial staff |
+| :--- | :--- | :--- | :--- |
+| Free | 1 | — | 5 |
+| Paid | 10 | 50 | 5 |
 
-### Case 1: One-Time Purchase (`single` or `weekend`)
-Directly add to `oneTimeCredits` and update the billing plan to `"pay_as_you_go"`.
-```typescript
-await actionCtx.runMutation(internal.payments.grantOneTimeCredits, {
-    authUserId,
-    creditsToAdd: order.productId === process.env.POLAR_PRODUCT_ID_SINGLE ? 1 : 3,
-});
-```
+Drafts sync to pro/free limits on `grantOneTimeCredits` / `grantSubscription`.
 
-### Case 2: Monthly Subscription (`monthly`)
-Grant the subscription tier, initialize `monthlyCredits` to 8, and set the initial reset date to 30 days from now (or the next billing date provided by Polar).
-```typescript
-await actionCtx.runMutation(internal.payments.grantSubscription, {
-    authUserId,
-    initialMonthlyCredits: 8,
-    subscriptionExpiresAt: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days
-});
-```
+---
+
+## 5. TODO: Polar subscription lifecycle webhooks
+
+Renewal is handled via **`order.paid`**. Still deferred:
+
+| Webhook | Purpose |
+| :--- | :--- |
+| `onSubscriptionCanceled` / `onSubscriptionUpdated` | Sync `subscriptionExpiresAt` for cancel-at-period-end UI |
+| `onSubscriptionRevoked` | Downgrade `billingPlan`, zero monthly credits, sync drafts |
+
+---
+
+## 6. One-time purchases (`onOrderPaid`)
+
+- `single` / `weekend` → add to `oneTimeCredits`, `billingPlan: "pay_as_you_go"`, upgrade drafts

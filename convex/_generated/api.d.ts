@@ -12,6 +12,7 @@ import type * as alerts from "../alerts.js";
 import type * as auth from "../auth.js";
 import type * as broadcasts from "../broadcasts.js";
 import type * as constants from "../constants.js";
+import type * as credits from "../credits.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as jobs from "../jobs.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   broadcasts: typeof broadcasts;
   constants: typeof constants;
+  credits: typeof credits;
   events: typeof events;
   http: typeof http;
   jobs: typeof jobs;

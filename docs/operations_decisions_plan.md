@@ -251,20 +251,30 @@ To keep URLs clean and simple for mobile users, we avoid placing complex databas
 
 ## 7. Credit Consumption & Capacity Architecture
 
-To ensure high conversions and lean operations, Asistir executes a strictly enforced **Credit Ledger** for creation limits, and utilizes **Convex Deduplication** for infinite read scalability.
+To ensure high conversions and lean operations, Asistir executes a strictly enforced **Credit Ledger** at go-live, with staff caps enforced on role slot counts.
 
-### 💳 7.1 Credit Consumption Logic
-The database relies on immediate, atomic deductions during the `event:create` mutation to protect platform abuse.
-*   **The Onboarding Gift**: Every newly registered Admin is granted exactly **1 free One-Time Credit** automatically in [convex/auth.ts](file:///Users/alvinwong/attendance_project/convex/auth.ts).
-*   **The Master Gate**: Creating ANY event instantly triggers a credit deduction algorithm. 
-    *   Checks total credits (`monthly` + `oneTime`).
-    *   If balance hits 0, creation is permanently locked until top-up.
-*   **Waterfall Deduction**: Consumes `monthlyCredits` (expiring pool) first, before gracefully falling back to the persistent `oneTimeCredits` pool.
+### 💳 7.1 Credit pools & consumption
 
-### 📊 7.2 Access Tiers & Staff Capacity
-Operational limits are designed strategically to act as a Revenue Paywall, not a system limitation:
-1.  **Free Tier (Max 5 Staff)**: Deliberately set to 5 personnel. This provides a fully operational sandbox for testing with close colleagues, while preventing commercial organizers (weddings, concerts) from bypassing the paywall.
-2.  **Paid Tier (Max 50 Staff)**: Standardized at 50 slots for BOTH Monthly Subscribers and Pay-As-You-Go customers. Covers the vast majority of small-to-medium live venue operational needs.
+Three pools on `users` (see `convex/credits.ts`):
+
+| Pool | Source | Staff at go-live |
+| :--- | :--- | :--- |
+| `freeTrialCredits` | Signup gift (1 credit) | **5** |
+| `oneTimeCredits` | Single Pass / Weekend Bundle | **50** |
+| `monthlyCredits` | Pro Monthly subscription | **50** |
+
+*   **Onboarding gift**: `freeTrialCredits: 1` on signup in [convex/auth.ts](file:///Users/alvinwong/attendance_project/convex/auth.ts) — separate from purchased credits.
+*   **Go-live gate**: Credits deducted in `events.updateStatus` (draft → live).
+*   **Waterfall**: `monthlyCredits` → `oneTimeCredits` → `freeTrialCredits`.
+*   **Monthly renewal**: Polar `order.paid` resets `monthlyCredits` to 8; `subscriptionExpiresAt` from `order.subscription.currentPeriodEnd`.
+*   **No lazy evaluation**: billing state changes only via Polar webhooks.
+
+### 📊 7.2 Access tiers, drafts & concurrency
+
+1.  **Free tier**: **1 draft**, **5 staff** (when using `freeTrialCredits`). `billingPlan: "free"`.
+2.  **Paid tier**: **10 drafts**, **50 staff** (monthly or purchased credits). `billingPlan: "pay_as_you_go"` or `"pro_monthly"`.
+3.  **Draft sync**: When billing plan changes (purchase or subscription expiry), all **draft** events are patched to the matching `tier` / `maxStaff`. Live/archived events are unchanged.
+4.  **Concurrency (all accounts)**: Max **1** concurrently active live event. Archive or wait for expiry before starting another.
 
 ### 🏗️ 7.3 Scalability Rationale (Computational Costs)
 Concerns regarding the cost of 50+ concurrent websocket listeners are mitigated by fundamental Convex architecture:

@@ -42,7 +42,8 @@ export const authComponent: any = createClient<DataModel>(components.betterAuth,
           email: user.email,
           name: user.name,
           role: "admin",
-          oneTimeCredits: 1, // 🔥 FREE STARTING CREDIT: Grants 1 sample event instantly on signup
+          freeTrialCredits: 1, // Signup gift: 1 live event capped at 5 staff
+          oneTimeCredits: 0,
           monthlyCredits: 0,
           billingPlan: "free",
           createdAt: Date.now(),
@@ -64,6 +65,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       "http://localhost:3000",
       "http://127.0.0.1:3000",
       "http://192.168.1.3:3000",
+      "http://192.168.1.5:3000",
       "http://192.168.1.6:3000",
       "http://192.168.1.7:3000",
     ],
@@ -80,7 +82,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
         expiresIn: 300,
         allowedAttempts: 3,
         async sendVerificationOTP({ email, otp }) {
-          console.log(`[Better Auth] Sending OTP to ${email}`);
+          // console.log(`[Better Auth] Sending OTP to ${email}`);
           const apiKey = process.env.RESEND_API_KEY;
           if (!apiKey) {
             console.error("[Better Auth Error] Missing RESEND_API_KEY environment variable!");
@@ -168,12 +170,20 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
                         }
 
                         if (order.productId === process.env.POLAR_PRODUCT_ID_MONTHLY) {
-                            const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
-                            await actionCtx.runMutation(internal.payments.grantSubscription, {
-                                authUserId,
-                                initialMonthlyCredits: 8,
-                                subscriptionExpiresAt: Date.now() + thirtyDaysInMs,
-                            });
+                            const subscription = (order as { subscription?: { currentPeriodEnd?: Date | string } }).subscription;
+                            const periodEnd = subscription?.currentPeriodEnd;
+                            if (!periodEnd) {
+                                console.error(
+                                    "[Polar] Monthly order.paid missing subscription.currentPeriodEnd — subscription not granted",
+                                    order.id,
+                                );
+                            } else {
+                                await actionCtx.runMutation(internal.payments.grantSubscription, {
+                                    authUserId,
+                                    initialMonthlyCredits: 8,
+                                    subscriptionPeriodEndsAt: new Date(periodEnd).getTime(),
+                                });
+                            }
                         }
                     },
                     

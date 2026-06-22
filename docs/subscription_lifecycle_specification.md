@@ -1,78 +1,79 @@
-# Lifecycle Specification: Credits, Cancellations & JIT Name Onboarding
-
-This specification outlines exactly what a **Credit** represents in Asistir, defines how to handle subscription cancellations, and documents the **Just-in-Time Name Onboarding** pattern on event launch.
+# Lifecycle Specification: Credits, Renewals & JIT Name Onboarding
 
 ---
 
-## 1. What Exactly is a Credit?
+## 1. Credit pools
 
-A **Pro Event Credit** represents a **single, 24-hour active window for a live Pro Event**.
+| Pool | Source | Staff at go-live |
+| :--- | :--- | :--- |
+| `monthlyCredits` | Pro Monthly | 50 (pro) |
+| `oneTimeCredits` | Single Pass / Weekend Bundle | 50 (pro) |
+| `freeTrialCredits` | Signup gift | 5 (free) |
 
-### The Lifecycle of an Event & Credit Consumption
-1.  **Draft Mode ($0 Cost):** An admin can create an event in `draft` status. They can configure settings, invite staff, and set up channels without spending any credits.
-2.  **Going Live (Deducts 1 Credit):** When the admin clicks **"Go Live"**:
-    *   The system checks if they have available credits (`monthlyCredits` or `oneTimeCredits`).
-    *   If yes, **1 credit is deducted** (prioritizing `monthlyCredits` first).
-    *   The event's status changes to `live`.
-    *   `liveAt` is set to `Date.now()`.
-    *   `expiresAt` is set to `Date.now() + (24 * 60 * 60 * 1000)` (exactly 24 hours later).
-3.  **Archived Mode ($0 Cost):** After 24 hours, the event enters `archived` status. Staff can no longer send messages or manage jobs, but the admin can view the historical data for free indefinitely.
+**Go-live waterfall:** `monthly` → `purchased` → `free_trial`
 
 ---
 
-## 2. Subscription Cancellation & Grace Period
+## 2. Event lifecycle
 
-When a customer cancels their subscription through Polar, they have paid for the full 30 days and are entitled to use their subscription credits until that period ends.
+1. **Draft** — no credit spent. Limits: 1 draft (free) or 10 (paid).
+2. **Go live** — one credit consumed; `tier` / `maxStaff` set from pool used.
+3. **Archived** — after 24h; history viewable free.
 
-### The Implementation Flow
-*   **The Polar Webhook (`subscription.canceled` or `sub.canceled`):**
-    When a cancellation event is received, **do not immediately revoke access or reset their credits**. Simply let the subscription run its course. Polar will let you know when the period officially ends, or you can rely on the `subscriptionExpiresAt` timestamp.
-*   **Checking Pro Tier Status:**
-    Evaluate Pro status dynamically using this logical formula:
+---
+
+## 3. Subscription renewal
+
+Polar auto-renews and sends **`order.paid`** on each successful charge.
+
+On `order.paid` for the monthly product:
 
 ```typescript
-export function isUserPro(user: any): boolean {
-  const now = Date.now();
-  const hasActiveSubscription = user.billingPlan === "pro_monthly" && 
-                                user.subscriptionExpiresAt && 
-                                now < user.subscriptionExpiresAt;
-                                
-  const hasOneTimeCredits = (user.oneTimeCredits ?? 0) > 0;
-
-  // The user is PRO if they have an active subscription OR if they have one-time credits remaining.
-  return hasActiveSubscription || hasOneTimeCredits;
-}
+// order.subscription.currentPeriodEnd from Polar payload
+await grantSubscription({
+  initialMonthlyCredits: 8,
+  subscriptionPeriodEndsAt: new Date(order.subscription.currentPeriodEnd).getTime(),
+});
 ```
+
+- **`subscriptionExpiresAt`** — cached `current_period_end` for UI (“period ends …”)
+- **`monthlyCredits`** — reset to **8** only on successful `order.paid`
+- **No lazy evaluation** — no local cron or billing-page timer
 
 ---
 
-## 3. The Lazy Downgrade Flow
+## 4. Billing plans
 
-When `now >= user.subscriptionExpiresAt`, the subscription has officially ended. Here is how the system handles the transition smoothly:
+| `billingPlan` | When |
+| :--- | :--- |
+| `free` | Signup; no purchased credits |
+| `pay_as_you_go` | Has `oneTimeCredits` from purchase |
+| `pro_monthly` | Active sub (`order.paid` grant) |
 
-```typescript
-// When evaluating user status or starting a new event:
-if (user.billingPlan === "pro_monthly" && Date.now() >= user.subscriptionExpiresAt) {
-  const hasOneTimeLeft = (user.oneTimeCredits ?? 0) > 0;
-  
-  // Lazy Downgrade: The billing period has ended.
-  // Fall back to pay_as_you_go if they have lifetime credits, otherwise downgrade to free.
-  await ctx.db.patch(user._id, {
-    billingPlan: hasOneTimeLeft ? "pay_as_you_go" : "free",
-    monthlyCredits: 0, // Revoke remaining monthly credits
-  });
-}
-```
+`freeTrialCredits` alone does not change `billingPlan`.
 
 ---
 
-## 4. Just-In-Time Name Onboarding
+## 5. TODO: Cancellation & downgrade webhooks
 
-To make sign-up and initial draft exploration completely frictionless, we do not force users to input a display name during registration. Instead, we perform a **Just-In-Time (JIT) name check** the moment they attempt to start a live event.
+Not implemented. Downgrade will be handled by Polar webhooks (not local expiry checks):
 
-### The Flow
-1.  **Clicking Go Live:** The admin clicks `"Go Live"` on a draft event.
-2.  **The Name Guard:** The client checks if `user.name` is empty or missing.
-    *   **If not empty:** Proceed directly to event launch.
-    *   **If empty:** Intercept the action and display a sleek modal asking them to set their name (e.g., *"To start this live event as its supervisor, please enter your display name so your crew can identify you in chat and tasks."*).
-3.  **Launch:** Once they submit their name inside the modal, a mutation updates `user.name` in the database, and the client proceeds to trigger the event launch mutation.
+| Webhook | Action |
+| :--- | :--- |
+| `onSubscriptionCanceled` / `onSubscriptionUpdated` | Sync period end; no credit revoke yet |
+| `onSubscriptionRevoked` | `monthlyCredits: 0`, downgrade plan, sync drafts |
+
+---
+
+## 6. JIT name onboarding
+
+On **Go Live**, if `user.name` is empty → modal → save name → launch.
+
+---
+
+## 7. Trial after subscription example
+
+1. Signup → `freeTrialCredits: 1`
+2. Subscribe → `order.paid` → 8 monthly credits
+3. Sub lapses (future: `subscription.revoked`) → monthly credits cleared
+4. Go live on trial → **5 staff** only (even if draft had more slots configured as pro)
