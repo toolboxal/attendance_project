@@ -70,13 +70,13 @@ function DashboardComponent() {
 	}, [checkoutSlug, router]);
 
 	const events =
-		shell.mode === "live" ? [shell.event] : shell.archivedEvents;
+		shell.mode === "live"
+			? [shell.event, ...shell.archivedEvents]
+			: shell.archivedEvents;
 	const defaultOpenEventId =
 		shell.mode === "live" ? shell.event._id : undefined;
 
-	const hasContent =
-		events.length > 0 ||
-		(shell.mode === "idle" && shell.nextDraft != null);
+	const hasContent = events.length > 0 || shell.nextDraft != null;
 
 	if (!hasContent) {
 		return (
@@ -100,12 +100,10 @@ function DashboardComponent() {
 	return (
 		<div className="w-full min-h-dvh bg-zinc-950">
 			<div className="spine flex flex-col gap-4 py-2 p-4 md:p-6">
-				{shell.mode === "idle" ? (
-					<DashboardIdleChrome
-						nextDraft={shell.nextDraft}
-						credits={shell.credits}
-					/>
-				) : null}
+				<DashboardIdleChrome
+					nextDraft={shell.nextDraft}
+					credits={shell.credits}
+				/>
 
 				{events.length > 0 ? (
 					<DashboardEventAccordion

@@ -844,20 +844,21 @@ export const getDashboardShell = query({
   handler: async (ctx) => {
     const user = await getAuthenticatedUser(ctx);
 
-    const liveEvent = await ctx.db
-      .query("events")
-      .withIndex("by_admin", (q) => q.eq("adminId", user._id))
-      .filter((q) => q.eq(q.field("status"), "live"))
-      .first();
+    const credits = {
+      monthlyCredits: user.monthlyCredits ?? 0,
+      oneTimeCredits: user.oneTimeCredits ?? 0,
+      billingPlan: user.billingPlan ?? "free",
+      subscriptionExpiresAt: user.subscriptionExpiresAt ?? null,
+      monthlyCreditsResetAt: user.monthlyCreditsResetAt ?? null,
+    };
 
-    if (liveEvent) {
-      return {
-        mode: "live" as const,
-        event: liveEvent,
-      };
-    }
-
-    const [draftEvents, archivedEvents] = await Promise.all([
+    const [archivedEvents, draftEvents, liveEvent] = await Promise.all([
+      ctx.db
+        .query("events")
+        .withIndex("by_admin", (q) => q.eq("adminId", user._id))
+        .filter((q) => q.eq(q.field("status"), "archived"))
+        .order("desc")
+        .take(10),
       ctx.db
         .query("events")
         .withIndex("by_admin", (q) => q.eq("adminId", user._id))
@@ -866,23 +867,29 @@ export const getDashboardShell = query({
       ctx.db
         .query("events")
         .withIndex("by_admin", (q) => q.eq("adminId", user._id))
-        .filter((q) => q.eq(q.field("status"), "archived"))
-        .order("desc")
-        .take(10),
+        .filter((q) => q.eq(q.field("status"), "live"))
+        .first(),
     ]);
 
-    draftEvents.sort((a, b) => a.eventDate - b.eventDate);
     archivedEvents.sort((a, b) => b.eventDate - a.eventDate);
+    draftEvents.sort((a, b) => a.eventDate - b.eventDate);
+    const nextDraft = draftEvents[0] ?? null;
+
+    if (liveEvent) {
+      return {
+        mode: "live" as const,
+        event: liveEvent,
+        archivedEvents,
+        nextDraft,
+        credits,
+      };
+    }
 
     return {
       mode: "idle" as const,
       archivedEvents,
-      nextDraft: draftEvents[0] ?? null,
-      credits: {
-        monthlyCredits: user.monthlyCredits ?? 0,
-        oneTimeCredits: user.oneTimeCredits ?? 0,
-        billingPlan: user.billingPlan ?? "free",
-      },
+      nextDraft,
+      credits,
     };
   },
 });
