@@ -10,8 +10,9 @@ export default defineSchema({
     role: v.optional(v.union(v.literal("admin"), v.literal("member"))),
     
     // MONETIZATION FIELDS
-    billingPlan: v.optional(v.union(v.literal("free"), v.literal("pay_as_you_go"), v.literal("pro_monthly"))),
+    billingPlan: v.optional(v.union(v.literal("free"), v.literal("pro_monthly"))),
     subscriptionExpiresAt: v.optional(v.number()), // Polar current_period_end (cached from webhooks)
+    subscriptionCancelAtPeriodEnd: v.optional(v.boolean()), // true after subscription.canceled until revoked
     
     // Separated Credit Pools (Model A)
     freeTrialCredits: v.optional(v.number()), // Signup gift only (5 staff events, never pro)

@@ -1,9 +1,15 @@
 import { v } from "convex/values";
+import type { MutationCtx } from "./_generated/server";
 import { internalMutation, query } from "./_generated/server";
-import {
-  resolveDraftLimits,
-  syncDraftEventsToLimits,
-} from "./credits";
+import { resolveDraftLimits, syncDraftEventsToLimits } from "./credits";
+import { getAuthenticatedUser } from "./events";
+
+async function findUserByAuthUserId(ctx: MutationCtx, authUserId: string) {
+  return await ctx.db
+    .query("users")
+    .withIndex("by_authUserId", (q) => q.eq("authUserId", authUserId))
+    .first();
+}
 
 export const grantOneTimeCredits = internalMutation({
   args: {
@@ -11,19 +17,17 @@ export const grantOneTimeCredits = internalMutation({
     creditsToAdd: v.number(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_authUserId", (q) => q.eq("authUserId", args.authUserId))
-      .first();
-
+    const user = await findUserByAuthUserId(ctx, args.authUserId);
     if (!user) return;
 
-    await ctx.db.patch(user._id, {
-      oneTimeCredits: (user.oneTimeCredits ?? 0) + args.creditsToAdd,
-      billingPlan: "pay_as_you_go",
-    });
+    const oneTimeCredits = (user.oneTimeCredits ?? 0) + args.creditsToAdd;
+    await ctx.db.patch(user._id, { oneTimeCredits });
 
-    await syncDraftEventsToLimits(ctx, user._id, resolveDraftLimits("pay_as_you_go"));
+    await syncDraftEventsToLimits(
+      ctx,
+      user._id,
+      resolveDraftLimits({ ...user, oneTimeCredits }),
+    );
   },
 });
 
@@ -34,20 +38,134 @@ export const grantSubscription = internalMutation({
     subscriptionPeriodEndsAt: v.number(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_authUserId", (q) => q.eq("authUserId", args.authUserId))
-      .first();
-
+    const user = await findUserByAuthUserId(ctx, args.authUserId);
     if (!user) return;
 
+    const monthlyCredits = args.initialMonthlyCredits;
     await ctx.db.patch(user._id, {
       billingPlan: "pro_monthly",
       subscriptionExpiresAt: args.subscriptionPeriodEndsAt,
-      monthlyCredits: args.initialMonthlyCredits,
+      subscriptionCancelAtPeriodEnd: false,
+      monthlyCredits,
     });
 
-    await syncDraftEventsToLimits(ctx, user._id, resolveDraftLimits("pro_monthly"));
+    await syncDraftEventsToLimits(
+      ctx,
+      user._id,
+      resolveDraftLimits({
+        ...user,
+        billingPlan: "pro_monthly",
+        monthlyCredits,
+      }),
+    );
+  },
+});
+
+/** Sync period end / cancel flag from Polar without changing credits or plan. */
+export const syncSubscriptionMetadata = internalMutation({
+  args: {
+    authUserId: v.string(),
+    subscriptionPeriodEndsAt: v.number(),
+    cancelAtPeriodEnd: v.boolean(),
+    polarSubscriptionId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await findUserByAuthUserId(ctx, args.authUserId);
+    if (!user || user.billingPlan !== "pro_monthly") return;
+
+    await ctx.db.patch(user._id, {
+      subscriptionExpiresAt: args.subscriptionPeriodEndsAt,
+      subscriptionCancelAtPeriodEnd: args.cancelAtPeriodEnd,
+      ...(args.polarSubscriptionId
+        ? { polarSubscriptionId: args.polarSubscriptionId }
+        : {}),
+    });
+  },
+});
+
+/** User canceled in Polar portal — keep Pro access until current period ends. */
+export const markSubscriptionCanceled = internalMutation({
+  args: {
+    authUserId: v.string(),
+    subscriptionPeriodEndsAt: v.number(),
+    polarSubscriptionId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await findUserByAuthUserId(ctx, args.authUserId);
+    if (!user) return;
+
+    await ctx.db.patch(user._id, {
+      subscriptionCancelAtPeriodEnd: true,
+      subscriptionExpiresAt: args.subscriptionPeriodEndsAt,
+      ...(args.polarSubscriptionId
+        ? { polarSubscriptionId: args.polarSubscriptionId }
+        : {}),
+    });
+  },
+});
+
+/** User undid a pending cancellation in Polar portal. */
+export const clearSubscriptionCanceled = internalMutation({
+  args: {
+    authUserId: v.string(),
+    subscriptionPeriodEndsAt: v.number(),
+    polarSubscriptionId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await findUserByAuthUserId(ctx, args.authUserId);
+    if (!user) return;
+
+    await ctx.db.patch(user._id, {
+      subscriptionCancelAtPeriodEnd: false,
+      subscriptionExpiresAt: args.subscriptionPeriodEndsAt,
+      ...(args.polarSubscriptionId
+        ? { polarSubscriptionId: args.polarSubscriptionId }
+        : {}),
+    });
+  },
+});
+
+/** Subscription ended (period over or revoked) — downgrade plan and monthly credits. */
+export const revokeSubscription = internalMutation({
+  args: {
+    authUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await findUserByAuthUserId(ctx, args.authUserId);
+    if (!user) return;
+
+    const monthlyCredits = 0;
+    await ctx.db.patch(user._id, {
+      billingPlan: "free",
+      monthlyCredits,
+      subscriptionCancelAtPeriodEnd: false,
+    });
+
+    await syncDraftEventsToLimits(
+      ctx,
+      user._id,
+      resolveDraftLimits({
+        ...user,
+        billingPlan: "free",
+        monthlyCredits,
+      }),
+    );
+  },
+});
+
+export const getBillingProfile = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+    return {
+      billingPlan: user.billingPlan ?? "free",
+      monthlyCredits: user.monthlyCredits ?? 0,
+      oneTimeCredits: user.oneTimeCredits ?? 0,
+      freeTrialCredits: user.freeTrialCredits ?? 0,
+      subscriptionExpiresAt: user.subscriptionExpiresAt ?? null,
+      subscriptionCancelAtPeriodEnd:
+        user.subscriptionCancelAtPeriodEnd ?? false,
+    };
   },
 });
 
@@ -58,11 +176,7 @@ export const updatePolarBillingIds = internalMutation({
     polarSubscriptionId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_authUserId", (q) => q.eq("authUserId", args.authUserId))
-      .first();
-
+    const user = await findUserByAuthUserId(ctx, args.authUserId);
     if (!user) return;
 
     await ctx.db.patch(user._id, {

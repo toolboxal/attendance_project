@@ -253,28 +253,30 @@ To keep URLs clean and simple for mobile users, we avoid placing complex databas
 
 To ensure high conversions and lean operations, Asistir executes a strictly enforced **Credit Ledger** at go-live, with staff caps enforced on role slot counts.
 
-### 💳 7.1 Credit pools & consumption
+### 💳 7.1 Plan vs credits
 
-Three pools on `users` (see `convex/credits.ts`):
+**Plan** (`billingPlan`): `free` or `pro_monthly` only.
+
+**Credits** (balances, not a plan type):
 
 | Pool | Source | Staff at go-live |
 | :--- | :--- | :--- |
-| `freeTrialCredits` | Signup gift (1 credit) | **5** |
-| `oneTimeCredits` | Single Pass / Weekend Bundle | **50** |
-| `monthlyCredits` | Pro Monthly subscription | **50** |
+| `freeTrialCredits` | Signup gift | 5 |
+| `oneTimeCredits` | Event passes | 50 |
+| `monthlyCredits` | Subscription renewal | 50 |
 
-*   **Onboarding gift**: `freeTrialCredits: 1` on signup in [convex/auth.ts](file:///Users/alvinwong/attendance_project/convex/auth.ts) — separate from purchased credits.
-*   **Go-live gate**: Credits deducted in `events.updateStatus` (draft → live).
-*   **Waterfall**: `monthlyCredits` → `oneTimeCredits` → `freeTrialCredits`.
-*   **Monthly renewal**: Polar `order.paid` resets `monthlyCredits` to 8; `subscriptionExpiresAt` from `order.subscription.currentPeriodEnd`.
-*   **No lazy evaluation**: billing state changes only via Polar webhooks.
+*   **Weddings / one-offs:** Stay **Free**; passes add `oneTimeCredits` only.
+*   **Go-live:** Waterfall in `events.updateStatus`.
+*   **Renewal:** Polar `order.paid` → 8 monthly credits.
+*   **Cancel:** Polar portal → `subscription.canceled` (keep access) → `subscription.revoked` at period end.
+*   **Pro capacity:** `hasProCapacity` = subscription OR credits > 0.
 
-### 📊 7.2 Access tiers, drafts & concurrency
+### 📊 7.2 Drafts & concurrency
 
-1.  **Free tier**: **1 draft**, **5 staff** (when using `freeTrialCredits`). `billingPlan: "free"`.
-2.  **Paid tier**: **10 drafts**, **50 staff** (monthly or purchased credits). `billingPlan: "pay_as_you_go"` or `"pro_monthly"`.
-3.  **Draft sync**: When billing plan changes (purchase or subscription expiry), all **draft** events are patched to the matching `tier` / `maxStaff`. Live/archived events are unchanged.
-4.  **Concurrency (all accounts)**: Max **1** concurrently active live event. Archive or wait for expiry before starting another.
+1.  **No pro capacity:** 1 draft, 5 staff planning.
+2.  **Has credits or subscription:** 10 drafts, 50 staff planning.
+3.  **Draft sync:** On purchase, subscription grant, or last credit used — patch drafts.
+4.  **Concurrency:** Max 1 live event at a time (all accounts).
 
 ### 🏗️ 7.3 Scalability Rationale (Computational Costs)
 Concerns regarding the cost of 50+ concurrent websocket listeners are mitigated by fundamental Convex architecture:

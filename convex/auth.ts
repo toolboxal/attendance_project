@@ -21,6 +21,62 @@ const siteUrl = process.env.SITE_URL!
 
 import { internal } from './_generated/api'
 
+function subscriptionAuthUserId(subscription: {
+    customer?: { externalId?: string | null };
+}) {
+    return subscription.customer?.externalId ?? null;
+}
+
+function isMonthlyPolarProduct(productId: string) {
+    return productId === process.env.POLAR_PRODUCT_ID_MONTHLY;
+}
+
+async function handleMonthlySubscriptionWebhook(
+    actionCtx: GenericActionCtx<DataModel>,
+    subscription: {
+        id: string;
+        productId: string;
+        currentPeriodEnd: Date | string;
+        cancelAtPeriodEnd?: boolean;
+        customer?: { externalId?: string | null };
+    },
+    action: "canceled" | "revoked" | "uncanceled" | "updated",
+) {
+    const authUserId = subscriptionAuthUserId(subscription);
+    if (!authUserId || !isMonthlyPolarProduct(subscription.productId)) return;
+
+    if (action === "revoked") {
+        await actionCtx.runMutation(internal.payments.revokeSubscription, { authUserId });
+        return;
+    }
+
+    const subscriptionPeriodEndsAt = new Date(subscription.currentPeriodEnd).getTime();
+    if (action === "canceled") {
+        await actionCtx.runMutation(internal.payments.markSubscriptionCanceled, {
+            authUserId,
+            subscriptionPeriodEndsAt,
+            polarSubscriptionId: subscription.id,
+        });
+        return;
+    }
+
+    if (action === "uncanceled") {
+        await actionCtx.runMutation(internal.payments.clearSubscriptionCanceled, {
+            authUserId,
+            subscriptionPeriodEndsAt,
+            polarSubscriptionId: subscription.id,
+        });
+        return;
+    }
+
+    await actionCtx.runMutation(internal.payments.syncSubscriptionMetadata, {
+        authUserId,
+        subscriptionPeriodEndsAt,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd ?? false,
+        polarSubscriptionId: subscription.id,
+    });
+}
+
 
 const polarClient = new Polar({ 
     accessToken: process.env.POLAR_ACCESS_TOKEN, 
@@ -186,7 +242,38 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
                             }
                         }
                     },
-                    
+                    onSubscriptionCanceled: async (event) => {
+                        const actionCtx = ctx as unknown as GenericActionCtx<DataModel>;
+                        await handleMonthlySubscriptionWebhook(
+                            actionCtx,
+                            event.data,
+                            "canceled",
+                        );
+                    },
+                    onSubscriptionRevoked: async (event) => {
+                        const actionCtx = ctx as unknown as GenericActionCtx<DataModel>;
+                        await handleMonthlySubscriptionWebhook(
+                            actionCtx,
+                            event.data,
+                            "revoked",
+                        );
+                    },
+                    onSubscriptionUncanceled: async (event) => {
+                        const actionCtx = ctx as unknown as GenericActionCtx<DataModel>;
+                        await handleMonthlySubscriptionWebhook(
+                            actionCtx,
+                            event.data,
+                            "uncanceled",
+                        );
+                    },
+                    onSubscriptionUpdated: async (event) => {
+                        const actionCtx = ctx as unknown as GenericActionCtx<DataModel>;
+                        await handleMonthlySubscriptionWebhook(
+                            actionCtx,
+                            event.data,
+                            "updated",
+                        );
+                    },
                 }) 
             ], 
         }) 

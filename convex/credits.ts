@@ -5,9 +5,10 @@ import type { MutationCtx } from "./_generated/server";
 export const FREE_MAX_STAFF = 5;
 export const PRO_MAX_STAFF = 50;
 export const FREE_DRAFT_LIMIT = 1;
-export const PAID_DRAFT_LIMIT = 10;
+/** Hard ceiling — no account may create more than this many drafts. */
+export const MAX_DRAFT_LIMIT = 10;
 
-export type BillingPlan = "free" | "pay_as_you_go" | "pro_monthly";
+export type BillingPlan = "free" | "pro_monthly";
 export type EventTier = "free" | "pro";
 export type CreditPool = "monthly" | "purchased" | "free_trial";
 
@@ -16,21 +17,31 @@ export type EventLimits = {
   maxStaff: number;
 };
 
-export function isPaidBillingPlan(
-  billingPlan: BillingPlan | string | undefined,
+export type UserEntitlements = Pick<
+  Doc<"users">,
+  "billingPlan" | "oneTimeCredits" | "monthlyCredits"
+>;
+
+export function isProSubscription(
+  billingPlan: string | undefined,
 ): boolean {
-  return billingPlan === "pro_monthly" || billingPlan === "pay_as_you_go";
+  return billingPlan === "pro_monthly";
 }
 
-export function getDraftLimit(billingPlan: BillingPlan | string | undefined): number {
-  return isPaidBillingPlan(billingPlan) ? PAID_DRAFT_LIMIT : FREE_DRAFT_LIMIT;
+/** Pro draft capacity: active subscription OR any paid credits on balance. */
+export function hasProCapacity(user: UserEntitlements): boolean {
+  if (isProSubscription(user.billingPlan)) return true;
+  return (user.oneTimeCredits ?? 0) > 0 || (user.monthlyCredits ?? 0) > 0;
 }
 
-/** Limits stamped on new drafts from the user's current billing plan. */
-export function resolveDraftLimits(
-  billingPlan: BillingPlan | string | undefined,
-): EventLimits {
-  return isPaidBillingPlan(billingPlan)
+export function getDraftLimit(user: UserEntitlements): number {
+  if (!hasProCapacity(user)) return FREE_DRAFT_LIMIT;
+  return MAX_DRAFT_LIMIT;
+}
+
+/** Draft planning limits from current entitlements (not billing plan alone). */
+export function resolveDraftLimits(user: UserEntitlements): EventLimits {
+  return hasProCapacity(user)
     ? { tier: "pro", maxStaff: PRO_MAX_STAFF }
     : { tier: "free", maxStaff: FREE_MAX_STAFF };
 }
@@ -43,10 +54,12 @@ export function resolveLimitsForCreditPool(pool: CreditPool): EventLimits {
   return { tier: "pro", maxStaff: PRO_MAX_STAFF };
 }
 
-export function getTotalCredits(user: Pick<
-  Doc<"users">,
-  "monthlyCredits" | "oneTimeCredits" | "freeTrialCredits"
->): number {
+export function getTotalCredits(
+  user: Pick<
+    Doc<"users">,
+    "monthlyCredits" | "oneTimeCredits" | "freeTrialCredits"
+  >,
+): number {
   return (
     (user.monthlyCredits ?? 0) +
     (user.oneTimeCredits ?? 0) +
@@ -54,11 +67,12 @@ export function getTotalCredits(user: Pick<
   );
 }
 
-/** Preview which pool would be consumed without mutating the user. */
-export function peekGoLiveCreditPool(user: Pick<
-  Doc<"users">,
-  "monthlyCredits" | "oneTimeCredits" | "freeTrialCredits"
->): CreditPool | null {
+export function peekGoLiveCreditPool(
+  user: Pick<
+    Doc<"users">,
+    "monthlyCredits" | "oneTimeCredits" | "freeTrialCredits"
+  >,
+): CreditPool | null {
   if ((user.monthlyCredits ?? 0) > 0) return "monthly";
   if ((user.oneTimeCredits ?? 0) > 0) return "purchased";
   if ((user.freeTrialCredits ?? 0) > 0) return "free_trial";
@@ -71,21 +85,25 @@ export async function consumeGoLiveCredit(
 ): Promise<CreditPool> {
   const pool = peekGoLiveCreditPool(user);
   if (!pool) {
-    throw new Error("Insufficient pass credits. Please top up or upgrade to go live.");
+    throw new Error(
+      "Insufficient pass credits. Please top up or upgrade to go live.",
+    );
   }
 
+  const patch: Partial<Doc<"users">> = {};
   if (pool === "monthly") {
-    await ctx.db.patch(user._id, {
-      monthlyCredits: (user.monthlyCredits ?? 0) - 1,
-    });
+    patch.monthlyCredits = (user.monthlyCredits ?? 0) - 1;
   } else if (pool === "purchased") {
-    await ctx.db.patch(user._id, {
-      oneTimeCredits: (user.oneTimeCredits ?? 0) - 1,
-    });
+    patch.oneTimeCredits = (user.oneTimeCredits ?? 0) - 1;
   } else {
-    await ctx.db.patch(user._id, {
-      freeTrialCredits: (user.freeTrialCredits ?? 0) - 1,
-    });
+    patch.freeTrialCredits = (user.freeTrialCredits ?? 0) - 1;
+  }
+
+  await ctx.db.patch(user._id, patch);
+
+  const updatedUser = { ...user, ...patch };
+  if (!hasProCapacity(updatedUser)) {
+    await syncDraftEventsToLimits(ctx, user._id, resolveDraftLimits(updatedUser));
   }
 
   return pool;
@@ -112,7 +130,7 @@ export function assertSlotCountWithinLimit(
       reason: `This event is limited to ${maxStaff} staff seats.`,
       actionNeeded:
         maxStaff <= FREE_MAX_STAFF
-          ? "Remove role slots or upgrade to Pro for up to 50 staff."
+          ? "Remove role slots or buy an event pass for up to 50 staff."
           : "Remove role slots before saving.",
       errorType: 403,
     });
@@ -135,25 +153,35 @@ export async function assertStaffCapacity(
 export async function assertDraftLimit(
   ctx: MutationCtx,
   adminId: Id<"users">,
-  billingPlan: BillingPlan | string | undefined,
+  user: UserEntitlements,
 ) {
-  const limit = getDraftLimit(billingPlan);
   const existingDrafts = await ctx.db
     .query("events")
     .withIndex("by_admin", (q) => q.eq("adminId", adminId))
     .filter((q) => q.eq(q.field("status"), "draft"))
     .collect();
 
-  if (existingDrafts.length >= limit) {
-    const isPaid = isPaidBillingPlan(billingPlan);
+  if (existingDrafts.length >= MAX_DRAFT_LIMIT) {
     throw new ConvexError({
       title: "Draft Limit Reached",
-      reason: isPaid
-        ? `You have reached the maximum limit of ${limit} draft events.`
-        : `Free accounts can only have ${limit} draft event at a time.`,
-      actionNeeded: isPaid
+      reason: `Accounts cannot have more than ${MAX_DRAFT_LIMIT} draft events.`,
+      actionNeeded:
+        "Delete or go live with an existing draft before creating another.",
+      errorType: 403,
+    });
+  }
+
+  const tierLimit = getDraftLimit(user);
+  if (existingDrafts.length >= tierLimit) {
+    const proCapacity = hasProCapacity(user);
+    throw new ConvexError({
+      title: "Draft Limit Reached",
+      reason: proCapacity
+        ? `You have reached the maximum limit of ${tierLimit} draft events.`
+        : `Free accounts can only have ${tierLimit} draft event at a time.`,
+      actionNeeded: proCapacity
         ? "Please delete or activate an existing draft before creating a new one."
-        : "Delete your existing draft or upgrade to Pro for more drafts.",
+        : "Delete your existing draft, subscribe to Pro, or buy an event pass.",
       errorType: 403,
     });
   }

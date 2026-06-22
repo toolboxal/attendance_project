@@ -196,7 +196,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
 
-    await assertDraftLimit(ctx, user._id, user.billingPlan);
+    await assertDraftLimit(ctx, user._id, user);
 
     assertEventDateNotInPast(args.eventDate);
 
@@ -211,7 +211,7 @@ export const create = mutation({
         .first();
       if (!existing) isUnique = true;
     }
-    const { tier, maxStaff } = resolveDraftLimits(user.billingPlan);
+    const { tier, maxStaff } = resolveDraftLimits(user);
 
     assertSlotCountWithinLimit(args.jobScopes.length, maxStaff);
 
@@ -737,7 +737,7 @@ export const duplicate = mutation({
       throw new Error("Unauthorized to duplicate this event");
     }
 
-    await assertDraftLimit(ctx, user._id, user.billingPlan);
+    await assertDraftLimit(ctx, user._id, user);
 
     // 2. Generate new unique joinCode
     let joinCode = "";
@@ -763,7 +763,7 @@ export const duplicate = mutation({
       newTitle = `${sourceEvent.title} (Copy)`;
     }
 
-    const draftLimits = resolveDraftLimits(user.billingPlan);
+    const draftLimits = resolveDraftLimits(user);
 
     const sourceSlots = await ctx.db
       .query("roleSlots")
@@ -838,6 +838,7 @@ export const getDashboardShell = query({
       freeTrialCredits: user.freeTrialCredits ?? 0,
       billingPlan: user.billingPlan ?? "free",
       subscriptionExpiresAt: user.subscriptionExpiresAt ?? null,
+      subscriptionCancelAtPeriodEnd: user.subscriptionCancelAtPeriodEnd ?? false,
     };
 
     const [archivedEvents, draftEvents, liveEvent] = await Promise.all([

@@ -2,7 +2,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { DashboardCreditsMetricCard } from "#/components/dashboard/DashboardCreditsMetricCard";
 import { Button } from "#/components/ui/button";
-import { capitalizeWords } from "#/lib/utils";
+import {
+	getPlanDescription,
+	getPlanDisplayLabel,
+	isProSubscription,
+} from "#/lib/billing-plan";
 
 export type DashboardCredits = {
 	monthlyCredits: number;
@@ -10,6 +14,7 @@ export type DashboardCredits = {
 	freeTrialCredits: number;
 	billingPlan: string;
 	subscriptionExpiresAt: number | null;
+	subscriptionCancelAtPeriodEnd: boolean;
 };
 
 type DashboardCreditsMetricsProps = {
@@ -23,13 +28,25 @@ function formatBillingDate(timestamp: number | null): string | undefined {
 
 export function DashboardCreditsMetrics({ credits }: DashboardCreditsMetricsProps) {
 	const navigate = useNavigate();
-	const isPro = credits.billingPlan === "pro_monthly";
+	const planLabel = getPlanDisplayLabel(credits.billingPlan);
+	const isSubscription = isProSubscription(credits.billingPlan);
 	const totalCredits =
 		credits.monthlyCredits + credits.oneTimeCredits + credits.freeTrialCredits;
-	const creditsLow = totalCredits === 0 && !isPro;
+	const creditsLow = totalCredits === 0 && !isSubscription;
 
-	const monthlyPeriodEndLabel = formatBillingDate(credits.subscriptionExpiresAt);
-	const renewalLabel = formatBillingDate(credits.subscriptionExpiresAt);
+	const periodEndLabel = formatBillingDate(credits.subscriptionExpiresAt);
+	const subscriptionSubtitle =
+		isSubscription && credits.subscriptionCancelAtPeriodEnd && periodEndLabel
+			? `Cancels ${periodEndLabel} · full access until then`
+			: isSubscription && periodEndLabel
+				? `Period ends ${periodEndLabel}`
+				: getPlanDescription(credits.billingPlan);
+	const monthlySubtitle =
+		isSubscription && credits.subscriptionCancelAtPeriodEnd && periodEndLabel
+			? `Cancels ${periodEndLabel} · credits usable until then`
+			: isSubscription && periodEndLabel
+				? `Renews via Polar · period ends ${periodEndLabel}`
+				: "Pro subscription only";
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -37,16 +54,12 @@ export function DashboardCreditsMetrics({ credits }: DashboardCreditsMetricsProp
 				<DashboardCreditsMetricCard
 					label="Monthly credits"
 					value={credits.monthlyCredits}
-					subtitle={
-						isPro && monthlyPeriodEndLabel
-							? `Renews via Polar · period ends ${monthlyPeriodEndLabel}`
-							: "Pro subscription only"
-					}
+					subtitle={monthlySubtitle}
 				/>
 				<DashboardCreditsMetricCard
 					label="Purchased credits"
 					value={credits.oneTimeCredits}
-					subtitle="Single pass & bundles"
+					subtitle="Event passes · up to 50 staff"
 				/>
 				<DashboardCreditsMetricCard
 					label="Free trial"
@@ -54,17 +67,9 @@ export function DashboardCreditsMetrics({ credits }: DashboardCreditsMetricsProp
 					subtitle="Up to 5 staff per event"
 				/>
 				<DashboardCreditsMetricCard
-					label={isPro ? "Subscription" : "Plan"}
-					value={
-						isPro
-							? "Pro"
-							: capitalizeWords(credits.billingPlan.replace(/_/g, " "))
-					}
-					subtitle={
-						isPro && renewalLabel
-							? `Renews ${renewalLabel}`
-							: "No active subscription"
-					}
+					label="Your plan"
+					value={planLabel}
+					subtitle={subscriptionSubtitle}
 					className="col-span-2 md:col-span-1"
 				/>
 			</div>

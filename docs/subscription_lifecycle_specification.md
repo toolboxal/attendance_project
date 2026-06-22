@@ -1,79 +1,138 @@
-# Lifecycle Specification: Credits, Renewals & JIT Name Onboarding
+# Lifecycle Specification: Credits, Renewals & Cancellation
 
 ---
 
-## 1. Credit pools
+## 1. Simplified model
+
+**Plan** = subscription status only.  
+**Credits** = how many live events you can run.
+
+| UI | Meaning |
+| :--- | :--- |
+| **Free** | No active subscription |
+| **Pro Subscription** | Active `pro_monthly` |
+| **Purchased / Monthly / Trial credits** | Separate balances |
+
+Buying a Single Pass or Weekend Bundle does **not** change plan — it adds **purchased credits**. Wedding customers stay on **Free**.
+
+---
+
+## 2. Credit pools & go-live
 
 | Pool | Source | Staff at go-live |
 | :--- | :--- | :--- |
-| `monthlyCredits` | Pro Monthly | 50 (pro) |
-| `oneTimeCredits` | Single Pass / Weekend Bundle | 50 (pro) |
-| `freeTrialCredits` | Signup gift | 5 (free) |
+| `monthlyCredits` | Pro Monthly | 50 |
+| `oneTimeCredits` | Event passes | 50 |
+| `freeTrialCredits` | Signup | 5 |
 
-**Go-live waterfall:** `monthly` → `purchased` → `free_trial`
-
----
-
-## 2. Event lifecycle
-
-1. **Draft** — no credit spent. Limits: 1 draft (free) or 10 (paid).
-2. **Go live** — one credit consumed; `tier` / `maxStaff` set from pool used.
-3. **Archived** — after 24h; history viewable free.
+**Waterfall:** monthly → purchased → trial
 
 ---
 
-## 3. Subscription renewal
+## 3. Draft limits
 
-Polar auto-renews and sends **`order.paid`** on each successful charge.
+`hasProCapacity` = subscription OR any credits on balance:
 
-On `order.paid` for the monthly product:
+| | Drafts | Planning staff cap |
+| :--- | :--- | :--- |
+| No pro capacity | 1 | 5 |
+| Has pro capacity | 10 | 50 |
 
-```typescript
-// order.subscription.currentPeriodEnd from Polar payload
-await grantSubscription({
-  initialMonthlyCredits: 8,
-  subscriptionPeriodEndsAt: new Date(order.subscription.currentPeriodEnd).getTime(),
-});
+After using the last credit (no subscription), drafts downgrade to free limits.
+
+---
+
+## 4. Subscription renewal
+
+Polar `order.paid` → 8 `monthlyCredits` + update `subscriptionExpiresAt` from Polar `currentPeriodEnd`.
+
+---
+
+## 5. Cancellation (cancel at period end)
+
+### UI entry point
+
+Billing page → **Cancel or Manage Subscription** → Polar customer portal (`authClient.customer.portal()`).
+
+There is no in-app cancel button. Polar hosts cancellation, invoices, and payment methods.
+
+### Webhook flow
+
+```
+User cancels in Polar portal
+        ↓
+subscription.canceled webhook
+        ↓
+markSubscriptionCanceled
+  · subscriptionCancelAtPeriodEnd: true
+  · subscriptionExpiresAt updated
+  · billingPlan stays pro_monthly
+  · monthlyCredits unchanged
+        ↓
+User keeps full Pro access until period end
+        ↓
+Period ends → subscription.revoked webhook
+        ↓
+revokeSubscription
+  · billingPlan: free
+  · monthlyCredits: 0
+  · sync drafts via hasProCapacity
 ```
 
-- **`subscriptionExpiresAt`** — cached `current_period_end` for UI (“period ends …”)
-- **`monthlyCredits`** — reset to **8** only on successful `order.paid`
-- **No lazy evaluation** — no local cron or billing-page timer
+If the user **undoes** cancellation before period end, Polar sends `subscription.uncanceled` → `clearSubscriptionCanceled`.
 
----
+### Entitlements during pending cancellation
 
-## 4. Billing plans
+While `subscriptionCancelAtPeriodEnd` is true, the user still has:
 
-| `billingPlan` | When |
-| :--- | :--- |
-| `free` | Signup; no purchased credits |
-| `pay_as_you_go` | Has `oneTimeCredits` from purchase |
-| `pro_monthly` | Active sub (`order.paid` grant) |
+- `billingPlan: pro_monthly` → `hasProCapacity` true
+- Remaining `monthlyCredits`
+- 10 drafts / 50 staff planning
 
-`freeTrialCredits` alone does not change `billingPlan`.
-
----
-
-## 5. TODO: Cancellation & downgrade webhooks
-
-Not implemented. Downgrade will be handled by Polar webhooks (not local expiry checks):
-
-| Webhook | Action |
-| :--- | :--- |
-| `onSubscriptionCanceled` / `onSubscriptionUpdated` | Sync period end; no credit revoke yet |
-| `onSubscriptionRevoked` | `monthlyCredits: 0`, downgrade plan, sync drafts |
+Purchased credits (`oneTimeCredits`) are unaffected by subscription cancellation.
 
 ---
 
 ## 6. JIT name onboarding
 
-On **Go Live**, if `user.name` is empty → modal → save name → launch.
+Collect `user.name` on first go-live if missing.
 
 ---
 
-## 7. Trial after subscription example
+## 8. Upgrading
 
-1. Signup → `freeTrialCredits: 1`
-2. Subscribe → `order.paid` → 8 monthly credits
-3. Sub lapses (future: `subscription.revoked`) → monthly credits cleared
-4. Go live on trial → **5 staff** only (even if draft had more slots configured as pro)
+All upgrades happen **in-app** via Polar checkout (`authClient.checkout`).
+
+| From | Action | Webhook | Result |
+| :--- | :--- | :--- | :--- |
+| Free (no credits) | Buy Single / Weekend pass | `order.paid` | `oneTimeCredits += N`, drafts → 10 / 50 staff |
+| Free (no credits) | Subscribe Pro Monthly | `order.paid` | `pro_monthly`, `monthlyCredits: 8` |
+| Free (has passes) | Subscribe Pro Monthly | `order.paid` | Plan → `pro_monthly`; passes **kept** |
+| Pro subscriber | Buy passes | `order.paid` | `oneTimeCredits += N` only |
+| Lapsed subscriber | Re-subscribe | `order.paid` | `grantSubscription` restores Pro |
+
+Renewals reset `monthlyCredits` to 8 on each monthly `order.paid`.
+
+---
+
+## 9. Downgrading
+
+| Trigger | Handler | Result |
+| :--- | :--- | :--- |
+| Last credit used at go-live (no sub) | `consumeGoLiveCredit` | Drafts → 5 staff / 1 draft limit |
+| Subscription period ends / revoked | `revokeSubscription` | `free`, `monthlyCredits: 0`, sync drafts |
+| Cancel at period end (pending) | `markSubscriptionCanceled` | **No downgrade yet** — full Pro until period end |
+
+If user still has purchased passes after subscription ends, `hasProCapacity` stays true via `oneTimeCredits`.
+
+Excess draft rows above your tier limit are retained, but **no account may create an 11th draft** (absolute cap: 10).
+
+---
+
+## 10. Wedding customer example
+
+1. Signup → Free, 1 trial credit
+2. Buy Single Pass → still **Free**, `oneTimeCredits: 1`
+3. Plan draft with 50 role slots (has pro capacity)
+4. Go live → uses purchased credit → 50 staff live event
+5. After event → `oneTimeCredits: 0` → drafts back to 5 staff, plan still **Free**

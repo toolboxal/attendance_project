@@ -14,6 +14,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
 import { authClient } from "#/lib/auth-client";
+import {
+	getPlanDescription,
+	getPlanDisplayLabel,
+	isProSubscription,
+} from "#/lib/billing-plan";
 import { api } from "../../../../convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/app/billing")({
@@ -21,14 +26,14 @@ export const Route = createFileRoute("/_authenticated/app/billing")({
 });
 
 function BillingComponent() {
-	const user = useQuery(api.auth.getCurrentUser);
+	const billing = useQuery(api.payments.getBillingProfile);
 
 	const [isPortalLoading, setIsPortalLoading] = useState(false);
 	const [activeCheckoutSlug, setActiveCheckoutSlug] = useState<string | null>(
 		null,
 	);
 
-	if (!user) {
+	if (!billing) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
 				<div className="flex flex-col items-center gap-2">
@@ -94,7 +99,10 @@ function BillingComponent() {
 		}
 	};
 
-	const isProSubscriber = user.billingPlan === "pro_monthly";
+	const isProSubscriber = isProSubscription(billing.billingPlan);
+	const planLabel = getPlanDisplayLabel(billing.billingPlan);
+	const planDescription = getPlanDescription(billing.billingPlan);
+	const isPendingCancellation = billing.subscriptionCancelAtPeriodEnd;
 
 	return (
 		<div className="spine flex-1 p-6 space-y-8 bg-zinc-950 text-white min-h-[calc(100vh-4rem)]">
@@ -121,10 +129,36 @@ function BillingComponent() {
 						) : (
 							<CreditCard className="size-4" />
 						)}
-						Manage Subscription & Invoices
+						{isPendingCancellation
+							? "Manage Subscription (Polar Portal)"
+							: "Cancel or Manage Subscription"}
 					</Button>
 				)}
 			</div>
+
+			{isProSubscriber && (
+				<div className="rounded-lg border border-zinc-800/80 bg-zinc-900/30 px-4 py-3 text-xs text-zinc-400 leading-relaxed">
+					<strong className="text-zinc-300 font-medium">
+						How cancellation works:
+					</strong>{" "}
+					Use{" "}
+					<button
+						type="button"
+						onClick={handleManageBilling}
+						disabled={isPortalLoading}
+						className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 disabled:opacity-50"
+					>
+						Cancel or Manage Subscription
+					</button>{" "}
+					to open Polar&apos;s customer portal. Cancel there to stop renewal.
+					You keep full Pro access — monthly credits, 10 drafts, 50 staff —
+					until{" "}
+					<span className="text-zinc-300 font-medium">
+						{formatDate(billing.subscriptionExpiresAt ?? undefined)}
+					</span>
+					. Polar then sends a webhook and we downgrade your plan automatically.
+				</div>
+			)}
 
 			{/* Grid of Credit Pools */}
 			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -138,7 +172,7 @@ function BillingComponent() {
 							<Calendar className="size-4 text-zinc-500" />
 						</div>
 						<h3 className="text-2xl font-bold font-mono">
-							{user.monthlyCredits ?? 0}{" "}
+							{billing.monthlyCredits}{" "}
 							<span className="text-sm font-normal text-zinc-400">/ 8</span>
 						</h3>
 						<p className="text-xs text-zinc-400">
@@ -148,7 +182,9 @@ function BillingComponent() {
 					<div className="border-t border-zinc-800/60 pt-4 text-xs text-zinc-500 flex justify-between">
 						<span>Current period ends:</span>
 						<span className="font-medium text-zinc-300">
-							{isProSubscriber ? formatDate(user.subscriptionExpiresAt) : "N/A"}
+							{isProSubscriber
+								? formatDate(billing.subscriptionExpiresAt ?? undefined)
+								: "N/A"}
 						</span>
 					</div>
 				</div>
@@ -163,7 +199,7 @@ function BillingComponent() {
 							<InfinityIcon className="size-4 text-zinc-500" />
 						</div>
 						<h3 className="text-2xl font-bold font-mono">
-							{user.oneTimeCredits ?? 0}
+							{billing.oneTimeCredits}
 						</h3>
 						<p className="text-xs text-zinc-400">
 							Single pass &amp; bundle credits. Up to 50 staff per event.
@@ -187,7 +223,7 @@ function BillingComponent() {
 							<Sparkles className="size-4 text-zinc-500" />
 						</div>
 						<h3 className="text-2xl font-bold font-mono">
-							{user.freeTrialCredits ?? 0}
+							{billing.freeTrialCredits}
 						</h3>
 						<p className="text-xs text-zinc-400">
 							Signup gift. Limited to 5 staff per live event.
@@ -204,28 +240,37 @@ function BillingComponent() {
 					<div className="space-y-2">
 						<div className="flex justify-between items-start">
 							<span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">
-								Billing Plan
+								Your plan
 							</span>
 							<ShieldCheck className="size-4 text-zinc-500" />
 						</div>
-						<h3 className="text-lg font-bold capitalize flex items-center gap-2">
-							{user.billingPlan?.replace(/_/g, " ") || "Free"}
-							{isProSubscriber && (
+						<h3 className="text-lg font-bold flex items-center gap-2">
+							{planLabel}
+							{isProSubscriber && !isPendingCancellation && (
 								<span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
 									Active
 								</span>
 							)}
+							{isProSubscriber && isPendingCancellation && (
+								<span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+									Cancels at period end
+								</span>
+							)}
 						</h3>
-						<p className="text-xs text-zinc-400">
-							{isProSubscriber
-								? "You have full access to Pro features with monthly auto-renewal."
-								: "Upgrade to Pro Monthly or buy credit bundles to start running live events."}
-						</p>
+						<p className="text-xs text-zinc-400">{planDescription}</p>
 					</div>
 					<div className="border-t border-zinc-800/60 pt-4 text-xs text-zinc-500 flex justify-between">
-						<span>Renewal Date:</span>
+						<span>
+							{isProSubscriber
+								? isPendingCancellation
+									? "Access ends:"
+									: "Current period ends:"
+								: "Subscription:"}
+						</span>
 						<span className="font-medium text-zinc-300">
-							{isProSubscriber ? formatDate(user.subscriptionExpiresAt) : "N/A"}
+							{isProSubscriber
+								? formatDate(billing.subscriptionExpiresAt ?? undefined)
+								: "N/A"}
 						</span>
 					</div>
 				</div>
