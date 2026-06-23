@@ -1,8 +1,9 @@
 import { useMutation } from "convex/react";
-import { Check, ChevronDown, Copy, Share2 } from "lucide-react";
+import { Check, Copy, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "#/components/ui/alert";
 import {
 	Dialog,
 	DialogContent,
@@ -29,6 +30,7 @@ export function ManageStaffDialog({
 	isArchived?: boolean;
 }) {
 	const [open, setOpen] = useState(false);
+	const [confirmRevokeOpen, setConfirmRevokeOpen] = useState(false);
 	const [name, setName] = useState(staff.staffName);
 	const [saving, setSaving] = useState(false);
 	const [revoking, setRevoking] = useState(false);
@@ -63,19 +65,13 @@ export function ManageStaffDialog({
 	};
 
 	const handleRevoke = async () => {
-		if (
-			!window.confirm(
-				`Are you sure you want to revoke access for ${staff.staffName}? This will instantly deactivate their live workspace and clear this role slot.`,
-			)
-		) {
-			return;
-		}
 		try {
 			setRevoking(true);
 			await revokeStaff({
 				slotId: slot._id,
 			});
 			toast.success("Access revoked successfully.");
+			setConfirmRevokeOpen(false);
 			setOpen(false);
 		} catch (err: any) {
 			toast.error(err.message || "Failed to revoke access.");
@@ -117,16 +113,29 @@ export function ManageStaffDialog({
 	const canShare =
 		typeof navigator !== "undefined" && !!navigator.share && !!inviteUrl;
 	const whatsAppUrl = `https://wa.me/?text=${encodeURIComponent(shareTextFull)}`;
+	const isUnclaimed = !!slot.inviteToken;
 
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
+		<Dialog
+			open={open}
+			onOpenChange={(nextOpen) => {
+				setOpen(nextOpen);
+				if (!nextOpen) setConfirmRevokeOpen(false);
+			}}
+		>
 			<DialogTrigger asChild>
 				<button
 					type="button"
-					className="flex flex-row items-center gap-1 ml-auto text-sm font-normal text-zinc-400 hover:text-zinc-200 px-2 h-auto cursor-pointer select-none transition-colors focus:outline-none bg-transparent border-none"
+					className="flex flex-col items-end ml-auto gap-0.5 cursor-pointer select-none"
 				>
-					<p>{staff.staffName}</p>
-					<ChevronDown size={16} strokeWidth={1.5} />
+					<p className="text-zinc-300 font-medium text-xs">{staff.staffName}</p>
+					<span
+						className={`text-[9px] font-semibold uppercase tracking-wider ${
+							isUnclaimed ? "text-zinc-400" : "text-emerald-400/80"
+						}`}
+					>
+						{isUnclaimed ? "Unactivated" : "activated"}
+					</span>
 				</button>
 			</DialogTrigger>
 			<DialogContent
@@ -196,77 +205,77 @@ export function ManageStaffDialog({
 
 							{/* ⏳ Section 2: Pending Invite Re-sharing (Conditional) */}
 							{inviteUrl && (
-						<div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/30 space-y-3 mt-2 flex flex-col">
-							<div className="flex flex-col">
-								<span className="text-yellow-400 font-bold text-xs">
-									In Pending Mode
-								</span>
-								<p className="text-zinc-300 text-[12px] mt-1">
-									Event must go live to activate this assignment.
-								</p>
-							</div>
+								<div className="py-4  space-y-3 mt-2 flex flex-col">
+									<div className="flex flex-col">
+										<p className="text-xs font-bold uppercase tracking-wider text-yellow-400 flex items-center gap-1.5">
+											Pending Activation
+										</p>
+										<p className="text-zinc-300 text-xs mt-1.5 leading-relaxed">
+											Event must go live and the staff must claim their
+											assignment to activate this.
+										</p>
+									</div>
 
-							<div className="flex flex-col gap-2  mt-1 overflow-hidden">
-								<div className="flex-1 min-w-0">
-									<p className="text-[10px] uppercase font-bold text-zinc-400 mb-1">
-										Access Link
-									</p>
-									<p className="break-all text-xs font-mono text-zinc-100 select-all leading-relaxed">
-										{inviteUrl}
-									</p>
+									<div className="flex flex-col gap-2  mt-1 overflow-hidden">
+										<div className="flex-1 min-w-0">
+											<p className="text-[10px] uppercase font-bold text-zinc-400 mb-1">
+												Access Link
+											</p>
+											<p className="break-all text-xs font-mono  text-emerald-300 select-all leading-relaxed">
+												{inviteUrl}
+											</p>
+										</div>
+										<Button
+											onClick={handleCopy}
+											className={`w-full mt-2 h-11 transition-all flex items-center justify-center gap-2 font-bold rounded-lg ${
+												copied
+													? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30"
+													: "bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
+											}`}
+										>
+											{copied ? (
+												<>
+													<Check className="size-4" />
+													<span>Copied!</span>
+												</>
+											) : (
+												<>
+													<Copy className="size-4" />
+													<span>Copy Invite Link</span>
+												</>
+											)}
+										</Button>
+									</div>
+
+									<div className="pt-1">
+										{canShare ? (
+											<Button
+												onClick={handleNativeShare}
+												className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold py-5 rounded-xl text-xs flex items-center justify-center gap-2"
+											>
+												<Share2 className="size-3.5" /> Share Invite Link
+											</Button>
+										) : (
+											<a
+												href={whatsAppUrl}
+												target="_blank"
+												rel="noreferrer"
+												className="flex items-center h-11 justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-bold py-2.5 rounded-lg text-xs transition-colors w-full"
+											>
+												Share via WhatsApp
+											</a>
+										)}
+									</div>
 								</div>
-								<Button
-									onClick={handleCopy}
-									className={`w-full mt-2 h-11 transition-all flex items-center justify-center gap-2 font-bold rounded-lg ${
-										copied
-											? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30"
-											: "bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
-									}`}
-								>
-									{copied ? (
-										<>
-											<Check className="size-4" />
-											<span>Copied!</span>
-										</>
-									) : (
-										<>
-											<Copy className="size-4" />
-											<span>Copy Invite Link</span>
-										</>
-									)}
-								</Button>
-							</div>
-
-							<div className="pt-1">
-								{canShare ? (
-									<Button
-										onClick={handleNativeShare}
-										className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold py-5 rounded-xl text-xs flex items-center justify-center gap-2"
-									>
-										<Share2 className="size-3.5" /> Share Invite Link
-									</Button>
-								) : (
-									<a
-										href={whatsAppUrl}
-										target="_blank"
-										rel="noreferrer"
-										className="flex items-center h-11 justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-bold py-2.5 rounded-lg text-xs transition-colors w-full"
-									>
-										Share via WhatsApp
-									</a>
-								)}
-							</div>
-						</div>
 							)}
 
 							{/* 🟢 Section 2: Claimed & Fully Active (Conditional) */}
 							{!inviteUrl && (
-								<div className="p-4 rounded-xl border border-emerald-500/10 bg-emerald-500/5 flex flex-col mt-2">
-									<span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-										<span className="size-2 bg-emerald-400 rounded-full animate-pulse" />
-										Activated & Active
-									</span>
-									<p className="text-zinc-300 text-[11px] mt-1.5 leading-relaxed">
+								<div className="py-2 flex flex-col mt-2">
+									<p className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+										Activated & On Live Floor
+									</p>
+									<p className="text-zinc-300 text-xs mt-1.5 leading-relaxed">
 										{staff.staffName} successfully claimed their assignment.
 									</p>
 								</div>
@@ -276,18 +285,56 @@ export function ManageStaffDialog({
 							<div className="h-px bg-zinc-800/60 w-full my-1" />
 
 							{/* 🚨 Section 3: Danger Zone (Revocation) */}
-							<div className="pt-1 flex flex-col gap-2 text-center">
-								<Button
-									variant="destructive"
-									onClick={handleRevoke}
-									disabled={revoking}
-									className="w-full border border-red-500/10 hover:bg-red-950/20 text-red-500 font-bold py-6 rounded-xl transition-colors"
-								>
-									{revoking ? "Revoking..." : "Revoke Access & Remove Assignment"}
-								</Button>
-								<span className="text-xs text-red-200 font-medium italic">
-									Instantly revokes their token and locks out their device.
-								</span>
+							<div className="pt-1 flex flex-col gap-2">
+								{confirmRevokeOpen ? (
+									<Alert
+										variant="destructive"
+										className="border-red-500/20 bg-red-950/20 text-red-200 flex flex-col"
+									>
+										<AlertTitle>
+											Revoke access for {staff.staffName}?
+										</AlertTitle>
+										<AlertDescription>
+											<p className="text-red-100 text-xs">
+												This will instantly deactivate their live workspace and
+												clear this role slot. This cannot be undone.
+											</p>
+										</AlertDescription>
+										<div className="col-span-2 flex flex-col sm:flex-row gap-2 mt-3">
+											<Button
+												type="button"
+												variant="ghost"
+												onClick={() => setConfirmRevokeOpen(false)}
+												disabled={revoking}
+												className="text-zinc-400 hover:text-zinc-200"
+											>
+												Cancel
+											</Button>
+											<Button
+												type="button"
+												variant="destructive"
+												onClick={handleRevoke}
+												disabled={revoking}
+												className="font-bold"
+											>
+												{revoking ? "Revoking..." : "Confirm Revoke"}
+											</Button>
+										</div>
+									</Alert>
+								) : (
+									<>
+										<Button
+											variant="destructive"
+											onClick={() => setConfirmRevokeOpen(true)}
+											className="w-full border border-red-500/20 hover:bg-red-950/20 text-red-400 font-medium py-6 rounded-xl transition-colors"
+										>
+											Revoke Access & Remove Assignment
+										</Button>
+										<span className="text-xs text-red-200/80 font-medium italic text-center">
+											Instantly revokes their token and locks out their device.
+										</span>
+									</>
+								)}
 							</div>
 						</>
 					)}

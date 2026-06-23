@@ -132,9 +132,9 @@ function EventAccordionBody({ event }: { event: Doc<"events"> }) {
 
 			<Suspense
 				fallback={
-					<div className="flex items-center justify-center py-12">
+					<div className="flex flex-col gap-4 items-center justify-center py-12">
 						<Spinner className="mb-2" />
-						<p className="text-zinc-400 text-sm">Loading...</p>
+						<p className="text-zinc-400 text-xs">Loading...</p>
 					</div>
 				}
 			>

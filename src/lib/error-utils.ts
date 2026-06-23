@@ -1,4 +1,5 @@
 import { ConvexError } from "convex/values";
+import { toast } from "sonner";
 
 export interface StructuredErrorData {
 	title?: string;
@@ -40,4 +41,35 @@ export function parseStructuredError(error: unknown): StructuredErrorData {
 	}
 
 	return {};
+}
+
+/** Strip Convex client wrapper text from a plain server Error message. */
+export function stripConvexErrorMessage(message: string): string {
+	const uncaught = message.match(/Uncaught Error:\s*([\s\S]+)/);
+	if (uncaught?.[1]) return uncaught[1].trim();
+	return message;
+}
+
+/**
+ * Show a mutation failure in a toast, using structured ConvexError fields when
+ * available and falling back to a cleaned plain error message.
+ */
+export function toastMutationError(
+	error: unknown,
+	fallback = "Something went wrong",
+) {
+	const { title, reason, actionNeeded } = parseStructuredError(error);
+
+	if (title || reason) {
+		const description = [reason, actionNeeded].filter(Boolean).join(" ");
+		toast.error(title ?? fallback, description ? { description } : undefined);
+		return;
+	}
+
+	if (error instanceof Error) {
+		toast.error(stripConvexErrorMessage(error.message) || fallback);
+		return;
+	}
+
+	toast.error(fallback);
 }

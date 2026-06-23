@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { toastMutationError } from "#/lib/error-utils";
 import { useHeaderStore } from "#/lib/store/topHeaderStore";
 import { api } from "../../../../../convex/_generated/api";
 import { EventEditor } from "#/components/authenticated/events/EventEditor";
@@ -35,11 +36,9 @@ function RouteComponent() {
 
 			// Immediate redirection, child editor handles logic gates automatically now
 			navigate({ to: "/app/events" });
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Event creation failed:", error);
-			toast.error(
-				error?.message || "Failed to create event. Please try again.",
-			);
+			toastMutationError(error, "Failed to create event. Please try again.");
 			// IMPORTANT: Re-throw so EventEditor form state knows submit failed
 			throw error;
 		}

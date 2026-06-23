@@ -5,7 +5,7 @@ import { useMutation } from "convex/react";
 import { format } from "date-fns";
 import { CircleAlert, Timer } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toastMutationError } from "#/lib/error-utils";
 import { Button } from "#/components/ui/button";
 import {
 	Dialog,
@@ -55,6 +55,7 @@ export function EventDetailsView({
 	const deleteEvent = useMutation(api.events.deleteEvent);
 	const enterLiveFloor = useMutation(api.liveStaff.enterLiveFloorAsAdmin);
 	const [isConfirmLiveOpen, setIsConfirmLiveOpen] = useState(false);
+	const [isConfirmEndOpen, setIsConfirmEndOpen] = useState(false);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 	const [isEnteringLiveFloor, setIsEnteringLiveFloor] = useState(false);
 
@@ -76,9 +77,7 @@ export function EventDetailsView({
 			localStorage.setItem("asistir_staff_token", accessToken);
 			navigate({ to: "/live/jobs" });
 		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to enter live floor",
-			);
+			toastMutationError(err, "Failed to enter live floor");
 		} finally {
 			setIsEnteringLiveFloor(false);
 		}
@@ -92,9 +91,7 @@ export function EventDetailsView({
 				eventId: eventId as Id<"events">,
 			});
 		} catch (err) {
-			const message =
-				err instanceof Error ? err.message : "Failed to update event status";
-			toast.error(message);
+			toastMutationError(err, "Failed to update event status");
 		}
 	};
 
@@ -102,7 +99,7 @@ export function EventDetailsView({
 		if (event.status === "draft") {
 			setIsConfirmLiveOpen(true);
 		} else {
-			handleToggleStatus();
+			setIsConfirmEndOpen(true);
 		}
 	};
 
@@ -128,6 +125,7 @@ export function EventDetailsView({
 			setSelectedEvent(result.newEventId);
 		} catch (err) {
 			console.error("Failed to duplicate event:", err);
+			toastMutationError(err, "Failed to duplicate event");
 		}
 	};
 
@@ -139,6 +137,7 @@ export function EventDetailsView({
 			setSelectedEvent(undefined);
 		} catch (err) {
 			console.error("Failed to delete event:", err);
+			toastMutationError(err, "Failed to delete event");
 		}
 	};
 
@@ -277,9 +276,17 @@ export function EventDetailsView({
 								)
 								.map((section) => {
 									// 🎯 Find slots belonging to this specific section instance!
-									const sectionSlots = slots.filter(
-										(s) => s.sectionId === section._id,
-									);
+									const sectionSlots = slots
+										.filter((s) => s.sectionId === section._id)
+										.sort((a, b) => {
+											if (a.role === "supervisor" && b.role !== "supervisor") {
+												return -1;
+											}
+											if (a.role !== "supervisor" && b.role === "supervisor") {
+												return 1;
+											}
+											return a.title.localeCompare(b.title);
+										});
 									const assignedCount = sectionSlots.filter(
 										(s) => s.assignedStaffId,
 									).length;
@@ -311,13 +318,13 @@ export function EventDetailsView({
 												</div>
 											</div>
 
-											{/* Roles grid inside this section */}
+											{/* Roles list inside this section */}
 											{sectionSlots.length === 0 ? (
 												<p className="text-zinc-600 text-[11px] italic">
 													No role slots defined for this section.
 												</p>
 											) : (
-												<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+												<div className="flex flex-col divide-y divide-zinc-800 rounded-sm  overflow-hidden mt-2">
 													{sectionSlots.map((slot) => {
 														const assignedStaff = liveStaff.find(
 															(ls) => ls._id === slot.assignedStaffId,
@@ -326,17 +333,14 @@ export function EventDetailsView({
 														return (
 															<div
 																key={slot._id}
-																className="flex items-center gap-3 bg-zinc-900  p-2.5 rounded-lg hover:bg-zinc-800/70 transition-colors"
+																className="flex items-center gap-3 bg-zinc-900 px-3 py-2.5 hover:bg-zinc-800/70 transition-colors"
 															>
-																{/* <div
-																	className={`w-1.5 h-8 rounded-full ${slot.role === "supervisor" ? "bg-indigo-500/50" : "bg-emerald-500/50"}`}
-																/> */}
 																<div>
 																	<p className="text-zinc-200 font-medium text-sm">
 																		{slot.title}
 																	</p>
 																	<p
-																		className={` text-[10px] uppercase tracking-wider font-semibold ${slot.role === "supervisor" ? "text-emerald-500" : "text-yellow-400"}`}
+																		className={` text-[9px] uppercase tracking-wider font-semibold ${slot.role === "supervisor" ? "text-emerald-500" : "text-zinc-400"}`}
 																	>
 																		{slot.role}
 																	</p>
@@ -435,6 +439,45 @@ export function EventDetailsView({
 							className="bg-green-400 hover:bg-green-300 text-zinc-950 font-bold"
 						>
 							Confirm Go Live
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={isConfirmEndOpen} onOpenChange={setIsConfirmEndOpen}>
+				<DialogContent className="max-w-md bg-zinc-900 border border-zinc-800 text-zinc-100">
+					<DialogHeader>
+						<DialogTitle className="text-red-400 font-bold text-xl flex items-center gap-2">
+							End Event
+						</DialogTitle>
+						<DialogDescription className="text-zinc-200 text-sm mt-2 space-y-3">
+							<p className="font-semibold text-lg">{event.title}</p>
+							<p className="text-zinc-400">
+								Are you sure you want to end this live event? Staff will lose
+								access to the live floor, and the event will be archived.
+							</p>
+							<p className="text-red-400 font-bold text-xs uppercase tracking-wide">
+								Warning: This action cannot be undone.
+							</p>
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter className="mt-4 flex flex-col sm:flex-row gap-4 justify-end">
+						<Button
+							variant="ghost"
+							onClick={() => setIsConfirmEndOpen(false)}
+							className="text-zinc-400 hover:text-zinc-200"
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={async () => {
+								setIsConfirmEndOpen(false);
+								await handleToggleStatus();
+							}}
+							variant="destructive"
+							className="font-bold"
+						>
+							Confirm End Event
 						</Button>
 					</DialogFooter>
 				</DialogContent>

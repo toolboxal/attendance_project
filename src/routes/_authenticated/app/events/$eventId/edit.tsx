@@ -12,7 +12,7 @@ import type { EventSubmitData } from "#/components/authenticated/events/EventEdi
 import { EventEditor } from "#/components/authenticated/events/EventEditor";
 import { ErrorView } from "#/components/error-view";
 import { Spinner } from "#/components/ui/spinner";
-import { parseStructuredError } from "#/lib/error-utils";
+import { parseStructuredError, toastMutationError } from "#/lib/error-utils";
 import { useHeaderStore } from "#/lib/store/topHeaderStore";
 import { api } from "../../../../../../convex/_generated/api";
 import type { Id } from "../../../../../../convex/_generated/dataModel";
@@ -125,11 +125,7 @@ function RouteComponent() {
 			navigate({ to: "/app/events" });
 		} catch (error: unknown) {
 			console.error("Event update failed:", error);
-			toast.error(
-				error instanceof Error
-					? error.message
-					: "Failed to save changes. Please try again.",
-			);
+			toastMutationError(error, "Failed to save changes. Please try again.");
 			throw error;
 		}
 	};
