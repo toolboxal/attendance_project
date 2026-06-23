@@ -151,6 +151,17 @@ export default defineSchema({
     content: v.string(),
   }).index("by_alert", ["alertId"]),
 
+  // Admin read cursors for live alert notifications (header bell)
+  adminAlertReadState: defineTable({
+    adminId: v.id("users"),
+    alertId: v.id("alerts"),
+    eventId: v.id("events"),
+    lastSeenUpdateCount: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_admin_alert", ["adminId", "alertId"])
+    .index("by_admin_event", ["adminId", "eventId"]),
+
   // Admin-published security watchlist (banned persons, prohibited items)
   eventWatchlist: defineTable({
     eventId: v.id("events"),

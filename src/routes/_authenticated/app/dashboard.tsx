@@ -1,6 +1,10 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	useNavigate,
+	useRouter,
+} from "@tanstack/react-router";
 import { Suspense, useEffect } from "react";
 import { DashboardEventAccordion } from "#/components/dashboard/DashboardEventAccordion";
 import { DashboardIdleChrome } from "#/components/dashboard/DashboardIdleChrome";
@@ -9,6 +13,7 @@ import { Spinner } from "#/components/ui/spinner";
 import { authClient } from "#/lib/auth-client";
 import { useHeaderStore } from "#/lib/store/topHeaderStore";
 import { api } from "../../../../convex/_generated/api";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/app/dashboard")({
 	validateSearch: (search: Record<string, unknown>) => ({
@@ -81,17 +86,32 @@ function DashboardComponent() {
 	if (!hasContent) {
 		return (
 			<div className="w-full min-h-dvh bg-zinc-950">
-				<div className="spine py-2 flex flex-col items-center justify-center gap-4 p-8 min-h-[50vh] text-center">
+				<div className="spine py-2 flex flex-col items-center justify-center gap-4 p-8 min-h-[50vh] text-left">
 					<div className="flex flex-col gap-2">
-						<p className="text-lg font-bold text-zinc-100">Welcome to Asistir</p>
-						<p className="text-sm text-zinc-400 max-w-sm">
-							Create your first event, add sections and roles, then go live on
-							event day.
+						<p className="text-lg font-bold text-zinc-100">
+							Thank you for using Asistir
 						</p>
+						<p className="text-sm italic text-zinc-400 max-w-md leading-relaxed">
+							Asistir is a platform that helps you manage human traffic at your
+							event. The core of this app is the "live floor", where your
+							helpers can interact and direct attendees to the correct
+							destination. Usual chat apps used as communication channels can
+							create a lot of noise and confusion. Asistir is a simple and
+							effective solution to this problem.
+						</p>
+						<p className="text-sm mt-1 text-zinc-100 max-w-md">
+							Start by creating your first event.
+						</p>
+
+						<Button
+							onClick={() => navigate({ to: "/app/events/create" })}
+							variant="secondary"
+							className="w-fit self-start mt-1"
+						>
+							Create Event
+							<ArrowUpRight size={16} className="ml-1.5" />
+						</Button>
 					</div>
-					<Button onClick={() => navigate({ to: "/app/events/create" })}>
-						Create Event
-					</Button>
 				</div>
 			</div>
 		);
@@ -111,10 +131,9 @@ function DashboardComponent() {
 						defaultOpenEventId={defaultOpenEventId}
 					/>
 				) : (
-					<div className="rounded-xl border border-zinc-800/50 bg-zinc-800/20 p-6 text-center">
-						<p className="text-sm text-zinc-400">
-							No archived events yet. Your past event snapshots will appear
-							here.
+					<div className="rounded-xl  bg-zinc-800/20 p-6 text-center">
+						<p className="text-sm text-zinc-500">
+							Live or archived events will appear here.
 						</p>
 					</div>
 				)}

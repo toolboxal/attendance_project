@@ -41,7 +41,7 @@ export function AppSidebar() {
 	return (
 		<Sidebar>
 			<SidebarHeader>
-				<p className="logo mx-2">Asistir</p>
+				<p className="logo ml-2 mt-2">Asistir</p>
 			</SidebarHeader>
 			<SidebarContent>
 				<SidebarGroup>

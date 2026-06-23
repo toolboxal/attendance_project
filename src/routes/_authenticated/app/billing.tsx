@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { ArrowUpRight, Check, CreditCard, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CreditsMetricsPanel } from "#/components/billing/CreditsMetricsPanel";
 import { Button } from "#/components/ui/button";
+import { Spinner } from "#/components/ui/spinner";
 import { authClient } from "#/lib/auth-client";
 import { isProSubscription } from "#/lib/billing-plan";
+import { useHeaderStore } from "#/lib/store/topHeaderStore";
 import { api } from "../../../../convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/app/billing")({
@@ -15,17 +17,28 @@ export const Route = createFileRoute("/_authenticated/app/billing")({
 
 function BillingComponent() {
 	const billing = useQuery(api.payments.getBillingProfile);
+	const setPageHeader = useHeaderStore((s) => s.setPageHeader);
+	const resetHeader = useHeaderStore((s) => s.resetHeader);
 
 	const [isPortalLoading, setIsPortalLoading] = useState(false);
 	const [activeCheckoutSlug, setActiveCheckoutSlug] = useState<string | null>(
 		null,
 	);
 
+	useEffect(() => {
+		setPageHeader({
+			title: "Billing",
+			showBackButton: false,
+			showLeftButton: false,
+		});
+		return () => resetHeader();
+	}, [setPageHeader, resetHeader]);
+
 	if (!billing) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<div className="flex flex-col items-center gap-2">
-					<RefreshCw className="animate-spin text-zinc-500 size-6" />
+				<div className="flex flex-col items-center gap-6">
+					<Spinner />
 					<p className="text-zinc-400 text-sm">Loading billing profile...</p>
 				</div>
 			</div>
@@ -157,10 +170,7 @@ function BillingComponent() {
 						</Button>
 					</div>
 
-					<div className="p-6 flex flex-1 flex-col justify-between gap-8 relative">
-						<div className="absolute -top-3 right-4 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-3xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
-							Popular Value
-						</div>
+					<div className="p-6 flex flex-1 flex-col justify-between gap-8">
 						<div className="space-y-4">
 							<div>
 								<h3 className="text-base font-semibold">Weekend Bundle</h3>
@@ -208,7 +218,14 @@ function BillingComponent() {
 					<div className="p-6 flex flex-1 flex-col justify-between gap-8">
 						<div className="space-y-4">
 							<div>
-								<h3 className="text-base font-semibold">Pro Monthly</h3>
+								<div className="flex items-start gap-2">
+									<h3 className="text-base font-semibold">Pro Monthly</h3>
+									{isProSubscriber && (
+										<span className="flex justify-center items-center px-2 py-1 rounded-full bg-indigo-300 text-indigo-900 text-[9px] font-semibold w-fit h-fit text-nowrap">
+											current plan
+										</span>
+									)}
+								</div>
 								<p className="text-xs text-zinc-400 mt-1">
 									Best for regular recurring event organizers.
 								</p>

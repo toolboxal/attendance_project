@@ -1,8 +1,8 @@
-import { Link, useRouter } from "@tanstack/react-router";
-import { Bell, ChevronLeft } from "lucide-react";
+import { useRouter } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
+import { AdminNotificationBell } from "#/components/authenticated/AdminNotificationBell";
 import { useHeaderStore } from "#/lib/store/topHeaderStore";
-import { cn } from "#/lib/utils";
-import { Button, buttonVariants } from "../ui/button";
+import { Button } from "../ui/button";
 import { Empty } from "../ui/empty";
 
 function TopHeaderBar() {
@@ -42,8 +42,8 @@ function TopHeaderBar() {
 				</p>
 
 				{/* Symmetrical Right Container (w-10) matching the left */}
-				<div className="w-10 flex justify-end items-center text-zinc-400">
-					<Bell className="w-5 h-5 hover:text-white transition-colors cursor-pointer" />
+				<div className="w-10 flex justify-end items-center">
+					<AdminNotificationBell />
 				</div>
 			</div>
 		</div>

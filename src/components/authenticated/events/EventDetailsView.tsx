@@ -16,6 +16,7 @@ import {
 	DialogTitle,
 } from "#/components/ui/dialog";
 import { useLiveCountdown } from "#/hooks/use-live-countdown";
+
 import {
 	cn,
 	eventDateFromMs,
@@ -183,7 +184,7 @@ export function EventDetailsView({
 			)}
 
 			{/* header */}
-			<div className="flex flex-row flex-wrap gap-1.5 justify-end items-center">
+			<div className="flex flex-row flex-wrap gap-1 justify-end items-center">
 				{event.status === "live" && (
 					<Button
 						onClick={handleEnterLiveFloor}
