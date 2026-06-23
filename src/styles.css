@@ -165,7 +165,7 @@ body {
 
 @layer components {
   .spine {
-    @apply max-w-7xl mx-auto px-4;
+    @apply w-full max-w-7xl mx-auto px-4;
   }
   .logo {
     @apply text-2xl font-extrabold text-zinc-100 tracking-tight;

@@ -10,7 +10,7 @@ export function normalizeBillingPlan(
 /** Subscription plan only — credits are shown separately. */
 export function getPlanDisplayLabel(billingPlan: string | undefined): string {
 	return normalizeBillingPlan(billingPlan) === "pro_monthly"
-		? "Pro Subscription"
+		? "Monthly Subscription"
 		: "Free";
 }
 
