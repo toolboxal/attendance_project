@@ -17,7 +17,11 @@ const config = defineConfig(({ mode }) => {
 			"import.meta.env.VITE_SENTRY_DSN": JSON.stringify(sentryDsn),
 		},
 		ssr: {
-			noExternal: ["@convex-dev/better-auth"],
+			noExternal: [
+				"@convex-dev/better-auth",
+				"@posthog/react",
+				"posthog-js",
+			],
 		},
 		// optimizeDeps: {
 		// 	holdUntilCrawlEnd: true,

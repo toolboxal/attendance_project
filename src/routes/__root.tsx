@@ -18,6 +18,7 @@ import type * as React from "react";
 import { useEffect } from "react";
 import { NotFoundComponent } from "#/components/not-found";
 import { GlobalErrorComponent } from "#/components/error-component";
+import { AppPostHogProvider } from "#/components/posthog-provider";
 import { authClient } from "#/lib/auth-client";
 import { getToken } from "#/lib/auth-server";
 import { Toaster } from "@/components/ui/sonner";
@@ -91,8 +92,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body className="bg-neutral-950 text-neutral-50">
-				{children}
-				<Toaster />
+				<AppPostHogProvider>
+					{children}
+					<Toaster />
+				</AppPostHogProvider>
 				{/* <TanStackDevtools
 					config={{
 						position: "bottom-right",
