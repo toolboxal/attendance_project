@@ -562,6 +562,119 @@ export const update = mutation({
   },
 });
 
+async function deleteOptionalStorage(
+  ctx: MutationCtx,
+  storageId: Id<"_storage"> | undefined,
+) {
+  if (storageId) {
+    await ctx.storage.delete(storageId);
+  }
+}
+
+/**
+ * Cascade-delete every row and storage blob tied to an event.
+ * Caller must verify ownership before invoking.
+ */
+export async function deleteEventRelatedData(
+  ctx: MutationCtx,
+  eventId: Id<"events">,
+  adminId: Id<"users">,
+) {
+  const readStates = await ctx.db
+    .query("adminAlertReadState")
+    .withIndex("by_admin_event", (q) =>
+      q.eq("adminId", adminId).eq("eventId", eventId),
+    )
+    .collect();
+  for (const readState of readStates) {
+    await ctx.db.delete(readState._id);
+  }
+
+  const alerts = await ctx.db
+    .query("alerts")
+    .withIndex("by_event", (q) => q.eq("eventId", eventId))
+    .collect();
+  for (const alert of alerts) {
+    const updates = await ctx.db
+      .query("alertUpdates")
+      .withIndex("by_alert", (q) => q.eq("alertId", alert._id))
+      .collect();
+    for (const update of updates) {
+      await ctx.db.delete(update._id);
+    }
+
+    await deleteOptionalStorage(ctx, alert.photoId);
+    await ctx.db.delete(alert._id);
+  }
+
+  const watchlistEntries = await ctx.db
+    .query("eventWatchlist")
+    .withIndex("by_event", (q) => q.eq("eventId", eventId))
+    .collect();
+  for (const entry of watchlistEntries) {
+    const updates = await ctx.db
+      .query("watchlistUpdates")
+      .withIndex("by_entry", (q) => q.eq("watchlistEntryId", entry._id))
+      .collect();
+    for (const update of updates) {
+      await ctx.db.delete(update._id);
+    }
+
+    await deleteOptionalStorage(ctx, entry.photoId);
+    await ctx.db.delete(entry._id);
+  }
+
+  const slots = await ctx.db
+    .query("roleSlots")
+    .withIndex("by_event", (q) => q.eq("eventId", eventId))
+    .collect();
+  for (const slot of slots) {
+    await ctx.db.delete(slot._id);
+  }
+
+  const staffMembers = await ctx.db
+    .query("liveStaff")
+    .withIndex("by_event", (q) => q.eq("eventId", eventId))
+    .collect();
+  for (const staff of staffMembers) {
+    await ctx.db.delete(staff._id);
+  }
+
+  const jobs = await ctx.db
+    .query("jobs")
+    .withIndex("by_event", (q) => q.eq("eventId", eventId))
+    .collect();
+  for (const job of jobs) {
+    await ctx.db.delete(job._id);
+  }
+
+  const messages = await ctx.db
+    .query("messages")
+    .withIndex("by_event", (q) => q.eq("eventId", eventId))
+    .collect();
+  for (const msg of messages) {
+    await ctx.db.delete(msg._id);
+  }
+
+  const broadcasts = await ctx.db
+    .query("broadcasts")
+    .withIndex("by_event", (q) => q.eq("eventId", eventId))
+    .collect();
+  for (const broadcast of broadcasts) {
+    await ctx.db.delete(broadcast._id);
+  }
+
+  const sections = await ctx.db
+    .query("eventSections")
+    .withIndex("by_event", (q) => q.eq("eventId", eventId))
+    .collect();
+  for (const sec of sections) {
+    await ctx.db.delete(sec._id);
+  }
+
+  await ctx.db.delete(eventId);
+}
+
 /**
  * Delete an event and gracefully cascade-delete all associated data.
  */
@@ -581,62 +694,7 @@ export const deleteEvent = mutation({
       throw new Error("Unauthorized to delete this event");
     }
 
-    // 1. Delete associated roleSlots
-    const slots = await ctx.db
-      .query("roleSlots")
-      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-      .collect();
-    for (const slot of slots) {
-      await ctx.db.delete(slot._id);
-    }
-
-    // 2. Delete associated liveStaff records
-    const staffMembers = await ctx.db
-      .query("liveStaff")
-      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-      .collect();
-    for (const staff of staffMembers) {
-      await ctx.db.delete(staff._id);
-    }
-
-    // 3. Delete associated jobs
-    const jobs = await ctx.db
-      .query("jobs")
-      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-      .collect();
-    for (const job of jobs) {
-      await ctx.db.delete(job._id);
-    }
-
-    // 4. Delete associated messages
-    const messages = await ctx.db
-      .query("messages")
-      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-      .collect();
-    for (const msg of messages) {
-      await ctx.db.delete(msg._id);
-    }
-
-    // 4b. Delete associated broadcasts
-    const broadcasts = await ctx.db
-      .query("broadcasts")
-      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-      .collect();
-    for (const broadcast of broadcasts) {
-      await ctx.db.delete(broadcast._id);
-    }
-
-    // 5. Delete associated eventSections
-    const sections = await ctx.db
-      .query("eventSections")
-      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
-      .collect();
-    for (const sec of sections) {
-      await ctx.db.delete(sec._id);
-    }
-
-    // 6. Delete the parent event itself
-    await ctx.db.delete(args.eventId);
+    await deleteEventRelatedData(ctx, args.eventId, event.adminId);
 
     return { success: true };
   },
