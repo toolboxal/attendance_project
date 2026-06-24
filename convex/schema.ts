@@ -214,5 +214,7 @@ export default defineSchema({
     productName: v.string(),
     status: v.string(),
     createdAt: v.number(),
-  }).index("by_checkoutId", ["checkoutId"]),
+  })
+    .index("by_checkoutId", ["checkoutId"])
+    .index("by_authUserId", ["authUserId"]),
 });

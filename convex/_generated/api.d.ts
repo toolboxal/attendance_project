@@ -23,6 +23,7 @@ import type * as payments from "../payments.js";
 import type * as sectionDefaults from "../sectionDefaults.js";
 import type * as sections from "../sections.js";
 import type * as test from "../test.js";
+import type * as users from "../users.js";
 import type * as watchlist from "../watchlist.js";
 
 import type {
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   sectionDefaults: typeof sectionDefaults;
   sections: typeof sections;
   test: typeof test;
+  users: typeof users;
   watchlist: typeof watchlist;
 }>;
 

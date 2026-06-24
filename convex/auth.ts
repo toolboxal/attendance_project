@@ -4,6 +4,7 @@ if (typeof (globalThis as any).Buffer === "undefined") {
 }
 
 import { betterAuth } from 'better-auth/minimal'
+import { APIError } from 'better-auth/api'
 import { createClient } from '@convex-dev/better-auth'
 import { convex } from '@convex-dev/better-auth/plugins'
 import authConfig from './auth.config'
@@ -20,6 +21,21 @@ import { Polar } from "@polar-sh/sdk";
 const siteUrl = process.env.SITE_URL!
 
 import { internal } from './_generated/api'
+
+async function sendResendEmail(to: string, subject: string, html: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error("[Better Auth Error] Missing RESEND_API_KEY environment variable!");
+    throw new Error("Missing RESEND_API_KEY environment variable");
+  }
+  const resend = new Resend(apiKey);
+  return await resend.emails.send({
+    from: "Asistir <onboarding@resend.dev>",
+    to,
+    subject,
+    html,
+  });
+}
 
 function subscriptionAuthUserId(subscription: {
     customer?: { externalId?: string | null };
@@ -105,6 +121,25 @@ export const authComponent: any = createClient<DataModel>(components.betterAuth,
           createdAt: Date.now(),
         });
       },
+      onUpdate: async (ctx: any, user: any) => {
+        const existing = await ctx.db
+          .query("users")
+          .withIndex("by_authUserId", (q: any) => q.eq("authUserId", user._id))
+          .first();
+        if (!existing) return;
+
+        const patch: { name?: string; email?: string } = {};
+        if (user.name !== undefined) patch.name = user.name;
+        if (user.email !== undefined) patch.email = user.email;
+        if (Object.keys(patch).length > 0) {
+          await ctx.db.patch(existing._id, patch);
+        }
+      },
+      onDelete: async (ctx: any, user: any) => {
+        await ctx.runMutation(internal.users.deleteAccountData, {
+          authUserId: user._id,
+        });
+      },
     },
   },
   authFunctions: (internal as any).auth,
@@ -131,6 +166,41 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
         clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
       },
     },
+    user: {
+      deleteUser: {
+        enabled: true,
+        sendDeleteAccountVerification: async ({ user, url }) => {
+          try {
+            await sendResendEmail(
+              user.email,
+              "Confirm Asistir account deletion",
+              `<p>You requested to permanently delete your Asistir account.</p><p><a href="${url}">Confirm account deletion</a></p><p>If you did not request this, you can ignore this email.</p>`,
+            );
+          } catch (err) {
+            console.error("[Better Auth Error] Failed to send delete verification:", err);
+            throw err;
+          }
+        },
+        beforeDelete: async (user) => {
+          const actionCtx = ctx as unknown as GenericActionCtx<DataModel>;
+          try {
+            await actionCtx.runMutation(internal.users.assertCanDeleteAccount, {
+              authUserId: user.id,
+            });
+          } catch (err: unknown) {
+            let message = "Account deletion is not allowed.";
+            if (err instanceof Error && err.message) {
+              message = err.message;
+            }
+            if (err && typeof err === "object" && "data" in err) {
+              const data = (err as { data?: { reason?: string } }).data;
+              if (data?.reason) message = data.reason;
+            }
+            throw new APIError("BAD_REQUEST", { message });
+          }
+        },
+      },
+    },
     plugins: [
       // The Convex plugin is required for Convex compatibility
       convex({ authConfig }),
@@ -139,19 +209,12 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
         allowedAttempts: 3,
         async sendVerificationOTP({ email, otp }) {
           // console.log(`[Better Auth] Sending OTP to ${email}`);
-          const apiKey = process.env.RESEND_API_KEY;
-          if (!apiKey) {
-            console.error("[Better Auth Error] Missing RESEND_API_KEY environment variable!");
-            throw new Error("Missing RESEND_API_KEY environment variable");
-          }
-          const resend = new Resend(apiKey);
           try {
-            const result = await resend.emails.send({
-              from: "Asistir <onboarding@resend.dev>", 
-              to: email,
-              subject: "Asistir verification code",
-              html: `<p>Your verification code is: <strong>${otp}</strong></p>`,
-            });
+            const result = await sendResendEmail(
+              email,
+              "Asistir verification code",
+              `<p>Your verification code is: <strong>${otp}</strong></p>`,
+            );
             console.log("[Better Auth] Resend successfully invoked:", result);
           } catch (err) {
             console.error("[Better Auth Error] Failed to send email via Resend:", err);

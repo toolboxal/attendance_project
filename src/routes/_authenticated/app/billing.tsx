@@ -76,7 +76,12 @@ function BillingComponent() {
 			}
 
 			if (data?.url) {
-				window.location.href = data.url;
+				const opened = window.open(data.url, "_blank", "noopener,noreferrer");
+				if (!opened) {
+					toast.error(
+						"Could not open a new tab. Allow pop-ups for this site and try again.",
+					);
+				}
 			} else {
 				toast.error("Billing portal is currently unavailable.");
 			}

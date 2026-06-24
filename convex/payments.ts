@@ -232,9 +232,31 @@ export const getPaymentByCheckoutId = query({
     checkoutId: v.string(),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const user = await getAuthenticatedUser(ctx);
+    const payment = await ctx.db
       .query("payments")
       .withIndex("by_checkoutId", (q) => q.eq("checkoutId", args.checkoutId))
       .first();
+
+    if (!payment || payment.authUserId !== user.authUserId) {
+      return null;
+    }
+
+    return payment;
+  },
+});
+
+export const listPayments = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+    const payments = await ctx.db
+      .query("payments")
+      .withIndex("by_authUserId", (q) => q.eq("authUserId", user.authUserId))
+      .collect();
+
+    return payments
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 5);
   },
 });
