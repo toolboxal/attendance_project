@@ -6,8 +6,9 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
-    "build": "vite build",
+    "dev": "NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --port 3000",
+    "build": "vite build && cp instrument.server.mjs dist/server/",
+    "start": "node --import ./dist/server/instrument.server.mjs dist/server/server.js",
     "preview": "vite preview",
     "test": "vitest run",
     "format": "biome format",
@@ -20,6 +21,7 @@
     "@fontsource-variable/geist": "^5.2.8",
     "@polar-sh/better-auth": "^1.8.3",
     "@polar-sh/sdk": "^0.47.1",
+    "@sentry/tanstackstart-react": "^10.60.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "^0.10.2",
     "@tanstack/react-form": "^1.29.1",
@@ -77,5 +79,8 @@
       "esbuild",
       "lightningcss"
     ]
-  }
+  },
+  "trustedDependencies": [
+    "@sentry/cli"
+  ]
 }

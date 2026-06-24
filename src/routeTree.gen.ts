@@ -24,6 +24,7 @@ import { Route as LiveDashboardAlertRouteImport } from './routes/live/_dashboard
 import { Route as LiveDashboardAdminRouteImport } from './routes/live/_dashboard/admin'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthenticatedAppSuccessRouteImport } from './routes/_authenticated/app/success'
+import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/app/settings'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/app/dashboard'
 import { Route as AuthenticatedAppBillingRouteImport } from './routes/_authenticated/app/billing'
 import { Route as publicauthSignupRouteImport } from './routes/(public)/(auth)/signup'
@@ -107,6 +108,12 @@ const AuthenticatedAppSuccessRoute = AuthenticatedAppSuccessRouteImport.update({
   path: '/success',
   getParentRoute: () => AuthenticatedAppRouteRoute,
 } as any)
+const AuthenticatedAppSettingsRoute =
+  AuthenticatedAppSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
 const AuthenticatedAppDashboardRoute =
   AuthenticatedAppDashboardRouteImport.update({
     id: '/dashboard',
@@ -169,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof publicauthSignupRoute
   '/app/billing': typeof AuthenticatedAppBillingRoute
   '/app/dashboard': typeof AuthenticatedAppDashboardRoute
+  '/app/settings': typeof AuthenticatedAppSettingsRoute
   '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/live/admin': typeof LiveDashboardAdminRoute
@@ -192,6 +200,7 @@ export interface FileRoutesByTo {
   '/signup': typeof publicauthSignupRoute
   '/app/billing': typeof AuthenticatedAppBillingRoute
   '/app/dashboard': typeof AuthenticatedAppDashboardRoute
+  '/app/settings': typeof AuthenticatedAppSettingsRoute
   '/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/live/admin': typeof LiveDashboardAdminRoute
@@ -218,6 +227,7 @@ export interface FileRoutesById {
   '/(public)/(auth)/signup': typeof publicauthSignupRoute
   '/_authenticated/app/billing': typeof AuthenticatedAppBillingRoute
   '/_authenticated/app/dashboard': typeof AuthenticatedAppDashboardRoute
+  '/_authenticated/app/settings': typeof AuthenticatedAppSettingsRoute
   '/_authenticated/app/success': typeof AuthenticatedAppSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/live/_dashboard/admin': typeof LiveDashboardAdminRoute
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app/billing'
     | '/app/dashboard'
+    | '/app/settings'
     | '/app/success'
     | '/api/auth/$'
     | '/live/admin'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app/billing'
     | '/app/dashboard'
+    | '/app/settings'
     | '/app/success'
     | '/api/auth/$'
     | '/live/admin'
@@ -292,6 +304,7 @@ export interface FileRouteTypes {
     | '/(public)/(auth)/signup'
     | '/_authenticated/app/billing'
     | '/_authenticated/app/dashboard'
+    | '/_authenticated/app/settings'
     | '/_authenticated/app/success'
     | '/api/auth/$'
     | '/live/_dashboard/admin'
@@ -421,6 +434,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppSuccessRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/_authenticated/app/settings': {
+      id: '/_authenticated/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AuthenticatedAppSettingsRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
     '/_authenticated/app/dashboard': {
       id: '/_authenticated/app/dashboard'
       path: '/dashboard'
@@ -541,6 +561,7 @@ const LiveRouteRouteWithChildren = LiveRouteRoute._addFileChildren(
 interface AuthenticatedAppRouteRouteChildren {
   AuthenticatedAppBillingRoute: typeof AuthenticatedAppBillingRoute
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
+  AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRoute
   AuthenticatedAppSuccessRoute: typeof AuthenticatedAppSuccessRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppEventsCreateRoute: typeof AuthenticatedAppEventsCreateRoute
@@ -553,6 +574,7 @@ interface AuthenticatedAppRouteRouteChildren {
 const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
   AuthenticatedAppBillingRoute: AuthenticatedAppBillingRoute,
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
+  AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRoute,
   AuthenticatedAppSuccessRoute: AuthenticatedAppSuccessRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppEventsCreateRoute: AuthenticatedAppEventsCreateRoute,
@@ -581,10 +603,11 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/tanstackstart-react";
 import { ConvexError } from "convex/values";
 import { toast } from "sonner";
 
@@ -58,6 +59,11 @@ export function toastMutationError(
 	error: unknown,
 	fallback = "Something went wrong",
 ) {
+	// ConvexErrors are intentional user-facing messages; skip reporting those.
+	if (!(error instanceof ConvexError)) {
+		Sentry.captureException(error);
+	}
+
 	const { title, reason, actionNeeded } = parseStructuredError(error);
 
 	if (title || reason) {

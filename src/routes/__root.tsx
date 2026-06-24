@@ -13,7 +13,9 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
+import * as Sentry from "@sentry/tanstackstart-react";
 import type * as React from "react";
+import { useEffect } from "react";
 import { NotFoundComponent } from "#/components/not-found";
 import { GlobalErrorComponent } from "#/components/error-component";
 import { authClient } from "#/lib/auth-client";
@@ -61,7 +63,12 @@ export const Route = createRootRouteWithContext<{
 	},
 	component: RootComponent,
 	notFoundComponent: NotFoundComponent,
-	errorComponent: GlobalErrorComponent,
+	errorComponent: ({ error, reset, info }) => {
+		useEffect(() => {
+			Sentry.captureException(error);
+		}, [error]);
+		return <GlobalErrorComponent error={error} reset={reset} info={info} />;
+	},
 });
 function RootComponent() {
 	const context = useRouteContext({ from: Route.id });
