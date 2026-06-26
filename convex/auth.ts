@@ -14,28 +14,13 @@ import type { GenericCtx } from '@convex-dev/better-auth'
 import type { GenericActionCtx } from 'convex/server'
 import type { DataModel } from './_generated/dataModel'
 import { emailOTP } from "better-auth/plugins"
-import { Resend } from "resend";
 import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth"; 
 import { Polar } from "@polar-sh/sdk"; 
 
 const siteUrl = process.env.SITE_URL!
 
 import { internal } from './_generated/api'
-
-async function sendResendEmail(to: string, subject: string, html: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.error("[Better Auth Error] Missing RESEND_API_KEY environment variable!");
-    throw new Error("Missing RESEND_API_KEY environment variable");
-  }
-  const resend = new Resend(apiKey);
-  return await resend.emails.send({
-    from: "Asistir <onboarding@resend.dev>",
-    to,
-    subject,
-    html,
-  });
-}
+import { buildOtpEmailHtml, sendResendEmail } from "./email";
 
 function subscriptionAuthUserId(subscription: {
     customer?: { externalId?: string | null };
@@ -210,12 +195,11 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
         async sendVerificationOTP({ email, otp }) {
           // console.log(`[Better Auth] Sending OTP to ${email}`);
           try {
-            const result = await sendResendEmail(
+            await sendResendEmail(
               email,
-              "Asistir verification code",
-              `<p>Your verification code is: <strong>${otp}</strong></p>`,
+              "Your Asistir verification code",
+              buildOtpEmailHtml(otp, siteUrl.replace(/\/$/, "")),
             );
-            console.log("[Better Auth] Resend successfully invoked:", result);
           } catch (err) {
             console.error("[Better Auth Error] Failed to send email via Resend:", err);
             throw err;
@@ -229,7 +213,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
                 checkout({ 
                     products: [ 
                         { productId: process.env.POLAR_PRODUCT_ID_SINGLE!, slug: "single" },
-                        { productId: process.env.POLAR_PRODUCT_ID_WEEKEND!, slug: "weekend" },
+                        { productId: process.env.POLAR_PRODUCT_ID_BUNDLE!, slug: "bundle" },
                         { productId: process.env.POLAR_PRODUCT_ID_MONTHLY!, slug: "monthly" },
                     ], 
                     successUrl: `${process.env.SITE_URL}/app/success?checkout_id={CHECKOUT_ID}`, 
@@ -246,7 +230,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 
                         let creditsToAdd = 0;
                         if (order.productId === process.env.POLAR_PRODUCT_ID_SINGLE) creditsToAdd = 1;
-                        if (order.productId === process.env.POLAR_PRODUCT_ID_WEEKEND) creditsToAdd = 3;
+                        if (order.productId === process.env.POLAR_PRODUCT_ID_BUNDLE) creditsToAdd = 4;
 
                         const actionCtx = ctx as unknown as GenericActionCtx<DataModel>;
 

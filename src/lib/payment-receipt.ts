@@ -1,10 +1,10 @@
-export type PurchaseKind = "single" | "weekend" | "monthly" | "unknown";
+export type PurchaseKind = "single" | "bundle" | "monthly" | "unknown";
 
 export function inferPurchaseKind(productName: string): PurchaseKind {
 	const name = productName.toLowerCase();
 	if (name.includes("monthly") || name.includes("pro monthly"))
 		return "monthly";
-	if (name.includes("weekend")) return "weekend";
+	if (name.includes("bundle")) return "bundle";
 	if (name.includes("single")) return "single";
 	return "unknown";
 }
@@ -13,8 +13,8 @@ export function getFulfillmentText(kind: PurchaseKind): string {
 	switch (kind) {
 		case "single":
 			return "1 event credit";
-		case "weekend":
-			return "3 event credits";
+		case "bundle":
+			return "4 event credits";
 		case "monthly":
 			return "8 credits/month";
 		default:

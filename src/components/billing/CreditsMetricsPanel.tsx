@@ -9,8 +9,7 @@ export type CreditsMetricsData = {
 	subscriptionCancelAtPeriodEnd: boolean;
 };
 
-function formatBillingDate(timestamp: number | null | undefined): string {
-	if (!timestamp) return "N/A";
+function formatBillingDate(timestamp: number): string {
 	return new Date(timestamp).toLocaleDateString("en-US", {
 		year: "numeric",
 		month: "long",
@@ -38,14 +37,20 @@ export function CreditsMetricsPanel({
 					{planLabel}
 				</p>
 				<p className="text-xs text-zinc-300 font-semibold">
-					{isProSubscriber && !isPendingCancellation ? "Active" : "Cancelled"}
+					{isProSubscriber && !isPendingCancellation ? "Active" : ""}
 				</p>
 			</div>
 			<div className="flex flex-1 flex-col self-stretch">
 				<p className="text-md text-zinc-400 font-bold">Monthly Credits</p>
 				<p className="text-xs text-zinc-300">
-					{isPendingCancellation ? "Ends" : "Renews"} on{" "}
-					{formatBillingDate(subscriptionExpiresAt)}
+					{subscriptionExpiresAt ? (
+						<>
+							{isPendingCancellation ? "Ends" : "Renews"} on{" "}
+							{formatBillingDate(subscriptionExpiresAt)}
+						</>
+					) : (
+						"none"
+					)}
 				</p>
 				<p className="text-3xl text-zinc-100 font-bold mt-auto">
 					{monthlyCredits}
@@ -54,9 +59,11 @@ export function CreditsMetricsPanel({
 			<div className="flex flex-1 flex-col">
 				<p className="text-md text-zinc-400 font-bold">One-Time Credits</p>
 				<p className="text-xs text-zinc-300">
-					Single or Weekend Bundle Credits. Does not expire.
+					Single Pass or Bundle credits. Does not expire.
 				</p>
-				<p className="text-3xl text-zinc-100 font-bold mt-2">{oneTimeCredits}</p>
+				<p className="text-3xl text-zinc-100 font-bold mt-2">
+					{oneTimeCredits}
+				</p>
 			</div>
 			<div className="flex flex-1 flex-col">
 				<p className="text-md text-zinc-400 font-bold">Free Trial Credits</p>

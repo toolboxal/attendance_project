@@ -142,44 +142,44 @@ function Home() {
 						</Button>
 					</div>
 
-					{/* Weekend Bundle */}
+					{/* Bundle */}
 					<div
 						className={base({
 							className:
 								"border-emerald-300/20 bg-zinc-900/50 shadow-emerald-300/10",
 						})}
 					>
-						<h3 className={cardTitle()}>Weekend Bundle</h3>
+						<h3 className={cardTitle()}>Bundle</h3>
 						<div className={featureList()}>
 							<div className="flex items-center gap-2">
 								<CircleCheck
 									size={18}
 									className="fill-zinc-400 stroke-zinc-950"
 								/>
-								<p className={featureItem()}>3 Pro Event Credits</p>
+								<p className={featureItem()}>4 Pro Event Credits</p>
 							</div>
 							<div className="flex items-center gap-2">
 								<CircleCheck
 									size={18}
 									className="fill-zinc-400 stroke-zinc-950"
 								/>
-								<p className={featureItem()}>Perfect for festivals</p>
+								<p className={featureItem()}>Ideal for ~one event per week</p>
 							</div>
 							<div className="flex items-center gap-2">
 								<CircleCheck
 									size={18}
 									className="fill-zinc-400 stroke-zinc-950"
 								/>
-								<p className={featureItem()}>Save 10%</p>
+								<p className={featureItem()}>Save 17%</p>
 							</div>
 						</div>
-						<p className={price()}>$25</p>
+						<p className={price()}>$30</p>
 						<Button
 							size={"xl"}
 							className={button()}
-							onClick={() => handleCheckout("weekend")}
+							onClick={() => handleCheckout("bundle")}
 						>
-							Get 3 Credits
+							Get 4 Credits
 						</Button>
 					</div>
 
@@ -192,7 +192,7 @@ function Home() {
 									size={18}
 									className="fill-zinc-400 stroke-zinc-950"
 								/>
-								<p className={featureItem()}>Unlimited Pro Events</p>
+								<p className={featureItem()}>8 Pro Event Credits / month</p>
 							</div>
 							<div className="flex items-center gap-2">
 								<CircleCheck
@@ -210,7 +210,7 @@ function Home() {
 							</div>
 						</div>
 						<p className={price()}>
-							$39<span className="text-base text-zinc-500 mx-0.5">/month</span>
+							$49<span className="text-base text-zinc-500 mx-0.5">/month</span>
 						</p>
 						<Button
 							size={"xl"}

@@ -12,6 +12,13 @@ import { useHeaderStore } from "#/lib/store/topHeaderStore";
 import { api } from "../../../../convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/app/billing")({
+	loader: () => {
+		useHeaderStore.getState().setPageHeader({
+			title: "Subscriptions",
+			showBackButton: false,
+			showLeftButton: false,
+		});
+	},
 	component: BillingComponent,
 });
 
@@ -27,7 +34,7 @@ function BillingComponent() {
 
 	useEffect(() => {
 		setPageHeader({
-			title: "Billing",
+			title: "Subscriptions",
 			showBackButton: false,
 			showLeftButton: false,
 		});
@@ -45,7 +52,7 @@ function BillingComponent() {
 		);
 	}
 
-	const handlePurchase = async (slug: "single" | "weekend" | "monthly") => {
+	const handlePurchase = async (slug: "single" | "bundle" | "monthly") => {
 		try {
 			setActiveCheckoutSlug(slug);
 			const { data, error } = await authClient.checkout({ slug });
@@ -100,7 +107,7 @@ function BillingComponent() {
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-zinc-800/80 py-6">
 				<div>
 					<h1 className="text-2xl font-bold tracking-tight">
-						Billing & Subscriptions
+						Subscriptions & Current Plan
 					</h1>
 					<p className="text-sm text-zinc-400 mt-1">
 						Manage your plan and credits.
@@ -178,24 +185,24 @@ function BillingComponent() {
 					<div className="p-6 flex flex-1 flex-col justify-between gap-8">
 						<div className="space-y-4">
 							<div>
-								<h3 className="text-base font-semibold">Weekend Bundle</h3>
+								<h3 className="text-base font-semibold">Bundle</h3>
 								<p className="text-xs text-zinc-400 mt-1">
-									2 days event plus 1 more credit.
+									Best for ~one event per week (~4 per month).
 								</p>
 							</div>
 							<div className="flex items-baseline gap-1">
 								<span className="text-2xl font-extrabold font-mono">
-									$25.00
+									$30.00
 								</span>
-								<span className="text-xs text-zinc-500">/ 3 credits</span>
+								<span className="text-xs text-zinc-500">/ 4 credits</span>
 							</div>
 							<ul className="space-y-4 text-xs text-zinc-400">
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> 3 Pro Event
+									<Check className="size-3 text-yellow-300" /> 4 Pro Event
 									Credits
 								</li>
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> Save 8% vs Single
+									<Check className="size-3 text-yellow-300" /> Save 17% vs Single
 									Passes
 								</li>
 								<li className="flex items-center gap-2">
@@ -205,12 +212,12 @@ function BillingComponent() {
 							</ul>
 						</div>
 						<Button
-							onClick={() => handlePurchase("weekend")}
+							onClick={() => handlePurchase("bundle")}
 							disabled={activeCheckoutSlug !== null}
 							variant="default"
 							className="w-full hover:bg-zinc-100 text-xs font-semibold"
 						>
-							{activeCheckoutSlug === "weekend" ? (
+							{activeCheckoutSlug === "bundle" ? (
 								<RefreshCw className="animate-spin size-3" />
 							) : (
 								<span className="flex items-center justify-center gap-1">
@@ -237,7 +244,7 @@ function BillingComponent() {
 							</div>
 							<div className="flex items-baseline gap-1">
 								<span className="text-2xl font-extrabold font-mono">
-									$39.00
+									$49.00
 								</span>
 								<span className="text-xs text-zinc-500">/ month</span>
 							</div>
@@ -247,7 +254,7 @@ function BillingComponent() {
 									Credits / month
 								</li>
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> Save 45% vs
+									<Check className="size-3 text-yellow-300" /> Save 32% vs
 									Single Passes
 								</li>
 								<li className="flex items-center gap-2">

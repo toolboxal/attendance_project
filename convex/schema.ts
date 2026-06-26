@@ -16,7 +16,7 @@ export default defineSchema({
     
     // Separated Credit Pools (Model A)
     freeTrialCredits: v.optional(v.number()), // Signup gift only (5 staff events, never pro)
-    oneTimeCredits: v.optional(v.number()), // Lifetime credits (Single Pass & Weekend Bundle)
+    oneTimeCredits: v.optional(v.number()), // Lifetime credits (Single Pass & Bundle)
     monthlyCredits: v.optional(v.number()), // Subscription credits (reset on order.paid renewal)
     
     polarCustomerId: v.optional(v.string()),

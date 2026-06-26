@@ -44,7 +44,7 @@ export const Route = createRootRouteWithContext<{
 		],
 		links: [
 			{ rel: "stylesheet", href: appCss },
-			{ rel: "icon", href: "/favicon.ico" },
+			{ rel: "icon", href: "/favicon-white.svg" },
 		],
 	}),
 	beforeLoad: async (ctx) => {

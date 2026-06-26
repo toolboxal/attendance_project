@@ -1,5 +1,6 @@
-import { sentryTanstackStart } from "@sentry/tanstackstart-react/vite";
+import { cloudflare } from "@cloudflare/vite-plugin";
 import babel from "@rolldown/plugin-babel";
+import { sentryTanstackStart } from "@sentry/tanstackstart-react/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -17,11 +18,7 @@ const config = defineConfig(({ mode }) => {
 			"import.meta.env.VITE_SENTRY_DSN": JSON.stringify(sentryDsn),
 		},
 		ssr: {
-			noExternal: [
-				"@convex-dev/better-auth",
-				"@posthog/react",
-				"posthog-js",
-			],
+			noExternal: ["@convex-dev/better-auth", "@posthog/react", "posthog-js"],
 		},
 		// optimizeDeps: {
 		// 	holdUntilCrawlEnd: true,
@@ -31,6 +28,7 @@ const config = defineConfig(({ mode }) => {
 			tailwindcss(),
 			tanstackStart(),
 			viteReact(),
+			cloudflare({ viteEnvironment: { name: "ssr" } }),
 			babel({ presets: [reactCompilerPreset()] }),
 			// sentryTanstackStart must be the last plugin
 			sentryTanstackStart({

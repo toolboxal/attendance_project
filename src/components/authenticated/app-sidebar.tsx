@@ -26,7 +26,7 @@ const items = [
 		icon: Calendar,
 	},
 	{
-		title: "Billing",
+		title: "Subscriptions",
 		url: "/app/billing",
 		icon: CreditCard,
 	},
