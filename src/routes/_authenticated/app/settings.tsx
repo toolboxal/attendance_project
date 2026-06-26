@@ -40,7 +40,7 @@ function SettingsPage() {
 		setIsSigningOut(true);
 		try {
 			await authClient.signOut();
-			navigate({ to: "/signin" });
+			navigate({ to: "/" });
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Failed to sign out");
 		} finally {
