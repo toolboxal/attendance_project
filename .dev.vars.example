@@ -1,0 +1,4 @@
+# Local Worker secrets for `wrangler dev` / Cloudflare Vite plugin.
+# Copy to `.dev.vars` (gitignored via *.local — add `.dev.vars` to .gitignore if needed).
+#
+# SENTRY_AUTH_TOKEN=

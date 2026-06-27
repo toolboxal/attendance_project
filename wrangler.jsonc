@@ -3,5 +3,16 @@
   "name": "attendance-project",
   "compatibility_date": "2026-06-15",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry"
+  "main": "@tanstack/react-start/server-entry",
+  // Preserve dashboard vars/secrets not listed below on Git deploys.
+  "keep_vars": true,
+  "vars": {
+    "VITE_SITE_URL": "https://www.asistir.online",
+    "VITE_POSTHOG_HOST": "https://us.i.posthog.com"
+  }
+  // Set in Cloudflare dashboard (Build + Runtime) — not committed:
+  //   VITE_CONVEX_URL, VITE_CONVEX_SITE_URL, VITE_SENTRY_DSN, SENTRY_DSN,
+  //   VITE_POSTHOG_PROJECT_TOKEN
+  // Set as Cloudflare Secrets (Build): SENTRY_AUTH_TOKEN
+  // Local secrets: .dev.vars (see .dev.vars.example)
 }
