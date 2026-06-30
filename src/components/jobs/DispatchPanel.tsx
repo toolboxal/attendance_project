@@ -38,7 +38,6 @@ export function DispatchPanel({
 					requestType,
 					description: value.description.trim() || undefined,
 				});
-				toast.success("Job Dispatched!");
 				form.reset();
 				setPersonCount(1);
 				setRequestType("regular");

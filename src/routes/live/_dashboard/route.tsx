@@ -8,6 +8,7 @@ import { useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { tv } from "tailwind-variants";
 import { BroadcastBanner } from "#/components/broadcast/BroadcastBanner";
+import { JobAcceptanceToasts } from "#/components/jobs/JobAcceptanceToasts";
 import { ErrorView } from "#/components/error-view";
 import { Spinner } from "#/components/ui/spinner";
 import { parseStructuredError } from "#/lib/error-utils";
@@ -127,8 +128,15 @@ function DashboardAuthLayout() {
 				<Outlet />
 			</main>
 			<BroadcastBanner accessToken={token} />
+			<JobAcceptanceToasts accessToken={token} />
 
 			<nav className={navBar()}>
+				{profile?.isAdmin && (
+					<Link to="/live/admin" className={tab()}>
+						<span>Admin</span>
+					</Link>
+				)}
+
 				<Link to="/live/jobs" className={tab()}>
 					<span>Traffic</span>
 				</Link>
@@ -140,12 +148,6 @@ function DashboardAuthLayout() {
 				<Link to="/live/roster" className={tab()}>
 					<span>Roster</span>
 				</Link>
-
-				{profile?.isAdmin && (
-					<Link to="/live/admin" className={tab()}>
-						<span>Admin</span>
-					</Link>
-				)}
 			</nav>
 		</div>
 	);

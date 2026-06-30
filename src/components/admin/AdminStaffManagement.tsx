@@ -2,11 +2,12 @@ import { convexQuery } from "@convex-dev/react-query";
 import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMutation } from "convex/react";
-import { Check, Copy, Share2 } from "lucide-react";
+import { Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 import { Button } from "#/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "#/components/ui/alert";
 import {
 	Dialog,
 	DialogContent,
@@ -22,7 +23,11 @@ import {
 } from "#/components/ui/field";
 import { Input } from "#/components/ui/input";
 import { getStaffAccessToken } from "#/lib/staffToken";
-import { cn, formatFieldErrors, formatTime12h } from "#/lib/utils";
+import {
+	buildStaffInviteShareMessage,
+	shareStaffInvite,
+} from "#/lib/staff-invite-share";
+import { formatFieldErrors, formatTime12h } from "#/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -54,81 +59,53 @@ function inviteUrl(inviteToken: string) {
 function ShareInviteButtons({
 	name,
 	slotTitle,
+	slotRole,
+	sectionName,
+	sectionStartTime,
+	sectionEndTime,
 	inviteToken,
 }: {
 	name: string;
 	slotTitle: string;
+	slotRole: "supervisor" | "staff";
+	sectionName: string;
+	sectionStartTime?: string;
+	sectionEndTime?: string;
 	inviteToken: string;
 }) {
-	const [copied, setCopied] = useState(false);
 	const url = inviteUrl(inviteToken);
-	const shareTextBody = `Hi ${name}! Here is your secure access link for your assignment as ${slotTitle}:`;
-	const shareTextFull = `${shareTextBody}\n\n${url}`;
-	const canShare =
-		typeof navigator !== "undefined" && !!navigator.share && !!url;
+	const shareTextFull = buildStaffInviteShareMessage({
+		staffName: name,
+		roleTitle: slotTitle,
+		sectionName,
+		startTime: sectionStartTime,
+		endTime: sectionEndTime,
+		role: slotRole,
+		inviteUrl: url,
+	});
 
-	const handleCopy = () => {
-		navigator.clipboard.writeText(url);
-		setCopied(true);
-		toast.success("Invite link copied.");
-		setTimeout(() => setCopied(false), 2000);
-	};
-
-	const handleNativeShare = async () => {
-		try {
-			await navigator.share({
-				title: `Access Link for ${name}`,
-				text: shareTextBody,
-				url,
-			});
-		} catch {
-			// dismissed
-		}
+	const handleShareInvite = () => {
+		void shareStaffInvite(shareTextFull, `Event Assignment — ${slotTitle}`);
 	};
 
 	return (
 		<div className="flex flex-col gap-3 pt-2">
-			<p className="break-all text-xs font-mono text-zinc-400">{url}</p>
+			<div className="flex-1 min-w-0">
+				<p className="text-[10px] uppercase font-bold text-zinc-400 mb-1">
+					Access Link
+				</p>
+				<p className="break-all text-xs font-mono text-emerald-300 select-all leading-relaxed">
+					{url}
+				</p>
+			</div>
 			<Button
 				type="button"
-				size="default"
-				onClick={handleCopy}
-				className={cn(
-					"w-full",
-					copied
-						? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-						: "bg-zinc-800 hover:bg-zinc-700 text-zinc-100",
-				)}
+				onClick={handleShareInvite}
+				className="w-full h-11 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold rounded-lg flex items-center justify-center gap-2"
 			>
-				{copied ? (
-					<>
-						<Check className="size-3.5 mr-1.5" /> Copied
-					</>
-				) : (
-					<>
-						<Copy className="size-3.5 mr-1.5" /> Copy link
-					</>
-				)}
+				<Share2 className="size-4" />
+				Share invite
 			</Button>
-			{canShare ? (
-				<Button
-					type="button"
-					size="default"
-					onClick={handleNativeShare}
-					className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-950"
-				>
-					<Share2 className="size-3.5 mr-1.5" /> Share
-				</Button>
-			) : (
-				<a
-					href={`https://wa.me/?text=${encodeURIComponent(shareTextFull)}`}
-					target="_blank"
-					rel="noreferrer"
-					className="flex items-center justify-center gap-1.5 h-8 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-bold"
-				>
-					Share via WhatsApp
-				</a>
-			)}
 		</div>
 	);
 }
@@ -265,11 +242,26 @@ function AssignSlotDialog({
 						</Button>
 					</form>
 				) : (
-					<ShareInviteButtons
-						name={submittedName}
-						slotTitle={slot.title}
-						inviteToken={generatedToken}
-					/>
+					<div className="space-y-3">
+						<div className="flex flex-col">
+							<p className="text-xs font-bold uppercase tracking-wider text-yellow-400">
+								Pending Activation
+							</p>
+							<p className="text-zinc-300 text-xs mt-1.5 leading-relaxed">
+								Event must go live and the staff must claim their assignment to
+								activate this.
+							</p>
+						</div>
+						<ShareInviteButtons
+							name={submittedName}
+							slotTitle={slot.title}
+							slotRole={slot.role}
+							sectionName={sectionName}
+							sectionStartTime={sectionStartTime}
+							sectionEndTime={sectionEndTime}
+							inviteToken={generatedToken}
+						/>
+					</div>
 				)}
 			</DialogContent>
 		</Dialog>
@@ -295,6 +287,7 @@ function ManageSlotDialog({
 }) {
 	const [saving, setSaving] = useState(false);
 	const [revoking, setRevoking] = useState(false);
+	const [confirmRevokeOpen, setConfirmRevokeOpen] = useState(false);
 
 	const updateStaff = useMutation(
 		api.liveStaff.createStaffInvitationFromLiveFloor,
@@ -323,22 +316,19 @@ function ManageSlotDialog({
 	useEffect(() => {
 		if (open) {
 			form.reset({ name: slot.staffName ?? "" });
+		} else {
+			setConfirmRevokeOpen(false);
 		}
 	}, [open, slot.staffName, form]);
 
 	const isPending = slot.assignmentStatus === "pending";
 
 	const handleRevoke = async () => {
-		const confirmMessage = isPending
-			? `Remove ${slot.staffName} from this slot? Their invite link will stop working.`
-			: `Revoke access for ${slot.staffName}? They will be disconnected immediately.`;
-		if (!window.confirm(confirmMessage)) {
-			return;
-		}
 		setRevoking(true);
 		try {
 			await revokeStaff({ accessToken, slotId: slot.slotId });
 			toast.success(isPending ? "Assignment removed." : "Access revoked.");
+			setConfirmRevokeOpen(false);
 			onOpenChange(false);
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Failed to remove.");
@@ -348,7 +338,13 @@ function ManageSlotDialog({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog
+			open={open}
+			onOpenChange={(nextOpen) => {
+				onOpenChange(nextOpen);
+				if (!nextOpen) setConfirmRevokeOpen(false);
+			}}
+		>
 			<DialogContent className="bg-zinc-900 border-zinc-800 sm:max-w-md text-zinc-50">
 				<DialogHeader>
 					<DialogTitle className="text-zinc-100">
@@ -420,40 +416,103 @@ function ManageSlotDialog({
 					</form>
 
 					{slot.inviteToken && slot.staffName ? (
-						<div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
-							<p className="text-[10px] font-bold uppercase text-yellow-400 mb-1">
-								Pending invite
-							</p>
+						<div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 space-y-3">
+							<div className="flex flex-col">
+								<p className="text-xs font-bold uppercase tracking-wider text-yellow-400">
+									Pending Activation
+								</p>
+								<p className="text-zinc-300 text-xs mt-1.5 leading-relaxed">
+									Event must go live and the staff must claim their assignment
+									to activate this.
+								</p>
+							</div>
 							<ShareInviteButtons
 								name={slot.staffName}
 								slotTitle={slot.title}
+								slotRole={slot.role}
+								sectionName={sectionName}
+								sectionStartTime={sectionStartTime}
+								sectionEndTime={sectionEndTime}
 								inviteToken={slot.inviteToken}
 							/>
 						</div>
 					) : slot.assignmentStatus === "active" ? (
-						<p className="text-xs text-emerald-400">Active on floor</p>
+						<div className="py-2 flex flex-col">
+							<p className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+								Activated & On Live Floor
+							</p>
+							<p className="text-zinc-300 text-xs mt-1.5 leading-relaxed">
+								{slot.staffName} successfully claimed their assignment.
+							</p>
+						</div>
 					) : null}
 
-					{slot.assignmentStatus === "active" ? (
-						<Button
-							type="button"
-							variant="destructive"
-							className="w-full"
-							disabled={revoking}
-							onClick={handleRevoke}
-						>
-							{revoking ? "Revoking…" : "Revoke access"}
-						</Button>
-					) : isPending ? (
-						<Button
-							type="button"
-							variant="destructive"
-							className="w-full"
-							disabled={revoking}
-							onClick={handleRevoke}
-						>
-							{revoking ? "Removing…" : "Remove assignment"}
-						</Button>
+					{slot.assignmentStatus === "active" || isPending ? (
+						<div className="pt-1 flex flex-col gap-2">
+							{confirmRevokeOpen ? (
+								<Alert
+									variant="destructive"
+									className="border-red-500/20 bg-red-950/20 text-red-200 flex flex-col"
+								>
+									<AlertTitle>
+										{isPending
+											? `Remove ${slot.staffName} from this slot?`
+											: `Revoke access for ${slot.staffName}?`}
+									</AlertTitle>
+									<AlertDescription>
+										<p className="text-red-100 text-xs">
+											{isPending
+												? "Their invite link will stop working. This cannot be undone."
+												: "This will instantly deactivate their live workspace and clear this role slot. This cannot be undone."}
+										</p>
+									</AlertDescription>
+									<div className="col-span-2 flex flex-col sm:flex-row gap-2 mt-3">
+										<Button
+											type="button"
+											variant="ghost"
+											onClick={() => setConfirmRevokeOpen(false)}
+											disabled={revoking}
+											className="text-zinc-400 hover:text-zinc-200"
+										>
+											Cancel
+										</Button>
+										<Button
+											type="button"
+											variant="destructive"
+											onClick={handleRevoke}
+											disabled={revoking}
+											className="font-bold"
+										>
+											{revoking
+												? isPending
+													? "Removing…"
+													: "Revoking…"
+												: isPending
+													? "Confirm Remove"
+													: "Confirm Revoke"}
+										</Button>
+									</div>
+								</Alert>
+							) : (
+								<>
+									<Button
+										type="button"
+										variant="destructive"
+										onClick={() => setConfirmRevokeOpen(true)}
+										className="w-full border border-red-500/20 hover:bg-red-950/20 text-red-400 font-medium py-6 rounded-xl transition-colors"
+									>
+										{isPending
+											? "Remove Assignment"
+											: "Revoke Access & Remove Assignment"}
+									</Button>
+									<span className="text-xs text-red-200/80 font-medium italic text-center">
+										{isPending
+											? "Clears this slot and invalidates their invite link."
+											: "Instantly revokes their token and locks out their device."}
+									</span>
+								</>
+							)}
+						</div>
 					) : null}
 				</div>
 			</DialogContent>

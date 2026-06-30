@@ -68,7 +68,6 @@ export function JobItem({
 				jobId: job._id,
 				accessToken: localStorage.getItem("asistir_staff_token") ?? "",
 			});
-			toast.success("Job accepted!");
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : "Failed to accept job");
 		}
@@ -80,7 +79,6 @@ export function JobItem({
 				jobId: job._id,
 				accessToken: localStorage.getItem("asistir_staff_token") ?? "",
 			});
-			toast.success("Job rejected!");
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : "Failed to reject job");
 		}
@@ -103,7 +101,6 @@ export function JobItem({
 				jobId: job._id,
 				accessToken: localStorage.getItem("asistir_staff_token") ?? "",
 			});
-			toast.success("Job cancelled!");
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : "Failed to cancel job");
 		}

@@ -148,7 +148,7 @@ export function EventEditor({
 			date: initialData?.eventDate
 				? eventDateFromMs(initialData.eventDate)
 				: new Date(),
-			time: initialData?.startTime ?? "10:30:00",
+			time: initialData?.startTime ?? "08:00:00",
 		},
 		onSubmit: async ({ value }) => {
 			// 1. Unlock the gate PROACTIVELY before firing the network call,
@@ -751,7 +751,7 @@ export function EventEditor({
 											value={jobTitle}
 											onChange={(e) => setJobTitle(e.target.value)}
 											className={`${inputStyle()} placeholder:text-zinc-700`}
-											placeholder="e.g. Foyer Usher, VIP Registrar, Gate 1 Scanner..."
+											placeholder="e.g. Door Attendant, Section Lead, etc."
 										/>
 										<FieldDescription>
 											The title of this position for helper reference.
@@ -763,7 +763,7 @@ export function EventEditor({
 											value={jobDescription}
 											onChange={(e) => setJobDescription(e.target.value)}
 											className={`${inputStyle()} placeholder:text-zinc-700`}
-											placeholder="Specific instructions for the staff..."
+											placeholder="Scan tickets, reserve seats, etc."
 										/>
 									</Field>
 									<div className="flex flex-row gap-6 flex-wrap">
@@ -825,10 +825,10 @@ export function EventEditor({
 										([timeRange, sectionsMap]) => (
 											<div key={timeRange} className="flex flex-col gap-4">
 												<div className="flex items-center gap-3 pb-2 mt-2">
-													<h3 className="text-md font-bold text-yellow-200 flex items-center gap-2">
+													<h3 className="text-xs font-bold text-yellow-200 flex items-center gap-2">
 														{timeRange}
 													</h3>
-													<span className="text-zinc-600 text-xs font-mono">
+													<span className="text-zinc-400 text-xs font-mono">
 														Shift Window
 													</span>
 												</div>
@@ -838,12 +838,12 @@ export function EventEditor({
 															key={sectionName}
 															className="flex flex-col gap-2"
 														>
-															<div className="flex items-center justify-center mb-2">
-																<h4 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider ">
+															<div className="flex mb-2">
+																<h4 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider ">
 																	{capitalizeWords(sectionName)}
 																</h4>
 															</div>
-															<div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950/20">
+															<div className="overflow-hidden rounded-sm  border-zinc-800 bg-zinc-950/20">
 																<Table>
 																	<TableBody>
 																		{jobs.map((job) => (
@@ -853,16 +853,16 @@ export function EventEditor({
 																			>
 																				<TableCell>
 																					<span
-																						className={`text-[9px] font-bold px-2 py-1 rounded border ${
+																						className={`text-[9px] font-bold px-2 py-1  ${
 																							job.role === "supervisor"
-																								? "bg-indigo-700/30 text-white border-indigo-800/50"
-																								: "bg-zinc-800 text-zinc-300 border-zinc-700"
+																								? " text-emerald-500 "
+																								: " text-zinc-400"
 																						} uppercase tracking-widest`}
 																					>
 																						{job.role}
 																					</span>
 																				</TableCell>
-																				<TableCell className="font-medium text-zinc-200 py-3">
+																				<TableCell className="text-xs font-medium text-zinc-200 py-3">
 																					{job.title}
 																				</TableCell>
 																				<TableCell className="text-zinc-400 text-xs hidden md:table-cell italic">

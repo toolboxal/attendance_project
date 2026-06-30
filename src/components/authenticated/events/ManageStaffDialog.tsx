@@ -1,9 +1,9 @@
 import { useMutation } from "convex/react";
-import { Check, Copy, Share2 } from "lucide-react";
+import { ChevronDown, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "#/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "#/components/ui/alert";
+import { Button } from "#/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -14,6 +14,10 @@ import {
 } from "#/components/ui/dialog";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
+import {
+	buildStaffInviteShareMessage,
+	shareStaffInvite,
+} from "#/lib/staff-invite-share";
 import { formatTime12h } from "#/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc } from "../../../../convex/_generated/dataModel";
@@ -34,7 +38,6 @@ export function ManageStaffDialog({
 	const [name, setName] = useState(staff.staffName);
 	const [saving, setSaving] = useState(false);
 	const [revoking, setRevoking] = useState(false);
-	const [copied, setCopied] = useState(false);
 
 	const updateStaff = useMutation(api.liveStaff.createStaffInvitation);
 	const revokeStaff = useMutation(api.liveStaff.revokeStaffAccess);
@@ -85,34 +88,23 @@ export function ManageStaffDialog({
 		? `${window.location.origin}/live/${slot.inviteToken}`
 		: "";
 
-	const shareTextBody = `Hi ${name}! Here is your secure access link for your assignment as ${slot.title}:`;
-	const shareTextFull = `${shareTextBody}\n\n${inviteUrl}`;
+	const shareTextFull = inviteUrl
+		? buildStaffInviteShareMessage({
+				staffName: name,
+				roleTitle: slot.title,
+				sectionName: section.name,
+				startTime: section.startTime,
+				endTime: section.endTime,
+				role: slot.role,
+				inviteUrl,
+			})
+		: "";
 
-	const handleNativeShare = async () => {
-		try {
-			if (navigator.share && inviteUrl) {
-				await navigator.share({
-					title: `Access Link for ${name}`,
-					text: shareTextBody,
-					url: inviteUrl,
-				});
-			}
-		} catch (err) {
-			console.log("Share failed:", err);
-		}
+	const handleShareInvite = () => {
+		if (!shareTextFull) return;
+		void shareStaffInvite(shareTextFull, `Event Assignment — ${slot.title}`);
 	};
 
-	const handleCopy = () => {
-		if (!inviteUrl) return;
-		navigator.clipboard.writeText(inviteUrl);
-		setCopied(true);
-		toast.success("Copied to clipboard!");
-		setTimeout(() => setCopied(false), 2000);
-	};
-
-	const canShare =
-		typeof navigator !== "undefined" && !!navigator.share && !!inviteUrl;
-	const whatsAppUrl = `https://wa.me/?text=${encodeURIComponent(shareTextFull)}`;
 	const isUnclaimed = !!slot.inviteToken;
 
 	return (
@@ -128,7 +120,12 @@ export function ManageStaffDialog({
 					type="button"
 					className="flex flex-col items-end ml-auto gap-0.5 cursor-pointer select-none"
 				>
-					<p className="text-zinc-300 font-medium text-xs">{staff.staffName}</p>
+					<div className="flex items-center gap-0.5">
+						<ChevronDown className="size-3 text-zinc-400" />
+						<span className="text-zinc-300 font-medium text-xs">
+							{staff.staffName}
+						</span>
+					</div>
 					<span
 						className={`text-[9px] font-semibold uppercase tracking-wider ${
 							isUnclaimed ? "text-zinc-400" : "text-emerald-400/80"
@@ -216,56 +213,24 @@ export function ManageStaffDialog({
 										</p>
 									</div>
 
-									<div className="flex flex-col gap-2  mt-1 overflow-hidden">
-										<div className="flex-1 min-w-0">
-											<p className="text-[10px] uppercase font-bold text-zinc-400 mb-1">
-												Access Link
-											</p>
-											<p className="break-all text-xs font-mono  text-emerald-300 select-all leading-relaxed">
-												{inviteUrl}
-											</p>
-										</div>
-										<Button
-											onClick={handleCopy}
-											className={`w-full mt-2 h-11 transition-all flex items-center justify-center gap-2 font-bold rounded-lg ${
-												copied
-													? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30"
-													: "bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
-											}`}
-										>
-											{copied ? (
-												<>
-													<Check className="size-4" />
-													<span>Copied!</span>
-												</>
-											) : (
-												<>
-													<Copy className="size-4" />
-													<span>Copy Invite Link</span>
-												</>
-											)}
-										</Button>
+									<div className="flex-1 min-w-0">
+										<p className="text-[10px] uppercase font-bold text-zinc-400 mb-1">
+											Access Link
+										</p>
+										<p className="break-all text-xs font-mono text-emerald-300 select-all leading-relaxed">
+											{inviteUrl}
+										</p>
 									</div>
 
-									<div className="pt-1">
-										{canShare ? (
-											<Button
-												onClick={handleNativeShare}
-												className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold py-5 rounded-xl text-xs flex items-center justify-center gap-2"
-											>
-												<Share2 className="size-3.5" /> Share Invite Link
-											</Button>
-										) : (
-											<a
-												href={whatsAppUrl}
-												target="_blank"
-												rel="noreferrer"
-												className="flex items-center h-11 justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-bold py-2.5 rounded-lg text-xs transition-colors w-full"
-											>
-												Share via WhatsApp
-											</a>
-										)}
-									</div>
+									<Button
+										type="button"
+										onClick={handleShareInvite}
+										disabled={!shareTextFull}
+										className="w-full h-11 bg-zinc-100 hover:bg-zinc-200 disabled:opacity-50 disabled:pointer-events-none text-zinc-950 font-bold rounded-lg flex items-center justify-center gap-2"
+									>
+										<Share2 className="size-4" />
+										Share invite
+									</Button>
 								</div>
 							)}
 

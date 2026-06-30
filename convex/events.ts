@@ -89,11 +89,16 @@ function dashboardJobWindowMs(
   jobCreationTimes: number[],
   now: number,
 ): { windowStart: number; windowEnd: number } {
-  const windowStart =
+  const eventStart =
     event.liveAt ?? parseEventStartTimeMs(event.eventDate, event.startTime);
 
+  const windowStart =
+    jobCreationTimes.length > 0
+      ? Math.min(...jobCreationTimes)
+      : eventStart;
+
   const lastJobTime =
-    jobCreationTimes.length > 0 ? Math.max(...jobCreationTimes) : windowStart;
+    jobCreationTimes.length > 0 ? Math.max(...jobCreationTimes) : eventStart;
 
   const defaultChartEnd = windowStart + DASHBOARD_JOB_CHART_WINDOW_MS;
 

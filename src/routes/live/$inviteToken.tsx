@@ -138,7 +138,7 @@ function InviteGateComponent() {
 								<span className="text-yellow-100 font-medium">
 									{formatTime12h(inviteData.sectionStartTime || "")}
 								</span>
-								<span>→</span>
+								<span className="text-yellow-100">→</span>
 								<span className="text-yellow-100 font-medium">
 									{formatTime12h(inviteData.sectionEndTime || "")}
 								</span>
@@ -187,7 +187,7 @@ function InviteGateComponent() {
 							{formatTime12h(inviteData.eventTime || "")}
 						</span>
 					</div>
-					{!inviteData.eventDescription ? (
+					{inviteData.eventDescription ? (
 						<div className="flex items-start gap-4">
 							<div className="flex flex-col gap-0.5">
 								<span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">

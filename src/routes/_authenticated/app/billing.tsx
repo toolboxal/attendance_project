@@ -103,7 +103,7 @@ function BillingComponent() {
 	const isPendingCancellation = billing.subscriptionCancelAtPeriodEnd;
 
 	return (
-		<div className="spine space-y-8 text-white min-h-[calc(100vh-4rem)]">
+		<div className="spine space-y-8 text-white min-h-[calc(100vh-4rem)] pb-10">
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-zinc-800/80 py-6">
 				<div>
 					<h1 className="text-2xl font-bold tracking-tight">
@@ -202,8 +202,8 @@ function BillingComponent() {
 									Credits
 								</li>
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> Save 17% vs Single
-									Passes
+									<Check className="size-3 text-yellow-300" /> Save 17% vs
+									Single Passes
 								</li>
 								<li className="flex items-center gap-2">
 									<Check className="size-3 text-yellow-300" /> Lifetime validity

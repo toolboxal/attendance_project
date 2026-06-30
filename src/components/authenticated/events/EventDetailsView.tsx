@@ -192,7 +192,7 @@ export function EventDetailsView({
 						size="lg"
 						className="animate-pulse"
 					>
-						{isEnteringLiveFloor ? "Opening..." : "Enter Live Event"}
+						{isEnteringLiveFloor ? "Opening..." : "Enter Live Floor"}
 					</Button>
 				)}
 				{event.status !== "archived" && (
@@ -494,8 +494,8 @@ export function EventDetailsView({
 							<p className="text-zinc-400">
 								Are you sure you want to permanently delete this event? This
 								action will permanently erase all associated sections, jobs,
-								shift slots, worker sign-ins, chat threads, alerts,
-								watchlist entries, broadcasts, and uploaded photos.
+								shift slots, worker sign-ins, chat threads, alerts, watchlist
+								entries, broadcasts, and uploaded photos.
 							</p>
 							<p className="text-red-400 font-bold text-xs uppercase tracking-wide">
 								Warning: This action is destructive and cannot be undone.

@@ -138,6 +138,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
     "https://www.asistir.online",
     "https://asistir.online",
     "http://localhost:3000",
+   "http://192.168.1.5:3000"
   ];
 
   return betterAuth({
