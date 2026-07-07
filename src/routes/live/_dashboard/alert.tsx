@@ -21,7 +21,7 @@ import {
 	setLastSeenForWatchlistEntry,
 } from "#/lib/watchlistReadState";
 import { getStaffAccessToken } from "#/lib/staffToken";
-import { cn, formatTime12h } from "#/lib/utils";
+import { cn, formatStaffRoleLabel, formatTime12h } from "#/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { MAX_ACTIVE_ALERTS } from "../../../../convex/constants";
@@ -143,7 +143,7 @@ function AlertsTabComponent() {
 								{profile?.name}
 							</p>
 							<p className="text-xs font-extrabold text-yellow-400 tracking-tight italic">
-								{profile?.role}
+								{formatStaffRoleLabel(profile?.role)}
 							</p>
 						</div>
 					</div>

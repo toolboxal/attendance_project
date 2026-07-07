@@ -16,6 +16,7 @@ import {
 	cn,
 	formatFieldErrors,
 	formatRelativeTime,
+	formatStaffRoleLabel,
 } from "#/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -171,7 +172,7 @@ export function AlertItem({
 							<span
 								className={`font-medium text-[11px] italic ${isCreator ? "text-yellow-400 font-semibold" : "text-zinc-300"}`}
 							>
-								{alert.creatorRole}
+								{formatStaffRoleLabel(alert.creatorRole)}
 							</span>
 							{isCreator && (
 								<span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />
