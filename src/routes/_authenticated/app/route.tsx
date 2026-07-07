@@ -24,7 +24,7 @@ function RouteComponent() {
 	}
 
 	if (!isAuthenticated) {
-		return <Navigate to="/signin" />;
+		return <Navigate to="/" replace />;
 	}
 
 	return (

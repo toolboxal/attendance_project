@@ -1,8 +1,10 @@
 import { createFileRoute, useRouter, Navigate } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
 import { CircleCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import { tv } from "tailwind-variants";
 import { Button } from "#/components/ui/button";
+import { clearSignedOutFlag, hasSignedOutFlag } from "#/lib/auth-session";
 
 export const Route = createFileRoute("/(public)/")({ component: Home });
 
@@ -22,9 +24,14 @@ function Home() {
 		pricingCard();
 	const router = useRouter();
 	const { isAuthenticated, isLoading } = useConvexAuth();
+	const [skipAuthRedirect] = useState(hasSignedOutFlag);
+
+	useEffect(() => {
+		if (skipAuthRedirect) clearSignedOutFlag();
+	}, [skipAuthRedirect]);
 
 	// Redirect authenticated users straight to the dashboard
-	if (!isLoading && isAuthenticated) {
+	if (!isLoading && isAuthenticated && !skipAuthRedirect) {
 		return (
 			<Navigate
 				to="/app/dashboard"

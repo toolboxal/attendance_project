@@ -15,6 +15,7 @@ import {
 	CardTitle,
 } from "#/components/ui/card";
 import { authClient } from "#/lib/auth-client";
+import { clearSignedOutFlag, markSignedOut } from "#/lib/auth-session";
 import { useHeaderStore } from "#/lib/store/topHeaderStore";
 
 export const Route = createFileRoute("/_authenticated/app/settings")({
@@ -39,9 +40,11 @@ function SettingsPage() {
 	const handleSignOut = async () => {
 		setIsSigningOut(true);
 		try {
+			markSignedOut();
+			navigate({ to: "/", replace: true });
 			await authClient.signOut();
-			navigate({ to: "/" });
 		} catch (err) {
+			clearSignedOutFlag();
 			toast.error(err instanceof Error ? err.message : "Failed to sign out");
 		} finally {
 			setIsSigningOut(false);
