@@ -30,6 +30,13 @@ export function capitalizeWords(str: string) {
 		.join(" ");
 }
 
+/** Short display label for staff role badges (e.g. job cards). */
+export function formatStaffRoleLabel(role: string | undefined): string | undefined {
+	if (!role) return role;
+	if (role.toLowerCase() === "supervisor") return "supv.";
+	return role;
+}
+
 /** e.g. "5 minutes ago" */
 export function formatRelativeTime(timestamp: number): string {
 	return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
