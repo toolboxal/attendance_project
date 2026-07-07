@@ -1,4 +1,4 @@
-import { cn } from "#/lib/utils";
+import { cn, formatStaffRoleLabel } from "#/lib/utils";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 export type RosterSlotRowData = {
@@ -75,7 +75,7 @@ export function RosterSlotRow({ slot }: { slot: RosterSlotRowData }) {
 						slot.isAdminCover ? " text-yellow-400" : "text-zinc-400",
 					)}
 				>
-					{slot.isAdminCover ? "Admin" : slot.role}
+					{slot.isAdminCover ? "Admin" : formatStaffRoleLabel(slot.role)}
 				</span>
 			</div>
 		</div>

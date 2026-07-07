@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { tv } from "tailwind-variants";
 import { DispatchPanel } from "#/components/jobs/DispatchPanel";
 import { JobItem } from "#/components/jobs/JobItem";
-import { capitalizeWords, formatTime12h } from "#/lib/utils";
+import { capitalizeWords, formatStaffRoleLabel, formatTime12h } from "#/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import { MAX_ACTIVE_JOBS } from "../../../../convex/constants";
 
@@ -84,11 +84,11 @@ function JobsTabComponent() {
 								{profile?.roleTitle}
 							</p>
 							<div className="flex flex-row items-center gap-1">
-								<p className="text-xs font-extrabold text-yellow-400 tracking-tight italic">
+								<p className="text-xs font-extrabold text-zinc-300  tracking-tight italic">
 									{profile?.name}
 								</p>
-								<p className="text-xs font-extrabold text-yellow-400 tracking-tight italic">
-									{profile?.role}
+								<p className="text-xs font-extrabold text-zinc-300  tracking-tight italic">
+									{formatStaffRoleLabel(profile?.role)}
 								</p>
 							</div>
 						</div>
