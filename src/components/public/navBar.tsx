@@ -4,12 +4,24 @@ import { buttonVariants } from "../ui/button";
 
 function NavBar() {
 	return (
-		<div className="sticky top-0 flex justify-between w-full z-30 border-b border-neutral-800 bg-zinc-950/80 backdrop-blur-md">
+		<header className="sticky top-0 z-30 bg-zinc-950/60 backdrop-blur-xl">
 			<div className="spine flex justify-between items-center py-4 w-full">
 				<Link to="/">
 					<p className="logo">Asistir</p>
 				</Link>
-				<div className="flex space-x-4">
+				<div className="flex items-center gap-3">
+					<Link
+						to="/signin"
+						className={cn(
+							buttonVariants({
+								variant: "ghost",
+								size: "lg",
+							}),
+							"text-zinc-400 hover:text-zinc-100 px-4",
+						)}
+					>
+						Sign In
+					</Link>
 					<Link
 						to="/signup"
 						search={{ checkoutSlug: undefined }}
@@ -18,28 +30,14 @@ function NavBar() {
 								variant: "default",
 								size: "lg",
 							}),
-
 							"px-4",
 						)}
 					>
 						Sign Up
 					</Link>
-					<Link
-						to="/signin"
-						className={cn(
-							buttonVariants({
-								variant: "secondary",
-								size: "lg",
-							}),
-
-							"px-4",
-						)}
-					>
-						Sign In
-					</Link>
 				</div>
 			</div>
-		</div>
+		</header>
 	);
 }
 

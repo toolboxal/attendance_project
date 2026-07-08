@@ -47,11 +47,13 @@ export function JobItem({
 	currentStaffId,
 	isSupervisor = false,
 	canParticipateOnFloor = true,
+	preview = false,
 }: {
 	job: EnrichedJob;
 	currentStaffId?: string;
 	isSupervisor?: boolean;
 	canParticipateOnFloor?: boolean;
+	preview?: boolean;
 }) {
 	const { card } = jobStyles({
 		status: job.status,
@@ -63,6 +65,7 @@ export function JobItem({
 	const cancelJob = useMutation(api.jobs.cancelJob);
 
 	const handleAcceptJob = async () => {
+		if (preview) return;
 		try {
 			await acceptJob({
 				jobId: job._id,
@@ -74,6 +77,7 @@ export function JobItem({
 	};
 
 	const handleRejectJob = async () => {
+		if (preview) return;
 		try {
 			await rejectJob({
 				jobId: job._id,
@@ -85,6 +89,7 @@ export function JobItem({
 	};
 
 	const handleResolveJob = async () => {
+		if (preview) return;
 		try {
 			await resolveJob({
 				jobId: job._id,
@@ -96,6 +101,7 @@ export function JobItem({
 		}
 	};
 	const handleCancelJob = async () => {
+		if (preview) return;
 		try {
 			await cancelJob({
 				jobId: job._id,
