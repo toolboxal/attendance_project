@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { cn } from "#/lib/utils";
 import { buttonVariants } from "../ui/button";
+import { Separator } from "../ui/separator";
 
 function NavBar() {
 	return (
@@ -10,6 +11,19 @@ function NavBar() {
 					<p className="logo">Asistir</p>
 				</Link>
 				<div className="flex items-center gap-3">
+					<Link
+						to="/demo"
+						className={cn(
+							buttonVariants({
+								variant: "ghost",
+								size: "lg",
+							}),
+							"text-yellow-400 hover:text-yellow-300 px-4",
+						)}
+					>
+						Try Demo
+					</Link>
+					<Separator orientation="vertical" className="bg-zinc-700" />
 					<Link
 						to="/signin"
 						className={cn(

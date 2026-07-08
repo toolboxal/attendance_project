@@ -10,12 +10,17 @@ type SectionIncludeInTotalSwitchProps = {
 	sectionId: Id<"eventSections">;
 	includeInTotal: boolean;
 	canToggle: boolean;
+	onIncludeInTotalChange?: (
+		sectionId: Id<"eventSections">,
+		includeInTotal: boolean,
+	) => void | Promise<void>;
 };
 
 export function SectionIncludeInTotalSwitch({
 	sectionId,
 	includeInTotal,
 	canToggle,
+	onIncludeInTotalChange,
 }: SectionIncludeInTotalSwitchProps) {
 	const reportSectionStatus = useMutation(api.sections.reportSectionStatus);
 	const [checked, setChecked] = useState(includeInTotal);
@@ -30,6 +35,10 @@ export function SectionIncludeInTotalSwitch({
 		setChecked(next);
 		setIsSaving(true);
 		try {
+			if (onIncludeInTotalChange) {
+				await onIncludeInTotalChange(sectionId, next);
+				return;
+			}
 			await reportSectionStatus({
 				accessToken: getStaffAccessToken(),
 				sectionId,

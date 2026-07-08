@@ -27,6 +27,10 @@ type SectionCrowdHeaderProps = {
 	sectionId?: Id<"eventSections">;
 	includeInTotal?: boolean;
 	canToggleIncludeInTotal?: boolean;
+	onIncludeInTotalChange?: (
+		sectionId: Id<"eventSections">,
+		includeInTotal: boolean,
+	) => void | Promise<void>;
 };
 
 export function SectionCrowdHeader({
@@ -40,6 +44,7 @@ export function SectionCrowdHeader({
 	sectionId,
 	includeInTotal = false,
 	canToggleIncludeInTotal = false,
+	onIncludeInTotalChange,
 }: SectionCrowdHeaderProps) {
 	const shift = formatShiftRange(startTime, endTime);
 	const activityOption = getActivityOption(activity);
@@ -105,6 +110,7 @@ export function SectionCrowdHeader({
 								sectionId={sectionId}
 								includeInTotal={includeInTotal}
 								canToggle={canToggleIncludeInTotal}
+								onIncludeInTotalChange={onIncludeInTotalChange}
 							/>
 						) : null}
 					</div>

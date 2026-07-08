@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DemoRouteImport } from './routes/demo'
 import { Route as LiveRouteRouteImport } from './routes/live/route'
 import { Route as publicRouteRouteImport } from './routes/(public)/route'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
@@ -35,6 +36,11 @@ import { Route as AuthenticatedAppEventsEventIdIndexRouteImport } from './routes
 import { Route as AuthenticatedAppEventsEventIdWatchlistRouteImport } from './routes/_authenticated/app/events/$eventId/watchlist'
 import { Route as AuthenticatedAppEventsEventIdEditRouteImport } from './routes/_authenticated/app/events/$eventId/edit'
 
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LiveRouteRoute = LiveRouteRouteImport.update({
   id: '/live',
   path: '/live',
@@ -168,6 +174,7 @@ const AuthenticatedAppEventsEventIdEditRoute =
 
 export interface FileRoutesByFullPath {
   '/live': typeof LiveDashboardRouteRouteWithChildren
+  '/demo': typeof DemoRoute
   '/app': typeof AuthenticatedAppRouteRouteWithChildren
   '/live/$inviteToken': typeof LiveInviteTokenRoute
   '/live/ended': typeof LiveEndedRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/live': typeof LiveDashboardIndexRoute
+  '/demo': typeof DemoRoute
   '/live/$inviteToken': typeof LiveInviteTokenRoute
   '/live/ended': typeof LiveEndedRoute
   '/': typeof publicIndexRoute
@@ -218,6 +226,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(public)': typeof publicRouteRouteWithChildren
   '/live': typeof LiveRouteRouteWithChildren
+  '/demo': typeof DemoRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteRouteWithChildren
   '/live/_dashboard': typeof LiveDashboardRouteRouteWithChildren
   '/live/$inviteToken': typeof LiveInviteTokenRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/live'
+    | '/demo'
     | '/app'
     | '/live/$inviteToken'
     | '/live/ended'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/live'
+    | '/demo'
     | '/live/$inviteToken'
     | '/live/ended'
     | '/'
@@ -295,6 +306,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/(public)'
     | '/live'
+    | '/demo'
     | '/_authenticated/app'
     | '/live/_dashboard'
     | '/live/$inviteToken'
@@ -323,12 +335,20 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   publicRouteRoute: typeof publicRouteRouteWithChildren
   LiveRouteRoute: typeof LiveRouteRouteWithChildren
+  DemoRoute: typeof DemoRoute
   AuthenticatedAppRouteRoute: typeof AuthenticatedAppRouteRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/live': {
       id: '/live'
       path: '/live'
@@ -595,6 +615,7 @@ const AuthenticatedAppRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   publicRouteRoute: publicRouteRouteWithChildren,
   LiveRouteRoute: LiveRouteRouteWithChildren,
+  DemoRoute: DemoRoute,
   AuthenticatedAppRouteRoute: AuthenticatedAppRouteRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

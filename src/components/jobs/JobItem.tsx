@@ -48,12 +48,20 @@ export function JobItem({
 	isSupervisor = false,
 	canParticipateOnFloor = true,
 	preview = false,
+	onAccept,
+	onReject,
+	onResolve,
+	onCancel,
 }: {
 	job: EnrichedJob;
 	currentStaffId?: string;
 	isSupervisor?: boolean;
 	canParticipateOnFloor?: boolean;
 	preview?: boolean;
+	onAccept?: (jobId: string) => void | Promise<void>;
+	onReject?: (jobId: string) => void | Promise<void>;
+	onResolve?: (jobId: string) => void | Promise<void>;
+	onCancel?: (jobId: string) => void | Promise<void>;
 }) {
 	const { card } = jobStyles({
 		status: job.status,
@@ -66,6 +74,10 @@ export function JobItem({
 
 	const handleAcceptJob = async () => {
 		if (preview) return;
+		if (onAccept) {
+			await onAccept(job._id);
+			return;
+		}
 		try {
 			await acceptJob({
 				jobId: job._id,
@@ -78,6 +90,10 @@ export function JobItem({
 
 	const handleRejectJob = async () => {
 		if (preview) return;
+		if (onReject) {
+			await onReject(job._id);
+			return;
+		}
 		try {
 			await rejectJob({
 				jobId: job._id,
@@ -90,6 +106,10 @@ export function JobItem({
 
 	const handleResolveJob = async () => {
 		if (preview) return;
+		if (onResolve) {
+			await onResolve(job._id);
+			return;
+		}
 		try {
 			await resolveJob({
 				jobId: job._id,
@@ -102,6 +122,10 @@ export function JobItem({
 	};
 	const handleCancelJob = async () => {
 		if (preview) return;
+		if (onCancel) {
+			await onCancel(job._id);
+			return;
+		}
 		try {
 			await cancelJob({
 				jobId: job._id,

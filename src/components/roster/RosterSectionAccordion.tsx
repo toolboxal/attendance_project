@@ -23,12 +23,17 @@ type RosterSectionAccordionProps = {
 	section: LayoutSection;
 	slots: RosterSlotRowData[];
 	canToggleIncludeInTotal: boolean;
+	onIncludeInTotalChange?: (
+		sectionId: Id<"eventSections">,
+		includeInTotal: boolean,
+	) => void | Promise<void>;
 };
 
 export function RosterSectionAccordion({
 	section,
 	slots,
 	canToggleIncludeInTotal,
+	onIncludeInTotalChange,
 }: RosterSectionAccordionProps) {
 	const visibleSlots = slots.filter(
 		(s) => s.staffStatus === "active" || s.staffStatus === "unclaimed",
@@ -53,6 +58,7 @@ export function RosterSectionAccordion({
 					sectionId={section.sectionKey as Id<"eventSections">}
 					includeInTotal={section.includeInTotal}
 					canToggleIncludeInTotal={canToggleIncludeInTotal}
+					onIncludeInTotalChange={onIncludeInTotalChange}
 				/>
 			</AccordionTrigger>
 			<AccordionContent>
