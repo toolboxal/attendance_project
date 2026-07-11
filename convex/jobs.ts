@@ -147,6 +147,11 @@ export const dispatchJob = mutation({
 			);
 		}
 
+		const event = await ctx.db.get(staff.eventId);
+		if (!event) throw new Error("Event not found.");
+
+		const ticketNumber = event.nextJobTicket ?? 1;
+
 		const jobId = await ctx.db.insert("jobs", {
 			eventId: staff.eventId,
 			creatorId: staff._id,
@@ -154,7 +159,12 @@ export const dispatchJob = mutation({
 			personCount: args.personCount,
 			requestType: args.requestType,
 			description: validateJobDescription(args.description),
+			ticketNumber,
 			status: "pending",
+		});
+
+		await ctx.db.patch(staff.eventId, {
+			nextJobTicket: ticketNumber + 1,
 		});
 
 		return jobId;

@@ -1,10 +1,13 @@
 import { useMutation } from "convex/react";
-import { MoveRight } from "lucide-react";
+import { Check, CornerDownRight, Trash, Undo } from "lucide-react";
 import { toast } from "sonner";
 import { tv } from "tailwind-variants";
-import { capitalizeWords, formatStaffRoleLabel } from "#/lib/utils";
+import { usePendingJobTimer } from "#/hooks/use-pending-job-timer";
+import { capitalizeWords } from "#/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
+
+const PENDING_WARN_AFTER_MS = 2 * 60 * 1000;
 
 type EnrichedJob = Doc<"jobs"> & {
 	creatorName: string;
@@ -21,19 +24,13 @@ type EnrichedJob = Doc<"jobs"> & {
 
 const jobStyles = tv({
 	slots: {
-		card: "bg-zinc-700 rounded-md overflow-hidden text-zinc-100 pb-0.5",
-		header:
-			" py-0.5 px-2  flex flex-row items-center justify-between font-normal",
-		middleSection:
-			" flex flex-row items-center gap-5  px-1.5 text-sm font-normal font-bold justify-between",
-		bottomSection:
-			" flex flex-row items-center gap-2 p-0.5 px-2 text-sm font-normal font-bold",
+		card: "bg-zinc-800/90 rounded-md overflow-hidden text-zinc-50 ",
 	},
 	variants: {
 		status: {
 			pending: "",
 			accepted: {
-				card: "bg-emerald-700/50 ",
+				// card: "bg-emerald-700/50 ",
 			},
 			resolved: {
 				card: "bg-zinc-950 opacity-40",
@@ -138,8 +135,14 @@ export function JobItem({
 
 	const isCreator = job.creatorId === currentStaffId;
 	const isClaimer = job.claimerId === currentStaffId;
-	const showCancel =
-		(job.status === "pending" && isCreator) || (isSupervisor && !isCreator);
+	const isPending = job.status === "pending";
+	const showCancel = (isPending && isCreator) || (isSupervisor && !isCreator);
+
+	const { label: pendingAge, elapsedMs: pendingElapsedMs } = usePendingJobTimer(
+		job._creationTime,
+		isPending,
+	);
+	const pendingIsStale = isPending && pendingElapsedMs >= PENDING_WARN_AFTER_MS;
 
 	const staffNameClass = (isSelf: boolean, isRevoked: boolean) => {
 		if (isSelf) return "text-yellow-400 font-semibold";
@@ -149,149 +152,151 @@ export function JobItem({
 
 	return (
 		<div className={card()}>
-			<div className="flex flex-row items-center justify-between px-2 py-0.5 border-b border-zinc-600">
-				<div
-					className={`flex flex-col leading-tight ${isCreator ? "text-yellow-400" : ""}`}
-				>
-					<span
-						className={`font-medium tracking-tight text-[13px] ${isCreator ? "" : "text-zinc-50"}`}
-					>
+			<div className="flex flex-col">
+				{/* ticket | timer | actions */}
+				<div className="flex flex-row items-center gap-2 px-1.5 pt-2">
+					<div className="flex min-w-0 flex-1 items-center self-start gap-2">
+						{job.ticketNumber != null && (
+							<div className="px-1 bg-zinc-800 rounded-xs min-w-10 flex items-center justify-center gap-1">
+								<span className="text-[12px] font-semibold text-blue-200 tracking-wide">
+									JOB
+								</span>
+								<span className="text-[12px] font-bold text-blue-200 tracking-wide">
+									{job.ticketNumber}
+								</span>
+							</div>
+						)}
+						{isPending && (
+							<span
+								className={`text-[11px] font-mono italic tabular-nums self-start ${
+									pendingIsStale ? "text-red-300" : "text-zinc-400"
+								}`}
+							>
+								{pendingAge}
+							</span>
+						)}
+					</div>
+
+					<div className="flex min-w-0 flex-1 flex-row items-center justify-end gap-3">
+						{showCancel && (
+							<button
+								className="rounded-full bg-zinc-700 p-2 text-xs font-medium text-rose-200"
+								type="button"
+								onClick={handleCancelJob}
+							>
+								<Trash size={15} className="text-rose-200" strokeWidth={2} />
+							</button>
+						)}
+						{job.status === "pending" &&
+							!isCreator &&
+							!job.creatorMissing &&
+							canParticipateOnFloor && (
+								<button
+									className="rounded-xs bg-zinc-700 p-1 px-2 text-xs font-medium text-zinc-200"
+									type="button"
+									onClick={handleAcceptJob}
+								>
+									Accept Job
+								</button>
+							)}
+						{job.status === "pending" &&
+							job.creatorMissing &&
+							!isSupervisor && (
+								<p className="text-[11px] italic text-red-400/90 text-right">
+									Waiting for supervisor or admin to clear
+								</p>
+							)}
+						{job.status === "accepted" && (isClaimer || isCreator) && (
+							<>
+								<button
+									className="rounded-full bg-zinc-700 p-2 text-xs font-medium "
+									type="button"
+									onClick={handleRejectJob}
+								>
+									<Undo size={15} className="text-zinc-200" strokeWidth={2} />
+								</button>
+								<button
+									className="rounded-full bg-zinc-700 p-2 text-xs font-medium text-zinc-200"
+									type="button"
+									onClick={handleResolveJob}
+								>
+									<Check size={15} className="text-zinc-200" strokeWidth={2} />
+								</button>
+							</>
+						)}
+					</div>
+				</div>
+				{/* Pax and type of person */}
+				<div className="flex flex-row items-center px-2 gap-2">
+					<span className="text-[15px] font-semibold text-zinc-100">
+						{job.personCount} pax
+					</span>
+					<div className="self-center bg-zinc-500 h-0.5 w-0.5 rounded-full" />
+					<span className="text-[13px] font-bold text-zinc-300">
+						{capitalizeWords(job.requestType)}
+					</span>
+					<div className="self-center bg-zinc-500 h-0.5 w-0.5 rounded-full" />
+					<span className="text-[12px]  text-zinc-300">{job.description}</span>
+				</div>
+			</div>
+			{/* bottom half section */}
+			<div className="flex flex-col items-start px-2 pb-2 gap-1">
+				<div className="flex flex-row items-center leading-tight gap-1  pt-1 rounded-sm ">
+					<span className="font-medium tracking-tight text-xs text-yellow-200">
 						{capitalizeWords(job.originSectionName)}
 					</span>
-					<span
-						className={`font-medium text-xs ${isCreator ? "" : "text-zinc-300"}`}
-					>
+					<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
+					<span className="font-medium text-[11px] text-zinc-300">
 						{job.creatorRoleTitle}
 					</span>
-					<div className="flex flex-row items-center gap-1 ">
+					<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
+					<div className="flex flex-row items-center gap-1">
 						<span
-							className={`font-medium text-[11px] italic ${staffNameClass(isCreator, job.creatorMissing)}`}
+							className={`font-medium text-[11px] italic ${staffNameClass(false, job.creatorMissing)}`}
 						>
 							{job.creatorName}
 						</span>
-						<span
-							className={`relative font-medium text-[11px] italic ${staffNameClass(isCreator, job.creatorMissing)}`}
-						>
-							{formatStaffRoleLabel(job.creatorRole)}
-						</span>
-						{/* {isCreator && (
-							<span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />
-						)} */}
-					</div>
-				</div>
-				{job.status === "pending" && (
-					<div className="self-start flex items-center justify-center p-1rounded-sm mt-1">
-						<span className="text-[11px] font-bold text-zinc-400 uppercase">
-							{/* {job.status} */}
-							OPEN JOB
-						</span>
-					</div>
-				)}
-				{job.status === "accepted" && (
-					<div className="flex flex-col items-center">
-						<span className="text-[11px] font-bold text-green-400 uppercase">
-							{job.status} BY
-						</span>
-
-						{isClaimer ? (
-							<span className="text-[11px] font-bold text-green-400 uppercase">
-								ME
+						{isCreator && (
+							<span className=" bg-yellow-300 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-zinc-950">
+								me
 							</span>
-						) : (
-							<MoveRight
-								size={22}
-								strokeWidth={1.5}
-								className="text-green-400"
-							/>
 						)}
 					</div>
-				)}
-				{job.status === "accepted" && (
-					<div
-						className={`flex flex-col leading-tight items-end ${isClaimer ? "text-yellow-400" : ""}`}
-					>
-						<span
-							className={`font-medium tracking-tight text-[13px] ${isClaimer ? "" : "text-zinc-50"}`}
-						>
-							{capitalizeWords(job.destinationSectionName ?? "TBD")}
-						</span>
-						<span
-							className={`font-medium text-xs ${isClaimer ? "" : "text-zinc-300"}`}
-						>
-							{job.claimerRoleTitle}
-						</span>
-						<div className="flex flex-row items-center gap-1">
-							{/* {isClaimer && (
-								<span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />
-							)} */}
-							<span
-								className={`font-medium text-[11px] italic ${staffNameClass(isClaimer, job.claimerMissing)}`}
-							>
-								{job.claimerName}
+				</div>
+				{job.status === "accepted" ? (
+					<div className="flex flex-row items-center gap-1">
+						{/* <CornerDownRight size={10} className="text-zinc-300" /> */}
+						<div className="w-2 h-2 rounded-bl-sm border-l border-b border-zinc-300" />
+						<div className="flex flex-row items-center leading-tight gap-1 px-1.5 py-1 rounded-sm bg-emerald-500/10">
+							<span className="font-medium tracking-tight text-xs text-emerald-300">
+								{capitalizeWords(job.destinationSectionName ?? "TBD")}
 							</span>
-							<span
-								className={`relative font-medium text-[11px] italic ${staffNameClass(isClaimer, job.claimerMissing)}`}
-							>
-								{formatStaffRoleLabel(job.claimerRole)}
+							<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
+							<span className="font-medium text-[11px] text-zinc-300">
+								{job.claimerRoleTitle}
 							</span>
+							<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
+							<div className="flex flex-row items-center gap-1">
+								<span
+									className={`font-medium text-[11px] italic ${staffNameClass(false, job.claimerMissing)}`}
+								>
+									{job.claimerName}
+								</span>
+							</div>
 						</div>
+						{isClaimer && (
+							<span className="bg-emerald-400 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-zinc-950">
+								me
+							</span>
+						)}
+					</div>
+				) : (
+					<div className="flex flex-row items-center leading-tight gap-1 px-1.5 py-1">
+						<span className="font-medium tracking-tight text-xs text-zinc-400 italic">
+							pending acceptance...
+						</span>
 					</div>
 				)}
-			</div>
-			<div className="flex flex-row items-center px-2 py-0.5 gap-3">
-				<span className="text-sm font-black pl-1">{job.personCount} pax</span>
-				<span className="text-[13px] font-bold text-yellow-100 uppercase">
-					{job.requestType}
-				</span>
-				<span className="text-[12px] italic ">{job.description}</span>
-			</div>
-			<div className="flex flex-row items-center justify-between px-2 py-0.5">
-				<div className="ml-auto flex flex-row items-center gap-1.5">
-					{showCancel && (
-						<button
-							className="rounded-sm bg-red-300 p-1 px-2 text-xs font-medium text-zinc-950"
-							type="button"
-							onClick={handleCancelJob}
-						>
-							Cancel
-						</button>
-					)}
-					{job.status === "pending" &&
-						!isCreator &&
-						!job.creatorMissing &&
-						canParticipateOnFloor && (
-							<button
-								className="rounded-sm bg-zinc-200 p-1 px-2 text-xs font-medium text-zinc-950"
-								type="button"
-								onClick={handleAcceptJob}
-							>
-								Accept Job
-							</button>
-						)}
-					{job.status === "pending" && job.creatorMissing && !isSupervisor && (
-						<p className="text-[11px] italic text-red-400/90">
-							Waiting for supervisor or admin to clear
-						</p>
-					)}
-					{job.status === "accepted" && (isClaimer || isCreator) && (
-						<>
-							<button
-								className="rounded-sm bg-zinc-200 p-1 px-2 text-xs font-medium text-zinc-950"
-								type="button"
-								onClick={handleRejectJob}
-							>
-								Release
-							</button>
-							<button
-								className="rounded-sm bg-zinc-200 p-1 px-2 text-xs font-medium text-zinc-950"
-								type="button"
-								onClick={handleResolveJob}
-							>
-								Completed
-							</button>
-						</>
-					)}
-				</div>
 			</div>
 		</div>
 	);

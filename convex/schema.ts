@@ -50,6 +50,9 @@ export default defineSchema({
 
     liveAt: v.optional(v.number()),    // When they clicked "Go Live"
     expiresAt: v.optional(v.number()), // liveAt + 24 hours (or duration)
+
+    // Next traffic-job ticket for this event (1, 2, 3… never recycled)
+    nextJobTicket: v.optional(v.number()),
     
   })
   .index("by_joinCode", ["joinCode"])
@@ -125,6 +128,8 @@ export default defineSchema({
     personCount: v.number(),
     requestType: v.string(),         // "vip", "wheelchair", "regular", etc.
     description: v.optional(v.string()),
+    // Event-scoped sequence number; assigned on dispatch, never reused
+    ticketNumber: v.optional(v.number()),
     status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("resolved")),
   }).index("by_event", ["eventId"]),
 

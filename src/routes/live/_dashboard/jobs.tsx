@@ -5,14 +5,19 @@ import { format } from "date-fns";
 import { tv } from "tailwind-variants";
 import { DispatchPanel } from "#/components/jobs/DispatchPanel";
 import { JobItem } from "#/components/jobs/JobItem";
-import { capitalizeWords, formatStaffRoleLabel, formatTime12h } from "#/lib/utils";
+import {
+	capitalizeWords,
+	formatStaffRoleLabel,
+	formatTime12h,
+} from "#/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import { MAX_ACTIVE_JOBS } from "../../../../convex/constants";
+import { Check } from "lucide-react";
 
 const layoutStyles = tv({
 	slots: {
 		container:
-			"flex-1 overflow-y-auto py-2 space-y-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pr-0.5 pb-36",
+			"flex-1 overflow-y-auto py-2 space-y-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-0.5 pb-36",
 	},
 });
 
@@ -49,26 +54,36 @@ function JobsTabComponent() {
 					{relevantJobs.map((relevantJob) => {
 						const isCreator = relevantJob.creatorId === profile?._id;
 						const message = isCreator
-							? `${relevantJob.claimerName ?? "Someone"} has accepted your job`
-							: `You have accepted ${relevantJob.creatorName}'s job`;
+							? `${relevantJob.claimerName ?? "Someone"} accepted your Job ${relevantJob.ticketNumber}`
+							: `You accepted Job ${relevantJob.ticketNumber}`;
 
 						return (
 							<div
-								className="flex flex-col rounded-md bg-zinc-900 px-2.5 py-1 shadow-sm shadow-emerald-700"
+								className="flex flex-col rounded-sm bg-zinc-950 px-2.5 py-2 shadow-sm shadow-zinc-600"
 								key={relevantJob._id}
 							>
-								<p className="text-xs font-semibold text-emerald-50">
-									{message}
-								</p>
-								<p className="text-[11px] text-emerald-200">
+								<div className="flex flex-row items-center gap-1">
+									<Check
+										size={10}
+										className="text-emerald-300"
+										strokeWidth={2}
+									/>
+									<p className="text-[13px] font-medium text-zinc-300">
+										{message}
+									</p>
+								</div>
+								{/* <p className="text-[11px] text-emerald-200">
+									{relevantJob.ticketNumber != null
+										? `#${relevantJob.ticketNumber} · `
+										: ""}
 									{capitalizeWords(relevantJob.originSectionName)}
 									{relevantJob.personCount >= 1
 										? ` · ${relevantJob.personCount} pax`
 										: ""}
 									{relevantJob.requestType
-										? ` · ${relevantJob.requestType}`
+										? ` · ${capitalizeWords(relevantJob.requestType)}`
 										: ""}
-								</p>
+								</p> */}
 							</div>
 						);
 					})}
