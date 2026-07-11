@@ -79,12 +79,14 @@ async function handleMonthlySubscriptionWebhook(
 }
 
 
-const polarClient = new Polar({ 
-    accessToken: process.env.POLAR_ACCESS_TOKEN, 
-    // Use 'sandbox' if you're using the Polar Sandbox environment
-    // Remember that access tokens, products, etc. are completely separated between environments.
-    // Access tokens obtained in Production are for instance not usable in the Sandbox environment.
-    server: 'sandbox'
+const polarServer =
+	process.env.POLAR_SERVER === "production" ? "production" : "sandbox";
+
+const polarClient = new Polar({
+	accessToken: process.env.POLAR_ACCESS_TOKEN,
+	// Sandbox and production tokens/products are fully separate.
+	// Set POLAR_SERVER=production on the Convex production deployment.
+	server: polarServer,
 }); 
 
 // The component client has methods needed for integrating Convex with Better Auth,

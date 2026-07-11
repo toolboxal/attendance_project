@@ -1,13 +1,11 @@
 import { useMutation } from "convex/react";
-import { Check, CornerDownRight, Trash, Undo } from "lucide-react";
+import { Check, Tag, Trash, Undo } from "lucide-react";
 import { toast } from "sonner";
 import { tv } from "tailwind-variants";
-import { usePendingJobTimer } from "#/hooks/use-pending-job-timer";
+import { suppressCreatorReleaseToastIds } from "#/components/jobs/JobAcceptanceToasts";
 import { capitalizeWords } from "#/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
-
-const PENDING_WARN_AFTER_MS = 2 * 60 * 1000;
 
 type EnrichedJob = Doc<"jobs"> & {
 	creatorName: string;
@@ -92,11 +90,15 @@ export function JobItem({
 			return;
 		}
 		try {
+			if (job.creatorId === currentStaffId) {
+				suppressCreatorReleaseToastIds.add(job._id);
+			}
 			await rejectJob({
 				jobId: job._id,
 				accessToken: localStorage.getItem("asistir_staff_token") ?? "",
 			});
 		} catch (e) {
+			suppressCreatorReleaseToastIds.delete(job._id);
 			toast.error(e instanceof Error ? e.message : "Failed to release job");
 		}
 	};
@@ -112,7 +114,6 @@ export function JobItem({
 				jobId: job._id,
 				accessToken: localStorage.getItem("asistir_staff_token") ?? "",
 			});
-			toast.success("Job done!");
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : "Failed to mark job done");
 		}
@@ -138,12 +139,6 @@ export function JobItem({
 	const isPending = job.status === "pending";
 	const showCancel = (isPending && isCreator) || (isSupervisor && !isCreator);
 
-	const { label: pendingAge, elapsedMs: pendingElapsedMs } = usePendingJobTimer(
-		job._creationTime,
-		isPending,
-	);
-	const pendingIsStale = isPending && pendingElapsedMs >= PENDING_WARN_AFTER_MS;
-
 	const staffNameClass = (isSelf: boolean, isRevoked: boolean) => {
 		if (isSelf) return "text-yellow-400 font-semibold";
 		if (isRevoked) return "text-red-400 font-semibold";
@@ -153,27 +148,46 @@ export function JobItem({
 	return (
 		<div className={card()}>
 			<div className="flex flex-col">
-				{/* ticket | timer | actions */}
-				<div className="flex flex-row items-center gap-2 px-1.5 pt-2">
+				{/* ticket | actions */}
+				<div className="flex flex-row items-center gap-2 px-1.5 pt-2 ">
 					<div className="flex min-w-0 flex-1 items-center self-start gap-2">
 						{job.ticketNumber != null && (
-							<div className="px-1 bg-zinc-800 rounded-xs min-w-10 flex items-center justify-center gap-1">
-								<span className="text-[12px] font-semibold text-blue-200 tracking-wide">
-									JOB
+							<div className="px-1 bg-zinc-800 rounded-xs min-w-10 flex items-center justify-center gap-0.5">
+								<span className="text-[13px] font-semibold text-zinc-500 tracking-wide">
+									No.
 								</span>
-								<span className="text-[12px] font-bold text-blue-200 tracking-wide">
+								<span className="text-[13px] font-bold text-blue-300 tracking-wide">
 									{job.ticketNumber}
 								</span>
 							</div>
 						)}
-						{isPending && (
-							<span
-								className={`text-[11px] font-mono italic tabular-nums self-start ${
-									pendingIsStale ? "text-red-300" : "text-zinc-400"
+						{isCreator && (
+							<div className="p-0.5 px-1 rounded-xs flex items-center justify-center gap-0.5 bg-yellow-300/15 shrink-0">
+								<Tag size={11} className="text-yellow-200" strokeWidth={2} />
+								<span className="font-medium tracking-tight uppercase text-[10px] text-yellow-200">
+									My Job
+								</span>
+							</div>
+						)}
+						{job.status === "accepted" && (
+							<div
+								className={`p-0.5 px-1 rounded-xs flex items-center justify-center gap-0.5 shrink-0 ${
+									isClaimer ? "bg-emerald-400/15" : "bg-blue-400/15"
 								}`}
 							>
-								{pendingAge}
-							</span>
+								<Check
+									size={11}
+									className={isClaimer ? "text-emerald-300" : "text-blue-300"}
+									strokeWidth={2}
+								/>
+								<span
+									className={`font-medium tracking-tight uppercase text-[10px] ${
+										isClaimer ? "text-emerald-300" : "text-blue-300"
+									}`}
+								>
+									{isClaimer ? "Accepted by me" : "Accepted"}
+								</span>
+							</div>
 						)}
 					</div>
 
@@ -227,7 +241,7 @@ export function JobItem({
 					</div>
 				</div>
 				{/* Pax and type of person */}
-				<div className="flex flex-row items-center px-2 gap-2">
+				<div className="flex flex-row items-center px-2 gap-2 ">
 					<span className="text-[15px] font-semibold text-zinc-100">
 						{job.personCount} pax
 					</span>
@@ -240,7 +254,7 @@ export function JobItem({
 				</div>
 			</div>
 			{/* bottom half section */}
-			<div className="flex flex-col items-start px-2 pb-2 gap-1">
+			<div className="flex flex-col items-start px-2 pb-2 gap-1 ">
 				<div className="flex flex-row items-center leading-tight gap-1  pt-1 rounded-sm ">
 					<span className="font-medium tracking-tight text-xs text-yellow-200">
 						{capitalizeWords(job.originSectionName)}
@@ -256,19 +270,22 @@ export function JobItem({
 						>
 							{job.creatorName}
 						</span>
-						{isCreator && (
-							<span className=" bg-yellow-300 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-zinc-950">
-								me
-							</span>
-						)}
 					</div>
 				</div>
 				{job.status === "accepted" ? (
 					<div className="flex flex-row items-center gap-1">
 						{/* <CornerDownRight size={10} className="text-zinc-300" /> */}
 						<div className="w-2 h-2 rounded-bl-sm border-l border-b border-zinc-300" />
-						<div className="flex flex-row items-center leading-tight gap-1 px-1.5 py-1 rounded-sm bg-emerald-500/10">
-							<span className="font-medium tracking-tight text-xs text-emerald-300">
+						<div
+							className={`flex flex-row items-center leading-tight gap-1 px-1.5 py-1 rounded-sm ${
+								isClaimer ? "bg-emerald-500/10" : "bg-blue-500/10"
+							}`}
+						>
+							<span
+								className={`font-medium tracking-tight text-xs ${
+									isClaimer ? "text-emerald-300" : "text-blue-300"
+								}`}
+							>
 								{capitalizeWords(job.destinationSectionName ?? "TBD")}
 							</span>
 							<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
@@ -284,16 +301,11 @@ export function JobItem({
 								</span>
 							</div>
 						</div>
-						{isClaimer && (
-							<span className="bg-emerald-400 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-zinc-950">
-								me
-							</span>
-						)}
 					</div>
 				) : (
 					<div className="flex flex-row items-center leading-tight gap-1 px-1.5 py-1">
 						<span className="font-medium tracking-tight text-xs text-zinc-400 italic">
-							pending acceptance...
+							pending someone to take it ...
 						</span>
 					</div>
 				)}

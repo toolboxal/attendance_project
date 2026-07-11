@@ -74,8 +74,10 @@ export function DemoFloorProvider({ children }: { children: ReactNode }) {
 			}
 
 			const { profile } = state;
+			const ticketNumber = state.nextJobTicket;
 			const job: DemoJob = {
 				id: nextId("demo_job"),
+				ticketNumber,
 				creatorId: profile.id,
 				personCount: input.personCount,
 				requestType: input.requestType,
@@ -90,7 +92,11 @@ export function DemoFloorProvider({ children }: { children: ReactNode }) {
 				claimerMissing: false,
 			};
 
-			setState((prev) => ({ ...prev, jobs: [job, ...prev.jobs] }));
+			setState((prev) => ({
+				...prev,
+				nextJobTicket: ticketNumber + 1,
+				jobs: [job, ...prev.jobs],
+			}));
 		},
 		[activeJobs.length, state],
 	);

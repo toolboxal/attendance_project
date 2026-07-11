@@ -26,6 +26,7 @@ export function demoJobToEnriched(job: DemoJob): EnrichedJob {
 		personCount: job.personCount,
 		requestType: job.requestType,
 		description: job.description,
+		ticketNumber: job.ticketNumber,
 		status: job.status,
 		creatorName: job.creatorName,
 		creatorRole: job.creatorRole,

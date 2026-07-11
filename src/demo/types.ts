@@ -20,6 +20,7 @@ export type DemoProfile = {
 
 export type DemoJob = {
 	id: string;
+	ticketNumber: number;
 	creatorId: string;
 	claimerId?: string;
 	personCount: number;
@@ -77,6 +78,7 @@ export type DemoRosterSection = {
 
 export type DemoFloorState = {
 	profile: DemoProfile;
+	nextJobTicket: number;
 	jobs: DemoJob[];
 	alerts: DemoAlert[];
 	sections: DemoRosterSection[];

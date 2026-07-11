@@ -1,11 +1,12 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
 import { useEffect, useState } from "react";
+import { AlertsPreview } from "#/components/public/landing/AlertsPreview";
 import { Footer } from "#/components/public/landing/Footer";
 import { HeroSection } from "#/components/public/landing/HeroSection";
+import { JobsPreview } from "#/components/public/landing/JobsPreview";
 import { MissionStatement } from "#/components/public/landing/MissionStatement";
 import { PricingSection } from "#/components/public/landing/PricingSection";
-import { JobsPreview } from "#/components/public/landing/JobsPreview";
 import { RosterPreview } from "#/components/public/landing/RosterPreview";
 import { clearSignedOutFlag, hasSignedOutFlag } from "#/lib/auth-session";
 
@@ -34,6 +35,7 @@ function Home() {
 			<HeroSection />
 			<MissionStatement />
 			<JobsPreview />
+			<AlertsPreview />
 			<RosterPreview />
 			<PricingSection />
 			<Footer />

@@ -42,9 +42,7 @@ export function DispatchPanel({
 				setPersonCount(1);
 				setRequestType("regular");
 			} catch (err) {
-				toast.error(
-					err instanceof Error ? err.message : "Failed to dispatch",
-				);
+				toast.error(err instanceof Error ? err.message : "Failed to dispatch");
 			} finally {
 				setIsSending(false);
 			}

@@ -15,12 +15,12 @@ import { formatTime12h } from "#/lib/utils";
 const MOCK_EVENTS = [
 	{
 		id: "event-live",
-		title: "Diane's Wedding Reception",
+		title: "Annual Summit 2026",
 		eventDate: new Date(2026, 6, 12),
-		startTime: "18:00",
-		location: "Grand Ballroom, Hotel Madison",
+		startTime: "09:00",
+		location: "Convention Center, Hall A",
 		description:
-			"Evening reception for 200 guests with dinner, dancing, and family seating.",
+			"Regional leadership conference with 800+ attendees across three halls.",
 		status: "live" as const,
 		selected: true,
 	},
@@ -46,12 +46,12 @@ const MOCK_EVENTS = [
 	},
 	{
 		id: "event-archived",
-		title: "Annual Summit 2026",
-		eventDate: new Date(2026, 3, 15),
-		startTime: "09:00",
-		location: "Convention Center, Hall A",
+		title: "Diane's Wedding Reception",
+		eventDate: new Date(2026, 5, 15),
+		startTime: "18:00",
+		location: "Grand Ballroom, Hotel Madison",
 		description:
-			"Regional leadership conference with 800+ attendees across three halls.",
+			"Evening reception for 200 guests with dinner, dancing, and family seating.",
 		status: "archived" as const,
 		selected: false,
 	},
@@ -69,7 +69,7 @@ const MOCK_SECTIONS = [
 			{
 				title: "Floor Coordinator",
 				role: "supervisor",
-				staff: "Jon Doe",
+				staff: "Toby Scott",
 				activated: true,
 			},
 			{

@@ -1,37 +1,36 @@
 import { Link } from "@tanstack/react-router";
 import { cn } from "#/lib/utils";
 import { buttonVariants } from "../ui/button";
-import { Separator } from "../ui/separator";
 
 function NavBar() {
 	return (
 		<header className="sticky top-0 z-30 bg-zinc-950/60 backdrop-blur-xl">
-			<div className="spine flex justify-between items-center py-4 w-full">
+			<div className="spine flex justify-between items-center py-3 md:py-4 w-full">
 				<Link to="/">
 					<p className="logo">Asistir</p>
 				</Link>
-				<div className="flex items-center gap-3">
+				<div className="flex items-center gap-1.5 md:gap-3">
 					<Link
 						to="/demo"
 						className={cn(
 							buttonVariants({
 								variant: "ghost",
-								size: "lg",
+								size: "sm",
 							}),
-							"text-yellow-400 hover:text-yellow-300 px-4",
+							"text-emerald-200 hover:text-emerald-100 px-2.5 md:h-9 md:px-4 md:text-sm",
 						)}
 					>
 						Try Demo
 					</Link>
-					<Separator orientation="vertical" className="bg-zinc-700" />
+					<div className="h-4 self-center bg-zinc-700 md:h-5 w-px" />
 					<Link
 						to="/signin"
 						className={cn(
 							buttonVariants({
 								variant: "ghost",
-								size: "lg",
+								size: "sm",
 							}),
-							"text-zinc-400 hover:text-zinc-100 px-4",
+							"text-zinc-400 hover:text-zinc-100 px-2.5 md:h-9 md:px-4 md:text-sm",
 						)}
 					>
 						Sign In
@@ -42,9 +41,9 @@ function NavBar() {
 						className={cn(
 							buttonVariants({
 								variant: "default",
-								size: "lg",
+								size: "sm",
 							}),
-							"px-4",
+							"px-2.5 md:h-9 md:px-4 md:text-sm",
 						)}
 					>
 						Sign Up

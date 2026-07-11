@@ -22,11 +22,12 @@ export function HeroSection() {
 					transition={{ duration: 3, ease: [0.22, 1, 0.36, 1] }}
 				>
 					<h1 className="text-5xl md:text-7xl font-heading text-white tracking-tight leading-[1.05]">
-						The live floor for event staff.
+						Orchestrate guest flow on the live floor.
 					</h1>
 					<p className="text-md md:text-lg text-zinc-400 pt-6 max-w-xl font-light leading-relaxed">
 						Replace noisy group chats with structured coordination. Asistir
-						helps your team direct attendees to the right place — in real time.
+						helps up to 50 staff direct attendees to the right place — in real
+						time.
 					</p>
 					<div className="flex flex-wrap items-center justify-start gap-3 pt-8">
 						<Button

@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { Check } from "lucide-react";
 import { tv } from "tailwind-variants";
 import { JobItem } from "#/components/jobs/JobItem";
 import { PhoneMockupShell } from "#/components/public/landing/LiveFloorPreviewChrome";
@@ -24,7 +25,7 @@ const MOCK_CURRENT_STAFF_ID = "mock_staff_jon" as Id<"liveStaff">;
 const MOCK_PROFILE = {
 	sectionName: "Main Hall",
 	roleTitle: "Floor Coordinator",
-	name: "Jon Doe",
+	name: "Toby Scott",
 	role: "supervisor",
 	eventDate: "2026-07-12T00:00:00.000Z",
 	sectionStartTime: "09:00",
@@ -43,6 +44,7 @@ const MOCK_JOBS: EnrichedJob[] = [
 		personCount: 1,
 		requestType: "vip",
 		description: "Speaker entourage",
+		ticketNumber: 1,
 		status: "pending",
 		creatorName: "Maria Santos",
 		creatorRole: "usher",
@@ -66,11 +68,12 @@ const MOCK_JOBS: EnrichedJob[] = [
 		personCount: 1,
 		requestType: "wheelchair",
 		description: "Needs ramp access",
+		ticketNumber: 2,
 		status: "accepted",
 		creatorName: "James Wu",
 		creatorRole: "usher",
 		creatorRoleTitle: "Section Usher",
-		claimerName: "Jon Doe",
+		claimerName: "Toby Scott",
 		claimerRole: "supervisor",
 		claimerRoleTitle: "Floor Coordinator",
 		originSectionName: "lobby",
@@ -89,8 +92,9 @@ const MOCK_JOBS: EnrichedJob[] = [
 		personCount: 4,
 		requestType: "family",
 		description: "Late arrivals",
+		ticketNumber: 3,
 		status: "pending",
-		creatorName: "Jon Doe",
+		creatorName: "Toby Scott",
 		creatorRole: "supervisor",
 		creatorRoleTitle: "Floor Coordinator",
 		claimerName: undefined,
@@ -106,13 +110,19 @@ const MOCK_JOBS: EnrichedJob[] = [
 const layoutStyles = tv({
 	slots: {
 		container:
-			"flex-1 overflow-y-auto py-2 space-y-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pr-0.5 pb-2 min-h-0",
+			"flex-1 overflow-y-auto py-2 space-y-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-0.5 pb-2 min-h-0",
 	},
 });
 
 export function JobsPreview() {
 	const { container } = layoutStyles();
 	const activeJobs = MOCK_JOBS;
+	const relevantJobs = activeJobs.filter(
+		(job) =>
+			(job.creatorId === MOCK_CURRENT_STAFF_ID ||
+				job.claimerId === MOCK_CURRENT_STAFF_ID) &&
+			job.status === "accepted",
+	);
 
 	return (
 		<section className="spine py-16 md:py-24 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150 fill-mode-backwards">
@@ -127,35 +137,64 @@ export function JobsPreview() {
 					</p>
 				</div>
 				<PhoneMockupShell heightClass="h-[480px]">
-					<div className="flex flex-col gap-4 shrink-0">
-						<div className="flex flex-row items-start justify-between">
-							<div className="flex flex-col">
-								<p className="text-xs font-extrabold text-zinc-100 tracking-tight">
-									{MOCK_PROFILE.sectionName.toUpperCase()}
-								</p>
-								<p className="text-xs font-extrabold text-zinc-300 tracking-tight">
-									{MOCK_PROFILE.roleTitle}
-								</p>
-								<div className="flex flex-row items-center gap-1">
-									<p className="text-xs font-extrabold text-zinc-300 tracking-tight italic">
-										{MOCK_PROFILE.name}
+					{relevantJobs.length > 0 ? (
+						<div className="flex flex-col gap-1.5 rounded-md p-1 shrink-0">
+							{relevantJobs.map((relevantJob) => {
+								const isCreator = relevantJob.creatorId === MOCK_CURRENT_STAFF_ID;
+								const message = isCreator
+									? `${relevantJob.claimerName ?? "Someone"} accepted your Job ${relevantJob.ticketNumber}`
+									: `You accepted Job ${relevantJob.ticketNumber}`;
+
+								return (
+									<div
+										className="flex flex-col rounded-sm bg-zinc-950 px-2.5 py-2 shadow-sm shadow-zinc-600"
+										key={relevantJob._id}
+									>
+										<div className="flex flex-row items-center gap-1">
+											<Check
+												size={10}
+												className="text-emerald-300"
+												strokeWidth={2}
+											/>
+											<p className="text-[13px] font-medium text-zinc-300">
+												{message}
+											</p>
+										</div>
+									</div>
+								);
+							})}
+						</div>
+					) : (
+						<div className="flex flex-col gap-4 shrink-0">
+							<div className="flex flex-row items-start justify-between">
+								<div className="flex flex-col">
+									<p className="text-xs font-extrabold text-zinc-100 tracking-tight">
+										{MOCK_PROFILE.sectionName.toUpperCase()}
 									</p>
-									<p className="text-xs font-extrabold text-zinc-300 tracking-tight italic">
-										{formatStaffRoleLabel(MOCK_PROFILE.role)}
+									<p className="text-xs font-extrabold text-zinc-300 tracking-tight">
+										{MOCK_PROFILE.roleTitle}
 									</p>
+									<div className="flex flex-row items-center gap-1">
+										<p className="text-xs font-extrabold text-zinc-300 tracking-tight italic">
+											{MOCK_PROFILE.name}
+										</p>
+										<p className="text-xs font-extrabold text-zinc-300 tracking-tight italic">
+											{formatStaffRoleLabel(MOCK_PROFILE.role)}
+										</p>
+									</div>
+								</div>
+								<div className="flex flex-col">
+									<span className="self-end text-xs font-semibold text-zinc-200">
+										{format(new Date(MOCK_PROFILE.eventDate), "PPPP")}
+									</span>
+									<span className="self-end font-mono text-xs text-yellow-200">
+										{formatTime12h(MOCK_PROFILE.sectionStartTime)}
+										{` - ${formatTime12h(MOCK_PROFILE.sectionEndTime)}`}
+									</span>
 								</div>
 							</div>
-							<div className="flex flex-col">
-								<span className="self-end text-xs font-semibold text-zinc-200">
-									{format(new Date(MOCK_PROFILE.eventDate), "PPPP")}
-								</span>
-								<span className="self-end font-mono text-xs text-yellow-200">
-									{formatTime12h(MOCK_PROFILE.sectionStartTime)}
-									{` - ${formatTime12h(MOCK_PROFILE.sectionEndTime)}`}
-								</span>
-							</div>
 						</div>
-					</div>
+					)}
 
 					<div className="flex flex-row items-center justify-between pb-2 border-b border-zinc-800 mt-2 shrink-0">
 						<span className="text-zinc-400 font-black text-sm uppercase">

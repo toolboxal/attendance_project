@@ -2,6 +2,7 @@ import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
+import { Check } from "lucide-react";
 import { tv } from "tailwind-variants";
 import { DispatchPanel } from "#/components/jobs/DispatchPanel";
 import { JobItem } from "#/components/jobs/JobItem";
@@ -12,7 +13,6 @@ import {
 } from "#/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import { MAX_ACTIVE_JOBS } from "../../../../convex/constants";
-import { Check } from "lucide-react";
 
 const layoutStyles = tv({
 	slots: {

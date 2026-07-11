@@ -7,7 +7,7 @@ export function createDemoFloorState(): DemoFloorState {
 	return {
 		profile: {
 			id: DEMO_VIEWER_ID,
-			name: "Jon Doe",
+			name: "Toby Scott",
 			role: "supervisor",
 			roleTitle: "Floor Coordinator",
 			sectionName: "Main Hall",
@@ -17,9 +17,11 @@ export function createDemoFloorState(): DemoFloorState {
 			sectionStartTime: "09:00",
 			sectionEndTime: "17:00",
 		},
+		nextJobTicket: 3,
 		jobs: [
 			{
 				id: "demo_job_1",
+				ticketNumber: 1,
 				creatorId: "demo_staff_maria",
 				personCount: 1,
 				requestType: "vip",
@@ -35,12 +37,13 @@ export function createDemoFloorState(): DemoFloorState {
 			},
 			{
 				id: "demo_job_2",
+				ticketNumber: 2,
 				creatorId: DEMO_VIEWER_ID,
 				personCount: 4,
 				requestType: "family",
 				description: "Late arrivals",
 				status: "pending",
-				creatorName: "Jon Doe",
+				creatorName: "Toby Scott",
 				creatorRole: "supervisor",
 				creatorRoleTitle: "Floor Coordinator",
 				claimerRoleTitle: "",
@@ -91,7 +94,7 @@ export function createDemoFloorState(): DemoFloorState {
 						title: "Floor Coordinator",
 						role: "supervisor",
 						assignedStaffId: DEMO_VIEWER_ID as Id<"liveStaff">,
-						staffName: "Jon Doe",
+						staffName: "Toby Scott",
 						staffStatus: "active",
 						isViewer: true,
 					},

@@ -3,23 +3,30 @@ import {
 	Link,
 	Outlet,
 	useNavigate,
+	useRouterState,
 } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { tv } from "tailwind-variants";
 import { BroadcastBanner } from "#/components/broadcast/BroadcastBanner";
-import { JobAcceptanceToasts } from "#/components/jobs/JobAcceptanceToasts";
 import { ErrorView } from "#/components/error-view";
+import { JobAcceptanceToasts } from "#/components/jobs/JobAcceptanceToasts";
 import { Spinner } from "#/components/ui/spinner";
+import {
+	countUnseenNewAlerts,
+	getKnownAlertIds,
+	markAlertsKnown,
+} from "#/lib/alertReadState";
 import { parseStructuredError } from "#/lib/error-utils";
 import { clearStaffAccessToken } from "#/lib/staffToken";
 import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 
 const navBarItem = tv({
 	slots: {
 		navBar:
 			"fixed bottom-1 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-md h-14 bg-zinc-800 rounded-3xl flex items-center justify-around px-2 z-50 border-t border-zinc-700",
-		tab: "flex flex-col items-center gap-1 text-zinc-400 text-[11px] font-bold uppercase hover:text-zinc-100 transition-all px-3 py-2 [&.active]:text-yellow-500 [&.active]:scale-110",
+		tab: "relative flex flex-col items-center gap-1 text-zinc-400 text-[11px] font-bold uppercase hover:text-zinc-100 transition-all px-3 py-2 [&.active]:text-yellow-500 [&.active]:scale-110",
 	},
 });
 
@@ -58,8 +65,14 @@ export const Route = createFileRoute("/live/_dashboard")({
 function DashboardAuthLayout() {
 	const { navBar, tab } = navBarItem();
 	const navigate = useNavigate();
+	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const [isAuthenticating, setIsAuthenticating] = useState(true);
 	const [hasToken, setHasToken] = useState(false);
+	const [knownAlertIds, setKnownAlertIds] = useState<Set<string>>(
+		() => new Set(),
+	);
+	const knownAlertsInitialized = useRef(false);
+	const lastEventIdRef = useRef<Id<"events"> | undefined>(undefined);
 
 	const token =
 		typeof window !== "undefined"
@@ -74,6 +87,14 @@ function DashboardAuthLayout() {
 		api.liveStaff.getLiveSessionStatus,
 		token && profile === null ? { accessToken: token } : "skip",
 	);
+
+	const activeAlerts = useQuery(
+		api.alerts.getActiveAlerts,
+		token && hasToken ? { accessToken: token } : "skip",
+	);
+
+	const isOnAlertTab = pathname.startsWith("/live/alert");
+	const eventId = profile?.eventId as Id<"events"> | undefined;
 
 	useEffect(() => {
 		if (profile === undefined) return;
@@ -111,6 +132,38 @@ function DashboardAuthLayout() {
 		});
 	}, [navigate, token, profile, sessionStatus]);
 
+	useEffect(() => {
+		if (eventId !== lastEventIdRef.current) {
+			lastEventIdRef.current = eventId;
+			knownAlertsInitialized.current = false;
+			setKnownAlertIds(new Set());
+		}
+
+		if (!eventId || activeAlerts === undefined) return;
+
+		const alertIds = activeAlerts.map((alert) => alert._id);
+
+		if (!knownAlertsInitialized.current) {
+			const stored = getKnownAlertIds(eventId);
+			if (stored.size === 0) {
+				setKnownAlertIds(markAlertsKnown(eventId, alertIds));
+			} else {
+				setKnownAlertIds(stored);
+			}
+			knownAlertsInitialized.current = true;
+			return;
+		}
+
+		if (isOnAlertTab) {
+			setKnownAlertIds(markAlertsKnown(eventId, alertIds));
+		}
+	}, [activeAlerts, eventId, isOnAlertTab]);
+
+	const unseenNewAlertCount = useMemo(() => {
+		if (!activeAlerts || isOnAlertTab) return 0;
+		return countUnseenNewAlerts(activeAlerts, knownAlertIds, profile?._id);
+	}, [activeAlerts, knownAlertIds, profile?._id, isOnAlertTab]);
+
 	if (isAuthenticating) {
 		return (
 			<div className="min-h-dvh bg-zinc-950 flex flex-col items-center justify-center gap-4">
@@ -143,6 +196,14 @@ function DashboardAuthLayout() {
 
 				<Link to="/live/alert" className={tab()}>
 					<span>Alert</span>
+					{unseenNewAlertCount > 0 && (
+						<span
+							className="absolute -right-0.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-zinc-50 -z-10"
+							title={`${unseenNewAlertCount} new alert${unseenNewAlertCount === 1 ? "" : "s"}`}
+						>
+							{unseenNewAlertCount}
+						</span>
+					)}
 				</Link>
 
 				<Link to="/live/roster" className={tab()}>

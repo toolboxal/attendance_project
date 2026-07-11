@@ -37,7 +37,7 @@ const MOCK_ROSTER_SECTIONS: MockRosterSection[] = [
 				title: "Floor Coordinator",
 				role: "supervisor",
 				assignedStaffId: "mock_staff_jon" as Id<"liveStaff">,
-				staffName: "Jon Doe",
+				staffName: "Toby Scott",
 				staffStatus: "active",
 				isViewer: true,
 			},

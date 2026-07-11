@@ -56,7 +56,7 @@ export function CollapsibleBottomPanel({
 				)}
 			>
 				<div className="overflow-hidden">
-					<div className="flex flex-col gap-3 rounded-2xl border-[0.5px] border-zinc-500 bg-zinc-800 p-3 shadow-2xl backdrop-blur-2xl">
+					<div className="flex flex-col gap-3 rounded-2xl border border-zinc-500 bg-zinc-800 p-3 shadow-2xl backdrop-blur-2xl">
 						{children}
 					</div>
 				</div>

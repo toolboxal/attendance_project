@@ -139,10 +139,10 @@ function AlertsTabComponent() {
 							{profile?.roleTitle}
 						</p>
 						<div className="flex flex-row gap-1 items-center">
-							<p className="text-xs font-extrabold text-yellow-400 tracking-tight italic">
+							<p className="text-xs font-extrabold text-zinc-300 tracking-tight italic">
 								{profile?.name}
 							</p>
-							<p className="text-xs font-extrabold text-yellow-400 tracking-tight italic">
+							<p className="text-xs font-extrabold text-zinc-300 tracking-tight italic">
 								{formatStaffRoleLabel(profile?.role)}
 							</p>
 						</div>
