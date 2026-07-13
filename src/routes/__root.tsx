@@ -23,6 +23,7 @@ import { authClient } from "#/lib/auth-client";
 import { getToken } from "#/lib/auth-server";
 import {
 	DEFAULT_DESCRIPTION,
+	OG_IMAGE_META,
 	SITE_NAME,
 	SITE_URL,
 } from "#/lib/seo";
@@ -53,6 +54,7 @@ export const Route = createRootRouteWithContext<{
 			{ property: "og:url", content: SITE_URL },
 			{ property: "og:title", content: SITE_NAME },
 			{ property: "og:description", content: DEFAULT_DESCRIPTION },
+			...OG_IMAGE_META,
 			{ name: "twitter:card", content: "summary" },
 			{ name: "twitter:title", content: SITE_NAME },
 			{ name: "twitter:description", content: DEFAULT_DESCRIPTION },

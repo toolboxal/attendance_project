@@ -26,9 +26,13 @@ import type { Doc } from "../../../../convex/_generated/dataModel";
 export function AssignRoleDialog({
 	slot,
 	section,
+	eventName,
+	eventDate,
 }: {
 	slot: Doc<"roleSlots">;
 	section: Doc<"eventSections">;
+	eventName: string;
+	eventDate: number;
 }) {
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
@@ -65,6 +69,8 @@ export function AssignRoleDialog({
 	const shareTextFull = inviteUrl
 		? buildStaffInviteShareMessage({
 				staffName: name,
+				eventName,
+				eventDate,
 				roleTitle: slot.title,
 				sectionName: section.name,
 				startTime: section.startTime,
@@ -76,7 +82,7 @@ export function AssignRoleDialog({
 
 	const handleShareInvite = () => {
 		if (!shareTextFull) return;
-		void shareStaffInvite(shareTextFull, `Event Assignment — ${slot.title}`);
+		void shareStaffInvite(shareTextFull, `Event Assignment — ${eventName}`);
 	};
 
 	return (

@@ -36,8 +36,11 @@ export function LiveCountdown({ expiresAt }: { expiresAt?: number }) {
 
 	return (
 		<div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold text-green-500">
-			<Timer size={14} className="text-green-500" />
-			<span>Expires in {timeLeft}</span>
+			<span
+				className={`w-fit flex flex-row items-center justify-center p-2 rounded-lg text-xs font-mono uppercase tracking-wider font-semibold bg-zinc-900 text-zinc-200`}
+			>
+				Expires in {timeLeft}
+			</span>
 		</div>
 	);
 }
@@ -357,6 +360,8 @@ export function EventDetailsView({
 																		<AssignRoleDialog
 																			slot={slot}
 																			section={section}
+																			eventName={event.title}
+																			eventDate={event.eventDate}
 																		/>
 																	) : (
 																		<span className="ml-auto text-sm text-zinc-500">
@@ -368,6 +373,8 @@ export function EventDetailsView({
 																		slot={slot}
 																		section={section}
 																		staff={assignedStaff}
+																		eventName={event.title}
+																		eventDate={event.eventDate}
 																		isArchived={event.status === "archived"}
 																	/>
 																)}

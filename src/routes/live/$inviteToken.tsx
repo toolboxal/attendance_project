@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { ErrorView } from "#/components/error-view";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
-import { SITE_URL } from "#/lib/seo";
+import { OG_IMAGE_META, SITE_URL } from "#/lib/seo";
 import { formatTime12h } from "#/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { api } from "../../../convex/_generated/api";
@@ -28,6 +28,8 @@ export const Route = createFileRoute("/live/$inviteToken")({
 				property: "og:url",
 				content: `${SITE_URL}/live/${params.inviteToken}`,
 			},
+			...OG_IMAGE_META,
+			{ name: "twitter:card", content: "summary" },
 			{ name: "twitter:title", content: INVITE_TITLE },
 			{ name: "twitter:description", content: INVITE_DESCRIPTION },
 		],
@@ -148,7 +150,22 @@ function InviteGateComponent() {
 				<div className="flex flex-col gap-2 flex-1">
 					{/* Logo and Welcome message */}
 					<div className="flex flex-col gap-3">
-						<span className="logo">Asistir</span>
+						<div className="flex flex-row items-start gap-2 justify-between">
+							<span className="logo">Asistir</span>
+							{inviteData.valid && (
+								<span
+									className={`px-3 py-1 text-[10px] font-mono font-semibold uppercase tracking-widest animate-pulse  ${
+										inviteData.eventStatus === "live"
+											? " text-emerald-500"
+											: " text-amber-500"
+									}`}
+								>
+									{inviteData.eventStatus === "live"
+										? "event is live"
+										: "waiting to go live"}
+								</span>
+							)}
+						</div>
 						<h1 className="text-lg font-bold text-zinc-100">
 							Welcome, {inviteData.assignedName}.
 						</h1>

@@ -13,6 +13,7 @@ import { clearSignedOutFlag, hasSignedOutFlag } from "#/lib/auth-session";
 import {
 	LANDING_DESCRIPTION,
 	LANDING_TITLE,
+	OG_IMAGE_META,
 	SITE_URL,
 } from "#/lib/seo";
 
@@ -25,6 +26,8 @@ export const Route = createFileRoute("/(public)/")({
 			{ property: "og:description", content: LANDING_DESCRIPTION },
 			{ property: "og:url", content: SITE_URL },
 			{ property: "og:type", content: "website" },
+			...OG_IMAGE_META,
+			{ name: "twitter:card", content: "summary" },
 			{ name: "twitter:title", content: LANDING_TITLE },
 			{ name: "twitter:description", content: LANDING_DESCRIPTION },
 		],

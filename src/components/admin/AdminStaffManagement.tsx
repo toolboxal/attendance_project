@@ -58,6 +58,8 @@ function inviteUrl(inviteToken: string) {
 
 function ShareInviteButtons({
 	name,
+	eventName,
+	eventDate,
 	slotTitle,
 	slotRole,
 	sectionName,
@@ -66,6 +68,8 @@ function ShareInviteButtons({
 	inviteToken,
 }: {
 	name: string;
+	eventName: string;
+	eventDate: number;
 	slotTitle: string;
 	slotRole: "supervisor" | "staff";
 	sectionName: string;
@@ -76,6 +80,8 @@ function ShareInviteButtons({
 	const url = inviteUrl(inviteToken);
 	const shareTextFull = buildStaffInviteShareMessage({
 		staffName: name,
+		eventName,
+		eventDate,
 		roleTitle: slotTitle,
 		sectionName,
 		startTime: sectionStartTime,
@@ -85,7 +91,7 @@ function ShareInviteButtons({
 	});
 
 	const handleShareInvite = () => {
-		void shareStaffInvite(shareTextFull, `Event Assignment — ${slotTitle}`);
+		void shareStaffInvite(shareTextFull, `Event Assignment — ${eventName}`);
 	};
 
 	return (
@@ -112,6 +118,8 @@ function ShareInviteButtons({
 
 function AssignSlotDialog({
 	slot,
+	eventName,
+	eventDate,
 	sectionName,
 	sectionStartTime,
 	sectionEndTime,
@@ -120,6 +128,8 @@ function AssignSlotDialog({
 	onOpenChange,
 }: {
 	slot: StaffSlot;
+	eventName: string;
+	eventDate: number;
 	sectionName: string;
 	sectionStartTime?: string;
 	sectionEndTime?: string;
@@ -254,6 +264,8 @@ function AssignSlotDialog({
 						</div>
 						<ShareInviteButtons
 							name={submittedName}
+							eventName={eventName}
+							eventDate={eventDate}
 							slotTitle={slot.title}
 							slotRole={slot.role}
 							sectionName={sectionName}
@@ -270,6 +282,8 @@ function AssignSlotDialog({
 
 function ManageSlotDialog({
 	slot,
+	eventName,
+	eventDate,
 	sectionName,
 	sectionStartTime,
 	sectionEndTime,
@@ -278,6 +292,8 @@ function ManageSlotDialog({
 	onOpenChange,
 }: {
 	slot: StaffSlot;
+	eventName: string;
+	eventDate: number;
 	sectionName: string;
 	sectionStartTime?: string;
 	sectionEndTime?: string;
@@ -428,6 +444,8 @@ function ManageSlotDialog({
 							</div>
 							<ShareInviteButtons
 								name={slot.staffName}
+								eventName={eventName}
+								eventDate={eventDate}
 								slotTitle={slot.title}
 								slotRole={slot.role}
 								sectionName={sectionName}
@@ -523,10 +541,14 @@ function ManageSlotDialog({
 function SlotRow({
 	slot,
 	section,
+	eventName,
+	eventDate,
 	accessToken,
 }: {
 	slot: StaffSlot;
 	section: StaffSection;
+	eventName: string;
+	eventDate: number;
 	accessToken: string;
 }) {
 	const [dialog, setDialog] = useState<"assign" | "manage" | null>(null);
@@ -579,6 +601,8 @@ function SlotRow({
 			{dialog === "assign" && (
 				<AssignSlotDialog
 					slot={slot}
+					eventName={eventName}
+					eventDate={eventDate}
 					sectionName={section.name}
 					sectionStartTime={section.startTime}
 					sectionEndTime={section.endTime}
@@ -590,6 +614,8 @@ function SlotRow({
 			{dialog === "manage" && (
 				<ManageSlotDialog
 					slot={slot}
+					eventName={eventName}
+					eventDate={eventDate}
 					sectionName={section.name}
 					sectionStartTime={section.startTime}
 					sectionEndTime={section.endTime}
@@ -638,6 +664,8 @@ export function AdminStaffManagement() {
 								key={slot.slotId}
 								slot={slot}
 								section={section}
+								eventName={staffData.eventTitle}
+								eventDate={staffData.eventDate}
 								accessToken={accessToken}
 							/>
 						))}

@@ -26,11 +26,15 @@ export function ManageStaffDialog({
 	slot,
 	section,
 	staff,
+	eventName,
+	eventDate,
 	isArchived = false,
 }: {
 	slot: Doc<"roleSlots">;
 	section: Doc<"eventSections">;
 	staff: Doc<"liveStaff">;
+	eventName: string;
+	eventDate: number;
 	isArchived?: boolean;
 }) {
 	const [open, setOpen] = useState(false);
@@ -91,6 +95,8 @@ export function ManageStaffDialog({
 	const shareTextFull = inviteUrl
 		? buildStaffInviteShareMessage({
 				staffName: name,
+				eventName,
+				eventDate,
 				roleTitle: slot.title,
 				sectionName: section.name,
 				startTime: section.startTime,
@@ -102,7 +108,7 @@ export function ManageStaffDialog({
 
 	const handleShareInvite = () => {
 		if (!shareTextFull) return;
-		void shareStaffInvite(shareTextFull, `Event Assignment — ${slot.title}`);
+		void shareStaffInvite(shareTextFull, `Event Assignment — ${eventName}`);
 	};
 
 	const isUnclaimed = !!slot.inviteToken;

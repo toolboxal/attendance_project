@@ -1,5 +1,6 @@
+import { format } from "date-fns";
 import { toast } from "sonner";
-import { formatTime12h } from "#/lib/utils";
+import { eventDateFromMs, formatTime12h } from "#/lib/utils";
 
 function formatTimeRange(startTime?: string, endTime?: string) {
 	if (startTime && endTime) {
@@ -11,6 +12,8 @@ function formatTimeRange(startTime?: string, endTime?: string) {
 
 export function buildStaffInviteShareMessage({
 	staffName,
+	eventName,
+	eventDate,
 	roleTitle,
 	sectionName,
 	startTime,
@@ -19,6 +22,8 @@ export function buildStaffInviteShareMessage({
 	inviteUrl,
 }: {
 	staffName: string;
+	eventName: string;
+	eventDate: number;
 	roleTitle: string;
 	sectionName?: string;
 	startTime?: string;
@@ -27,14 +32,17 @@ export function buildStaffInviteShareMessage({
 	inviteUrl: string;
 }) {
 	const timeRange = formatTimeRange(startTime, endTime);
+	const formattedDate = format(eventDateFromMs(eventDate), "PP");
 
 	const body = [
 		`Hello ${staffName.trim()},`,
 		"",
 		"You have been assigned to the following role:",
 		"",
+		`• Event: ${eventName}`,
 		`• Role: ${roleTitle}`,
 		...(sectionName ? [`• Section: ${sectionName}`] : []),
+		`• Date: ${formattedDate}`,
 		...(timeRange ? [`• Time: ${timeRange}`] : []),
 		...(role === "supervisor" ? ["• Access level: Supervisor"] : []),
 		"",
@@ -46,7 +54,7 @@ export function buildStaffInviteShareMessage({
 		"",
 		inviteUrl,
 		"",
-		"Once claimed, you will have access to your live workspace on event day. If you did not expect this assignment, please contact your event coordinator.",
+		"Once entered, access is non transferable to another device or person. If you did not expect this assignment, please contact your event coordinator.",
 	].join("\n");
 }
 
@@ -85,9 +93,7 @@ export async function shareStaffInvite(message: string, title: string) {
 	}
 
 	if (!canUseNativeShare()) {
-		toast.success(
-			"Invite copied. Paste into WhatsApp, email, or another app.",
-		);
+		toast.success("Invite copied. Paste into WhatsApp, email, or another app.");
 		return;
 	}
 
@@ -103,8 +109,6 @@ export async function shareStaffInvite(message: string, title: string) {
 		await navigator.share(payload);
 	} catch (err) {
 		if (err instanceof Error && err.name === "AbortError") return;
-		toast.success(
-			"Invite copied. Paste into WhatsApp, email, or another app.",
-		);
+		toast.success("Invite copied. Paste into WhatsApp, email, or another app.");
 	}
 }

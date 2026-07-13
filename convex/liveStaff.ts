@@ -184,6 +184,7 @@ export const validateInvite = query({
 			eventDate: event.eventDate,
 			eventTime: event.startTime,
 			eventDescription: event.description,
+			eventStatus: event.status,
 			sectionName: section?.name ?? "",
 			sectionStartTime: section?.startTime ?? "",
 			sectionEndTime: section?.endTime ?? "",
@@ -704,6 +705,8 @@ export const getLiveFloorStaffManagement = query({
 		}
 
 		return {
+			eventTitle: event.title,
+			eventDate: event.eventDate,
 			sections: groupedSections,
 		};
 	},
