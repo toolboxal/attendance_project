@@ -94,14 +94,16 @@ function PreviewAlertCard({ alert }: { alert: PreviewAlert }) {
 			<div className="flex flex-row items-stretch border-b border-zinc-600">
 				<div className="min-w-0 flex-1 text-left px-2 py-0.5">
 					<div className="flex flex-col leading-tight">
-						{alert.isPinned && (
-							<span className="text-[10px] font-bold text-amber-400 uppercase">
-								Pinned
+						<div className="flex flex-row items-center gap-2">
+							<span className="font-medium text-zinc-50 tracking-tight text-sm truncate">
+								{capitalizeWords(alert.sectionName)}
 							</span>
-						)}
-						<span className="font-medium text-zinc-50 tracking-tight text-sm truncate">
-							{capitalizeWords(alert.sectionName)}
-						</span>
+							{alert.isPinned && (
+								<span className="text-[10px] font-bold text-amber-400 uppercase shrink-0">
+									Pinned
+								</span>
+							)}
+						</div>
 						<span className="font-medium text-zinc-300 text-xs">
 							{alert.creatorRoleTitle}
 						</span>

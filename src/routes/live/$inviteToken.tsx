@@ -7,11 +7,31 @@ import { toast } from "sonner";
 import { ErrorView } from "#/components/error-view";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
+import { SITE_URL } from "#/lib/seo";
 import { formatTime12h } from "#/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { api } from "../../../convex/_generated/api";
 
+const INVITE_TITLE = "You're invited on Asistir";
+const INVITE_DESCRIPTION =
+	"Claim your event assignment and open your live staff workspace.";
+
 export const Route = createFileRoute("/live/$inviteToken")({
+	head: ({ params }) => ({
+		meta: [
+			{ title: INVITE_TITLE },
+			{ name: "description", content: INVITE_DESCRIPTION },
+			{ name: "robots", content: "noindex" },
+			{ property: "og:title", content: INVITE_TITLE },
+			{ property: "og:description", content: INVITE_DESCRIPTION },
+			{
+				property: "og:url",
+				content: `${SITE_URL}/live/${params.inviteToken}`,
+			},
+			{ name: "twitter:title", content: INVITE_TITLE },
+			{ name: "twitter:description", content: INVITE_DESCRIPTION },
+		],
+	}),
 	component: InviteGateComponent,
 });
 

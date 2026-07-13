@@ -43,7 +43,7 @@ export function DemoDispatchPanel({
 	});
 
 	return (
-		<CollapsibleBottomPanel panelLabel="dispatch composer">
+		<CollapsibleBottomPanel panelLabel="dispatch composer" defaultOpen>
 			<div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
 				{["regular", "elderly", "family", "wheelchair", "vip"].map((tag) => (
 					<button

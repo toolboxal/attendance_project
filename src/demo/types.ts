@@ -63,6 +63,25 @@ export type DemoAlert = {
 	updates: DemoAlertUpdate[];
 };
 
+export type DemoWatchlistKind = "banned_person" | "prohibited_item";
+
+export type DemoWatchlistUpdate = {
+	id: string;
+	authorId: string;
+	authorName: string;
+	content: string;
+	createdAt: number;
+};
+
+export type DemoWatchlistEntry = {
+	id: string;
+	kind: DemoWatchlistKind;
+	label: string;
+	notes?: string;
+	photoUrl?: string;
+	updates: DemoWatchlistUpdate[];
+};
+
 export type DemoRosterSection = {
 	sectionKey: string;
 	name: string;
@@ -81,6 +100,7 @@ export type DemoFloorState = {
 	nextJobTicket: number;
 	jobs: DemoJob[];
 	alerts: DemoAlert[];
+	watchlist: DemoWatchlistEntry[];
 	sections: DemoRosterSection[];
 };
 

@@ -7,13 +7,15 @@ export function CollapsibleBottomPanel({
 	panelLabel,
 	open,
 	onOpenChange,
+	defaultOpen = false,
 }: {
 	children: React.ReactNode;
 	panelLabel: string;
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
+	defaultOpen?: boolean;
 }) {
-	const [internalOpen, setInternalOpen] = useState(false);
+	const [internalOpen, setInternalOpen] = useState(defaultOpen);
 	const isControlled = open !== undefined;
 	const isOpen = isControlled ? open : internalOpen;
 

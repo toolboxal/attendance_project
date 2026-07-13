@@ -33,7 +33,7 @@ export function DemoSectionReportPanel({
 		String(serverState.headcount),
 	);
 	const [isDirty, setIsDirty] = useState(false);
-	const [isPanelOpen, setIsPanelOpen] = useState(false);
+	const [isPanelOpen, setIsPanelOpen] = useState(true);
 
 	useEffect(() => {
 		if (!isDirty) {

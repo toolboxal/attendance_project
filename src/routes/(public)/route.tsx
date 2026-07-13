@@ -7,9 +7,11 @@ export const Route = createFileRoute("/(public)")({
 
 function RouteComponent() {
 	return (
-		<div className="min-h-dvh bg-zinc-950 relative">
+		<div className="min-h-dvh bg-zinc-950 relative flex flex-col">
 			<NavBar />
-			<Outlet />
+			<div className="flex flex-1 flex-col min-h-0">
+				<Outlet />
+			</div>
 		</div>
 	);
 }

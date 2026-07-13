@@ -28,6 +28,8 @@ type DemoFloorContextValue = {
 	createAlert: (input: { alertType: string; body: string }) => void;
 	addAlertUpdate: (alertId: string, content: string) => void;
 	resolveAlert: (alertId: string) => void;
+	setAlertPinned: (alertId: string, pinned: boolean) => void;
+	addWatchlistUpdate: (entryId: string, content: string) => void;
 	reportSection: (
 		sectionKey: string,
 		report: SectionReportFormState,
@@ -226,6 +228,38 @@ export function DemoFloorProvider({ children }: { children: ReactNode }) {
 		}));
 	}, []);
 
+	const setAlertPinned = useCallback((alertId: string, pinned: boolean) => {
+		setState((prev) => ({
+			...prev,
+			alerts: prev.alerts.map((alert) =>
+				alert.id === alertId ? { ...alert, isPinned: pinned } : alert,
+			),
+		}));
+	}, []);
+
+	const addWatchlistUpdate = useCallback((entryId: string, content: string) => {
+		setState((prev) => ({
+			...prev,
+			watchlist: prev.watchlist.map((entry) =>
+				entry.id === entryId
+					? {
+							...entry,
+							updates: [
+								...entry.updates,
+								{
+									id: nextId("demo_watchlist_update"),
+									authorId: prev.profile.id,
+									authorName: prev.profile.name,
+									content,
+									createdAt: Date.now(),
+								},
+							],
+						}
+					: entry,
+			),
+		}));
+	}, []);
+
 	const reportSection = useCallback(
 		(sectionKey: string, report: SectionReportFormState) => {
 			setState((prev) => ({
@@ -275,6 +309,8 @@ export function DemoFloorProvider({ children }: { children: ReactNode }) {
 			createAlert,
 			addAlertUpdate,
 			resolveAlert,
+			setAlertPinned,
+			addWatchlistUpdate,
 			reportSection,
 			toggleIncludeInTotal,
 		}),
@@ -291,6 +327,8 @@ export function DemoFloorProvider({ children }: { children: ReactNode }) {
 			createAlert,
 			addAlertUpdate,
 			resolveAlert,
+			setAlertPinned,
+			addWatchlistUpdate,
 			reportSection,
 			toggleIncludeInTotal,
 		],

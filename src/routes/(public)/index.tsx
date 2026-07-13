@@ -8,9 +8,29 @@ import { JobsPreview } from "#/components/public/landing/JobsPreview";
 import { MissionStatement } from "#/components/public/landing/MissionStatement";
 import { PricingSection } from "#/components/public/landing/PricingSection";
 import { RosterPreview } from "#/components/public/landing/RosterPreview";
+import { WatchlistPreview } from "#/components/public/landing/WatchlistPreview";
 import { clearSignedOutFlag, hasSignedOutFlag } from "#/lib/auth-session";
+import {
+	LANDING_DESCRIPTION,
+	LANDING_TITLE,
+	SITE_URL,
+} from "#/lib/seo";
 
-export const Route = createFileRoute("/(public)/")({ component: Home });
+export const Route = createFileRoute("/(public)/")({
+	head: () => ({
+		meta: [
+			{ title: LANDING_TITLE },
+			{ name: "description", content: LANDING_DESCRIPTION },
+			{ property: "og:title", content: LANDING_TITLE },
+			{ property: "og:description", content: LANDING_DESCRIPTION },
+			{ property: "og:url", content: SITE_URL },
+			{ property: "og:type", content: "website" },
+			{ name: "twitter:title", content: LANDING_TITLE },
+			{ name: "twitter:description", content: LANDING_DESCRIPTION },
+		],
+	}),
+	component: Home,
+});
 
 function Home() {
 	const { isAuthenticated, isLoading } = useConvexAuth();
@@ -36,6 +56,7 @@ function Home() {
 			<MissionStatement />
 			<JobsPreview />
 			<AlertsPreview />
+			<WatchlistPreview />
 			<RosterPreview />
 			<PricingSection />
 			<Footer />

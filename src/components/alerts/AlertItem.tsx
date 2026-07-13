@@ -151,15 +151,15 @@ export function AlertItem({
 				>
 					<div className="flex flex-col leading-tight">
 						<div className="flex flex-row items-center gap-2">
+							<span className="font-medium text-zinc-50 tracking-tight text-sm truncate">
+								{capitalizeWords(alert.sectionName ?? "Event")}
+							</span>
 							{alert.isPinned && (
-								<span className="text-[10px] font-bold text-amber-400 uppercase">
+								<span className="text-[10px] font-bold text-amber-400 uppercase shrink-0">
 									Pinned
 								</span>
 							)}
 						</div>
-						<span className="font-medium text-zinc-50 tracking-tight text-sm truncate">
-							{capitalizeWords(alert.sectionName ?? "Event")}
-						</span>
 						<span className="font-medium text-zinc-300 text-xs">
 							{alert.creatorRoleTitle}
 						</span>

@@ -9,6 +9,9 @@ import {
 } from "#/components/ui/sidebar";
 
 export const Route = createFileRoute("/_authenticated/app")({
+	head: () => ({
+		meta: [{ name: "robots", content: "noindex" }],
+	}),
 	component: RouteComponent,
 });
 

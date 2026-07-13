@@ -21,6 +21,11 @@ import { GlobalErrorComponent } from "#/components/error-component";
 import { AppPostHogProvider } from "#/components/posthog-provider";
 import { authClient } from "#/lib/auth-client";
 import { getToken } from "#/lib/auth-server";
+import {
+	DEFAULT_DESCRIPTION,
+	SITE_NAME,
+	SITE_URL,
+} from "#/lib/seo";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
@@ -41,6 +46,16 @@ export const Route = createRootRouteWithContext<{
 				name: "viewport",
 				content: "width=device-width, initial-scale=1",
 			},
+			{ title: SITE_NAME },
+			{ name: "description", content: DEFAULT_DESCRIPTION },
+			{ property: "og:site_name", content: SITE_NAME },
+			{ property: "og:type", content: "website" },
+			{ property: "og:url", content: SITE_URL },
+			{ property: "og:title", content: SITE_NAME },
+			{ property: "og:description", content: DEFAULT_DESCRIPTION },
+			{ name: "twitter:card", content: "summary" },
+			{ name: "twitter:title", content: SITE_NAME },
+			{ name: "twitter:description", content: DEFAULT_DESCRIPTION },
 		],
 		links: [
 			{ rel: "stylesheet", href: appCss },

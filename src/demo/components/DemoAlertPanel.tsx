@@ -40,7 +40,7 @@ export function DemoAlertPanel({
 	});
 
 	return (
-		<CollapsibleBottomPanel panelLabel="alert composer">
+		<CollapsibleBottomPanel panelLabel="alert composer" defaultOpen>
 			<div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
 				{ALERT_TYPES.map((tag) => (
 					<button

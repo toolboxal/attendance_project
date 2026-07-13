@@ -77,6 +77,47 @@ export function createDemoFloorState(): DemoFloorState {
 				],
 			},
 		],
+		watchlist: [
+			{
+				id: "demo_watchlist_1",
+				kind: "banned_person",
+				label: "Jon Doe",
+				notes: "Do not admit. Last seen wearing a dark jacket near Gate A.",
+				photoUrl: "/demo/banned-person.png",
+				updates: [
+					{
+						id: "demo_watchlist_update_1",
+						authorId: "demo_staff_james",
+						authorName: "James Wu",
+						content: "Spotted near the queue — security notified.",
+						createdAt: Date.now() - 1000 * 60 * 12,
+					},
+				],
+			},
+			{
+				id: "demo_watchlist_2",
+				kind: "prohibited_item",
+				label: "Alcoholic drinks",
+				notes: "No alcohol is permitted on the premises of this venue.",
+				photoUrl: "/demo/prohibited-beer.png",
+				updates: [
+					{
+						id: "demo_watchlist_update_2",
+						authorId: "demo_staff_maria",
+						authorName: "Maria Santos",
+						content: "👍",
+						createdAt: Date.now() - 1000 * 60 * 9,
+					},
+					{
+						id: "demo_watchlist_update_3",
+						authorId: "demo_staff_priya",
+						authorName: "Priya Nair",
+						content: "Acknowledged",
+						createdAt: Date.now() - 1000 * 60 * 6,
+					},
+				],
+			},
+		],
 		sections: [
 			{
 				sectionKey: "section-main-hall",
