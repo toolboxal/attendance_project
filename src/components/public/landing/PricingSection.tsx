@@ -73,7 +73,7 @@ export function PricingSection() {
 		{
 			name: "Free",
 			features: [
-				"1 Active Event Draft",
+				"1 draft · 1 live · 10 past events",
 				"Basic attendee tracking",
 				"Up to 5 staff seats",
 			],
@@ -90,8 +90,8 @@ export function PricingSection() {
 			name: "Single Pass",
 			features: [
 				"1 Pro Event Credit",
-				"Indefinite expiration",
-				"Full Pro Features",
+				"5 drafts · 1 live · 10 past events",
+				"Up to 50 staff seats",
 			],
 			price: "$9",
 			buttonLabel: "Buy 1 Credit",
@@ -102,7 +102,7 @@ export function PricingSection() {
 			name: "Bundle",
 			features: [
 				"4 Pro Event Credits",
-				"Ideal for ~one event per week",
+				"5 drafts · 1 live · 10 past events",
 				"Save 17%",
 			],
 			price: "$30",
@@ -114,8 +114,8 @@ export function PricingSection() {
 			name: "Pro Monthly",
 			features: [
 				"8 Pro Event Credits / month",
-				"For frequent use of Asistir",
-				"Can purchase more credits anytime",
+				"5 drafts · 1 live · 10 past events",
+				"Up to 50 staff seats",
 			],
 			price: "$49",
 			priceSuffix: "/month",

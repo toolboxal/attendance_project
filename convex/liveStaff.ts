@@ -2,7 +2,11 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { getAuthenticatedUser, isEventAccessClosed } from "./events";
+import {
+	getAuthenticatedUser,
+	isEventAccessClosed,
+	pruneArchivedEvents,
+} from "./events";
 import { getLiveContext, requireAdmin } from "./liveAuth";
 import { ConvexError } from "convex/values";
 
@@ -573,6 +577,7 @@ export const endEventFromLiveFloor = mutation({
 		requireAdmin(live);
 
 		await ctx.db.patch(live.event._id, { status: "archived" });
+		await pruneArchivedEvents(ctx, live.event.adminId);
 
 		return { success: true };
 	},

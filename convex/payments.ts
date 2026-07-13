@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, query } from "./_generated/server";
-import { resolveDraftLimits, syncDraftEventsToLimits } from "./credits";
+import { resolveDraftLimits, syncDraftEventsToLimits, getDraftLimit } from "./credits";
 import { getAuthenticatedUser } from "./events";
 
 async function findUserByAuthUserId(ctx: MutationCtx, authUserId: string) {
@@ -165,6 +165,7 @@ export const getBillingProfile = query({
       subscriptionExpiresAt: user.subscriptionExpiresAt ?? null,
       subscriptionCancelAtPeriodEnd:
         user.subscriptionCancelAtPeriodEnd ?? false,
+      draftLimit: getDraftLimit(user),
     };
   },
 });

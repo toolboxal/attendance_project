@@ -12,6 +12,8 @@ import {
   assertStaffCapacity,
   consumeGoLiveCredit,
   countRoleSlots,
+  getDraftLimit,
+  MAX_ARCHIVED_EVENTS,
   peekGoLiveCreditPool,
   resolveDraftLimits,
   resolveLimitsForCreditPool,
@@ -149,6 +151,7 @@ async function archiveEventIfExpired(ctx: MutationCtx, eventId: Id<"events">) {
   const event = await ctx.db.get(eventId);
   if (!event || !isLiveEventExpired(event)) return false;
   await ctx.db.patch(eventId, { status: "archived" });
+  await pruneArchivedEvents(ctx, event.adminId);
   return true;
 }
 
@@ -163,6 +166,7 @@ export const archiveExpiredLiveEvents = internalMutation({
     if (!event || event.status !== "live") return;
 
     await ctx.db.patch(eventId, { status: "archived" });
+    await pruneArchivedEvents(ctx, event.adminId);
   },
 });
 
@@ -288,7 +292,7 @@ export const list = query({
 
     const user = await getAuthenticatedUser(ctx);
 
-    // 1. Fetch active events (draft or live) - usually very few (1 draft free / 10 paid & 1 live)
+    // 1. Fetch active events (draft or live) - usually very few (1 draft free / 5 paid & 1 live)
     const activeEvents = await ctx.db
       .query("events")
       .withIndex("by_admin", (q) => q.eq("adminId", user._id))
@@ -322,6 +326,30 @@ export const list = query({
     });
 
     return combined;
+  },
+});
+
+/**
+ * Current draft count vs tier limit — used to gate Create / Duplicate in the UI.
+ */
+export const getDraftCapacity = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+    const drafts = await ctx.db
+      .query("events")
+      .withIndex("by_admin", (q) => q.eq("adminId", user._id))
+      .filter((q) => q.eq(q.field("status"), "draft"))
+      .collect();
+
+    const draftLimit = getDraftLimit(user);
+    const draftCount = drafts.length;
+
+    return {
+      draftCount,
+      draftLimit,
+      atLimit: draftCount >= draftLimit,
+    };
   },
 });
 
@@ -681,6 +709,30 @@ export async function deleteEventRelatedData(
 }
 
 /**
+ * Keep at most MAX_ARCHIVED_EVENTS per admin. Deletes oldest by eventDate first
+ * (full cascade). Safe to call after every transition to archived.
+ */
+export async function pruneArchivedEvents(
+  ctx: MutationCtx,
+  adminId: Id<"users">,
+) {
+  const archived = await ctx.db
+    .query("events")
+    .withIndex("by_admin", (q) => q.eq("adminId", adminId))
+    .filter((q) => q.eq(q.field("status"), "archived"))
+    .collect();
+
+  if (archived.length <= MAX_ARCHIVED_EVENTS) return;
+
+  archived.sort((a, b) => a.eventDate - b.eventDate);
+
+  const overflow = archived.length - MAX_ARCHIVED_EVENTS;
+  for (let i = 0; i < overflow; i++) {
+    await deleteEventRelatedData(ctx, archived[i]._id, adminId);
+  }
+}
+
+/**
  * Delete an event and gracefully cascade-delete all associated data.
  */
 export const deleteEvent = mutation({
@@ -771,6 +823,10 @@ export const updateStatus = mutation({
     }
 
     await ctx.db.patch(event._id, updateFields);
+
+    if (args.status === "archived") {
+      await pruneArchivedEvents(ctx, user._id);
+    }
 
     if (args.status === "live" && updateFields.expiresAt) {
       await ctx.scheduler.runAt(
@@ -902,6 +958,7 @@ export const getDashboardShell = query({
       billingPlan: user.billingPlan ?? "free",
       subscriptionExpiresAt: user.subscriptionExpiresAt ?? null,
       subscriptionCancelAtPeriodEnd: user.subscriptionCancelAtPeriodEnd ?? false,
+      draftLimit: getDraftLimit(user),
     };
 
     const [archivedEvents, draftEvents, liveEvent] = await Promise.all([

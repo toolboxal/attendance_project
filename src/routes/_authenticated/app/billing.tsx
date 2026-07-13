@@ -157,8 +157,8 @@ function BillingComponent() {
 									Credit
 								</li>
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> 24-hour active
-									live session
+									<Check className="size-3 text-yellow-300" /> 5 drafts · 1
+									live · 10 past events
 								</li>
 								<li className="flex items-center gap-2">
 									<Check className="size-3 text-yellow-300" /> Lifetime validity
@@ -202,8 +202,8 @@ function BillingComponent() {
 									Credits
 								</li>
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> Save 17% vs
-									Single Passes
+									<Check className="size-3 text-yellow-300" /> 5 drafts · 1
+									live · 10 past events
 								</li>
 								<li className="flex items-center gap-2">
 									<Check className="size-3 text-yellow-300" /> Lifetime validity
@@ -254,8 +254,8 @@ function BillingComponent() {
 									Credits / month
 								</li>
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> Save 32% vs
-									Single Passes
+									<Check className="size-3 text-yellow-300" /> 5 drafts · 1
+									live · 10 past events
 								</li>
 								<li className="flex items-center gap-2">
 									<Check className="size-3 text-yellow-300" /> Automatic billing

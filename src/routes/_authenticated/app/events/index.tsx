@@ -52,6 +52,9 @@ function RouteComponent() {
 	const setPageHeader = useHeaderStore((s) => s.setPageHeader);
 	const resetHeader = useHeaderStore((s) => s.resetHeader);
 	const { data: events } = useSuspenseQuery(convexQuery(api.events.list, {}));
+	const { data: draftCapacity } = useSuspenseQuery(
+		convexQuery(api.events.getDraftCapacity, {}),
+	);
 
 	const [selectedEvent, setSelectedEvent] = useState<string | undefined>(
 		events[0]?._id,
@@ -62,7 +65,13 @@ function RouteComponent() {
 			title: "Events",
 			showBackButton: false,
 			showLeftButton: true,
-			leftButton: (
+			leftButton: draftCapacity.atLimit ? (
+				<div className="flex items-center justify-center p-1 rounded-xs bg-yellow-900/30">
+					<span className="text-[10px] font-mono text-yellow-300 uppercase tracking-wide">
+						{draftCapacity.draftLimit} draft limit
+					</span>
+				</div>
+			) : (
 				<Button
 					variant={"default"}
 					onClick={() => navigate({ to: "/app/events/create" })}
@@ -72,7 +81,13 @@ function RouteComponent() {
 			),
 		});
 		return () => resetHeader();
-	}, [setPageHeader, resetHeader, navigate]);
+	}, [
+		setPageHeader,
+		resetHeader,
+		navigate,
+		draftCapacity.atLimit,
+		draftCapacity.draftLimit,
+	]);
 
 	return (
 		<div className="w-full min-h-dvh bg-zinc-950">
@@ -126,6 +141,7 @@ function RouteComponent() {
 							<EventDetailsView
 								eventId={selectedEvent}
 								setSelectedEvent={setSelectedEvent}
+								draftLimitReached={draftCapacity.atLimit}
 							/>
 						</Suspense>
 					) : (
@@ -135,12 +151,18 @@ function RouteComponent() {
 								<p className="text-zinc-500 whitespace-pre-line font-light mb-1">
 									{`Start a new draft event,\nyou can add sections, jobs later.\nWhen you are ready, you can go live.`}
 								</p>
-								<Button
-									variant={"ghost"}
-									onClick={() => navigate({ to: "/app/events/create" })}
-								>
-									Create Event
-								</Button>
+								{draftCapacity.atLimit ? (
+									<p className="text-sm font-medium text-zinc-400">
+										{draftCapacity.draftLimit} draft limit
+									</p>
+								) : (
+									<Button
+										variant={"ghost"}
+										onClick={() => navigate({ to: "/app/events/create" })}
+									>
+										Create Event
+									</Button>
+								)}
 							</div>
 						</div>
 					)}

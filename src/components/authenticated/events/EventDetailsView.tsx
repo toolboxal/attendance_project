@@ -45,9 +45,11 @@ export function LiveCountdown({ expiresAt }: { expiresAt?: number }) {
 export function EventDetailsView({
 	eventId,
 	setSelectedEvent,
+	draftLimitReached = false,
 }: {
 	eventId: string;
 	setSelectedEvent: (id: string | undefined) => void;
+	draftLimitReached?: boolean;
 }) {
 	const navigate = useNavigate();
 	const updateStatus = useMutation(api.events.updateStatus);
@@ -216,7 +218,12 @@ export function EventDetailsView({
 				)}
 				{event.status !== "live" && (
 					<>
-						<Button onClick={handleDuplicate} variant={"ghost"} size={"lg"}>
+						<Button
+							onClick={handleDuplicate}
+							variant={"ghost"}
+							size={"lg"}
+							disabled={draftLimitReached}
+						>
 							Duplicate
 						</Button>
 						<Button

@@ -6,7 +6,9 @@ export const FREE_MAX_STAFF = 5;
 export const PRO_MAX_STAFF = 50;
 export const FREE_DRAFT_LIMIT = 1;
 /** Hard ceiling — no account may create more than this many drafts. */
-export const MAX_DRAFT_LIMIT = 10;
+export const MAX_DRAFT_LIMIT = 5;
+/** Hard ceiling — oldest archived events are deleted when over this. */
+export const MAX_ARCHIVED_EVENTS = 10;
 
 export type BillingPlan = "free" | "pro_monthly";
 export type EventTier = "free" | "pro";

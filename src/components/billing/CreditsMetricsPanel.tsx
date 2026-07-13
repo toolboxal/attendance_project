@@ -1,4 +1,5 @@
 import { getPlanDisplayLabel, isProSubscription } from "#/lib/billing-plan";
+import { formatEventInventoryLine } from "#/lib/event-limits";
 
 export type CreditsMetricsData = {
 	billingPlan: string;
@@ -7,6 +8,7 @@ export type CreditsMetricsData = {
 	freeTrialCredits: number;
 	subscriptionExpiresAt: number | null;
 	subscriptionCancelAtPeriodEnd: boolean;
+	draftLimit: number;
 };
 
 function formatBillingDate(timestamp: number): string {
@@ -24,6 +26,7 @@ export function CreditsMetricsPanel({
 	freeTrialCredits,
 	subscriptionExpiresAt,
 	subscriptionCancelAtPeriodEnd,
+	draftLimit,
 }: CreditsMetricsData) {
 	const isProSubscriber = isProSubscription(billingPlan);
 	const planLabel = getPlanDisplayLabel(billingPlan);
@@ -38,6 +41,9 @@ export function CreditsMetricsPanel({
 				</p>
 				<p className="text-xs text-zinc-300 font-semibold">
 					{isProSubscriber && !isPendingCancellation ? "Active" : ""}
+				</p>
+				<p className="text-xs text-zinc-400 mt-2">
+					{formatEventInventoryLine(draftLimit)}
 				</p>
 			</div>
 			<div className="flex flex-1 flex-col self-stretch">
