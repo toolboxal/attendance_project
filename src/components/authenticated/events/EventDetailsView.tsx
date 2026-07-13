@@ -3,9 +3,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { format } from "date-fns";
-import { CircleAlert, Timer } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { useState } from "react";
-import { toastMutationError } from "#/lib/error-utils";
 import { Button } from "#/components/ui/button";
 import {
 	Dialog,
@@ -16,6 +15,7 @@ import {
 	DialogTitle,
 } from "#/components/ui/dialog";
 import { useLiveCountdown } from "#/hooks/use-live-countdown";
+import { toastMutationError } from "#/lib/error-utils";
 
 import {
 	cn,
