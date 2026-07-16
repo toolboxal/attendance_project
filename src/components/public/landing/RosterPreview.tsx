@@ -241,7 +241,7 @@ export function RosterPreview() {
 								Total Headcount
 							</span>
 							<div className="flex flex-row items-center gap-1">
-								<span className="text-2xl font-bold text-yellow-100">
+								<span className="text-2xl font-bold text-emerald-200">
 									{TOTAL_HEADCOUNT.toLocaleString()}
 								</span>
 								<span className="text-zinc-400 text-sm">pax</span>

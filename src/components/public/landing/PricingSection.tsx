@@ -73,9 +73,9 @@ export function PricingSection() {
 		{
 			name: "Free",
 			features: [
-				"1 draft · 1 live · 10 past events",
-				"Basic attendee tracking",
-				"Up to 5 staff seats",
+				"1 trial credit",
+				"Limit to 5 staff on the floor",
+				"Good for testing out the platform",
 			],
 			price: "$0",
 			buttonLabel: "Get Started",
@@ -89,9 +89,10 @@ export function PricingSection() {
 		{
 			name: "Single Pass",
 			features: [
-				"1 Pro Event Credit",
-				"5 drafts · 1 live · 10 past events",
+				"1 Pro credit",
 				"Up to 50 staff seats",
+				"Alerts, broadcasts & job dispatch",
+				"24 hrs live event duration",
 			],
 			price: "$9",
 			buttonLabel: "Buy 1 Credit",
@@ -101,9 +102,10 @@ export function PricingSection() {
 		{
 			name: "Bundle",
 			features: [
-				"4 Pro Event Credits",
-				"5 drafts · 1 live · 10 past events",
-				"Save 17%",
+				"4 Pro credits",
+				"Same Pro tools as a single pass",
+				"Great for once a week events",
+				"~$7.50 / event · save 17%",
 			],
 			price: "$30",
 			buttonLabel: "Get 4 Credits",
@@ -113,9 +115,10 @@ export function PricingSection() {
 		{
 			name: "Pro Monthly",
 			features: [
-				"8 Pro Event Credits / month",
-				"5 drafts · 1 live · 10 past events",
-				"Up to 50 staff seats",
+				"8 Pro credits each month",
+				"Best for recurring events",
+				"Auto renews to 8 credits each month",
+				"cancel anytime",
 			],
 			price: "$49",
 			priceSuffix: "/month",

@@ -153,16 +153,19 @@ function BillingComponent() {
 							</div>
 							<ul className="space-y-4 text-xs text-zinc-400">
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> 1 Pro Event
-									Credit
+									<Check className="size-3 text-zinc-300" /> 1 Pro credit
 								</li>
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> 5 drafts · 1
-									live · 10 past events
+									<Check className="size-3 text-zinc-300" /> Up to 50 staff
+									seats
 								</li>
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> Lifetime validity
-									(no expiration)
+									<Check className="size-3 text-zinc-300" /> Alerts, broadcasts
+									& job dispatch
+								</li>
+								<li className="flex items-center gap-2">
+									<Check className="size-3 text-zinc-300" /> 24 hrs live event
+									duration
 								</li>
 							</ul>
 						</div>
@@ -192,22 +195,25 @@ function BillingComponent() {
 							</div>
 							<div className="flex items-baseline gap-1">
 								<span className="text-2xl font-extrabold font-mono">
-									$30.00
+									$29.00
 								</span>
 								<span className="text-xs text-zinc-500">/ 4 credits</span>
 							</div>
 							<ul className="space-y-4 text-xs text-zinc-400">
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> 4 Pro Event
-									Credits
+									<Check className="size-3 text-zinc-300" /> 4 Pro credits
 								</li>
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> 5 drafts · 1
-									live · 10 past events
+									<Check className="size-3 text-zinc-300" /> Same Pro tools as a
+									single pass
 								</li>
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> Lifetime validity
-									(no expiration)
+									<Check className="size-3 text-zinc-300" /> Great for once a
+									week events
+								</li>
+								<li className="flex items-center gap-2">
+									<Check className="size-3 text-zinc-300" /> ~$7.50 / event ·
+									save 17%
 								</li>
 							</ul>
 						</div>
@@ -250,16 +256,19 @@ function BillingComponent() {
 							</div>
 							<ul className="space-y-4 text-xs text-zinc-400">
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> 8 Pro Event
-									Credits / month
+									<Check className="size-3 text-zinc-300" /> 8 Pro credits each
+									month
 								</li>
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> 5 drafts · 1
-									live · 10 past events
+									<Check className="size-3 text-zinc-300" /> Best for recurring
+									events
 								</li>
 								<li className="flex items-center gap-2">
-									<Check className="size-3 text-yellow-300" /> Automatic billing
-									& invoice portal
+									<Check className="size-3 text-zinc-300" /> Auto renews to 8
+									credits each month
+								</li>
+								<li className="flex items-center gap-2">
+									<Check className="size-3 text-zinc-300" /> Cancel anytime
 								</li>
 							</ul>
 						</div>
@@ -269,7 +278,7 @@ function BillingComponent() {
 							className={`w-full text-xs font-semibold flex items-center justify-center gap-1 ${
 								isProSubscriber
 									? "bg-zinc-800 text-zinc-500 cursor-not-allowed border-none"
-									: "bg-yellow-200 hover:bg-yellow-100 text-black hover:text-black"
+									: "bg-zinc-200 hover:bg-zinc-100 text-black hover:text-black"
 							}`}
 						>
 							{activeCheckoutSlug === "monthly" ? (

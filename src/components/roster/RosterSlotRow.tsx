@@ -39,7 +39,7 @@ function OccupantLine({ slot }: { slot: RosterSlotRowData }) {
 
 	if (slot.staffStatus === "active") {
 		return (
-			<p className="text-xs font-bold text-yellow-300 mb-0.5">
+			<p className="text-xs font-bold text-emerald-200 mb-0.5">
 				{slot.staffName}
 				<span className="ml-1.5 text-zinc-300">· Active</span>
 			</p>

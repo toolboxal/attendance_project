@@ -66,8 +66,8 @@ function RouteComponent() {
 			showBackButton: false,
 			showLeftButton: true,
 			leftButton: draftCapacity.atLimit ? (
-				<div className="flex items-center justify-center p-1 rounded-xs bg-yellow-900/30">
-					<span className="text-[10px] font-mono text-yellow-300 uppercase tracking-wide">
+				<div className="flex items-center justify-center p-1 rounded-xs bg-zinc-800">
+					<span className="text-[10px] font-normal  text-rose-300 uppercase tracking-wide p-0.5 rounded-xs">
 						{draftCapacity.draftLimit} draft limit
 					</span>
 				</div>

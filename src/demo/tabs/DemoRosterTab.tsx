@@ -2,10 +2,10 @@ import { useMemo } from "react";
 import { tv } from "tailwind-variants";
 import { RosterSectionAccordion } from "#/components/roster/RosterSectionAccordion";
 import { SectionHeadcountBreakdown } from "#/components/roster/SectionHeadcountBreakdown";
-import type { OccupancyFill } from "#/lib/sectionReport";
 import { Accordion } from "#/components/ui/accordion";
 import { DemoSectionReportPanel } from "#/demo/components/DemoSectionReportPanel";
 import { useDemoFloor } from "#/demo/DemoFloorContext";
+import type { OccupancyFill } from "#/lib/sectionReport";
 
 const layoutStyles = tv({
 	slots: {
@@ -70,7 +70,7 @@ export function DemoRosterTab() {
 							Total Headcount
 						</span>
 						<div className="flex flex-row items-center gap-1">
-							<span className="text-2xl font-bold text-yellow-100">
+							<span className="text-2xl font-bold text-emerald-200">
 								{totalHeadcount.toLocaleString()}
 							</span>
 							<span className="text-zinc-400 text-sm">pax</span>

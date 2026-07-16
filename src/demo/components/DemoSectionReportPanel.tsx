@@ -1,6 +1,7 @@
 import { Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CollapsibleBottomPanel } from "#/components/live/CollapsibleBottomPanel";
+import type { SectionReportFormState } from "#/components/roster/SectionReportPanel";
 import { Input } from "#/components/ui/input";
 import { Switch } from "#/components/ui/switch";
 import {
@@ -8,7 +9,6 @@ import {
 	formatOccupancyFill,
 	formatShiftRange,
 	OCCUPANCY_OPTIONS,
-	type SectionReportFormState,
 } from "#/lib/sectionReport";
 import { capitalizeWords, cn } from "#/lib/utils";
 

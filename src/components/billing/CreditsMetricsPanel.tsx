@@ -62,21 +62,21 @@ export function CreditsMetricsPanel({
 					{monthlyCredits}
 				</p>
 			</div>
-			<div className="flex flex-1 flex-col">
+			<div className="flex flex-1 flex-col self-stretch">
 				<p className="text-md text-zinc-400 font-bold">One-Time Credits</p>
 				<p className="text-xs text-zinc-300">
 					Single Pass or Bundle credits. Does not expire.
 				</p>
-				<p className="text-3xl text-zinc-100 font-bold mt-2">
+				<p className="text-3xl text-zinc-100 font-bold mt-auto">
 					{oneTimeCredits}
 				</p>
 			</div>
-			<div className="flex flex-1 flex-col">
-				<p className="text-md text-zinc-400 font-bold">Free Trial Credits</p>
+			<div className="flex flex-1 flex-col self-stretch">
+				<p className="text-md text-zinc-400 font-bold">Free Trial Credit</p>
 				<p className="text-xs text-zinc-300">
 					Signup gift. Limited to 5 staff per live event.
 				</p>
-				<p className="text-3xl text-zinc-100 font-bold mt-2">
+				<p className="text-3xl text-zinc-100 font-bold mt-auto">
 					{freeTrialCredits}
 				</p>
 			</div>
