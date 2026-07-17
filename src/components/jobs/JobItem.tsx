@@ -1,5 +1,5 @@
 import { useMutation } from "convex/react";
-import { Check, Tag, Trash, Undo } from "lucide-react";
+import { Check, Tag, Trash, Undo, User } from "lucide-react";
 import { toast } from "sonner";
 import { tv } from "tailwind-variants";
 import { suppressCreatorReleaseToastIds } from "#/components/jobs/JobAcceptanceToasts";
@@ -22,7 +22,7 @@ type EnrichedJob = Doc<"jobs"> & {
 
 const jobStyles = tv({
 	slots: {
-		card: "bg-zinc-800/90 rounded-md overflow-hidden text-zinc-50 ",
+		card: "bg-zinc-900 rounded-md  text-zinc-50 flex-row",
 	},
 	variants: {
 		status: {
@@ -139,56 +139,46 @@ export function JobItem({
 	const isPending = job.status === "pending";
 	const showCancel = (isPending && isCreator) || (isSupervisor && !isCreator);
 
-	const staffNameClass = (isSelf: boolean, isRevoked: boolean) => {
-		if (isSelf) return "text-yellow-400 font-semibold";
-		if (isRevoked) return "text-red-400 font-semibold";
-		return "text-zinc-300";
-	};
-
 	return (
 		<div className={card()}>
 			<div className="flex flex-col">
 				{/* ticket | actions */}
-				<div className="flex flex-row items-center gap-2 px-1.5 pt-2 ">
-					<div className="flex min-w-0 flex-1 items-center self-start gap-2">
-						{job.ticketNumber != null && (
-							<div className="px-1 bg-zinc-800 rounded-xs min-w-10 flex items-center justify-center gap-0.5">
-								<span className="text-[13px] font-semibold text-zinc-500 tracking-wide">
-									No.
-								</span>
-								<span className="text-[13px] font-bold text-blue-300 tracking-wide">
-									{job.ticketNumber}
-								</span>
-							</div>
-						)}
-						{isCreator && (
-							<div className="p-0.5 px-1 rounded-xs flex items-center justify-center gap-0.5 bg-yellow-300/15 shrink-0">
-								<Tag size={11} className="text-yellow-200" strokeWidth={2} />
-								<span className="font-medium tracking-tight uppercase text-[10px] text-yellow-200">
-									My Job
-								</span>
-							</div>
-						)}
-						{job.status === "accepted" && (
-							<div
-								className={`p-0.5 px-1 rounded-xs flex items-center justify-center gap-0.5 shrink-0 ${
-									isClaimer ? "bg-emerald-400/15" : "bg-blue-400/15"
-								}`}
-							>
-								<Check
-									size={11}
-									className={isClaimer ? "text-emerald-300" : "text-blue-300"}
-									strokeWidth={2}
-								/>
-								<span
-									className={`font-medium tracking-tight uppercase text-[10px] ${
-										isClaimer ? "text-emerald-300" : "text-blue-300"
-									}`}
-								>
-									{isClaimer ? "Accepted by me" : "Accepted"}
-								</span>
-							</div>
-						)}
+				<div className="flex flex-row items-start gap-2 px-1.5 pt-2 ">
+					<div className="flex-col gap-1 w-3/5">
+						<div className="flex flex-row min-w-0 items-center self-start gap-2 bg-yellow-600/50 p-0.5 ">
+							{job.ticketNumber != null && (
+								<div className="px-1 bg-zinc-950 rounded-xs min-w-10 flex items-center justify-center gap-0.5">
+									<span className="text-[11px] font-semibold text-zinc-50 tracking-wide">
+										Job
+									</span>
+									<span className="text-[11px] font-bold text-zinc-50 tracking-wide">
+										{job.ticketNumber}
+									</span>
+								</div>
+							)}
+							<span className="font-bold tracking-tight text-xs uppercase text-yellow-300">
+								{capitalizeWords(job.originSectionName)}
+							</span>
+						</div>
+						<div className="flex flex-row items-center leading-tight gap-1 pl-1 pt-1 rounded-sm ">
+							<span className="font-medium text-[11px] text-yellow-200">
+								{job.creatorRoleTitle}
+							</span>
+							<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
+							<span className="font-medium text-[11px] text-yellow-200 italic">
+								{job.creatorName}
+							</span>
+							{isCreator ? (
+								<div className="flex flex-row items-center gap-1">
+									<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
+									<User
+										size={11}
+										className="text-yellow-200"
+										strokeWidth={2.5}
+									/>
+								</div>
+							) : null}
+						</div>
 					</div>
 
 					<div className="flex min-w-0 flex-1 flex-row items-center justify-end gap-3">
@@ -255,57 +245,56 @@ export function JobItem({
 			</div>
 			{/* bottom half section */}
 			<div className="flex flex-col items-start px-2 pb-2 gap-1 ">
-				<div className="flex flex-row items-center leading-tight gap-1  pt-1 rounded-sm ">
-					<span className="font-medium tracking-tight text-xs text-yellow-200">
-						{capitalizeWords(job.originSectionName)}
-					</span>
-					<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
-					<span className="font-medium text-[11px] text-zinc-300">
-						{job.creatorRoleTitle}
-					</span>
-					<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
-					<div className="flex flex-row items-center gap-1">
-						<span
-							className={`font-medium text-[11px] italic ${staffNameClass(false, job.creatorMissing)}`}
-						>
-							{job.creatorName}
-						</span>
-					</div>
-				</div>
 				{job.status === "accepted" ? (
-					<div className="flex flex-row items-center gap-1">
-						{/* <CornerDownRight size={10} className="text-zinc-300" /> */}
-						<div className="w-2 h-2 rounded-bl-sm border-l border-b border-zinc-300" />
-						<div
-							className={`flex flex-row items-center leading-tight gap-1 px-1.5 py-1 rounded-sm ${
-								isClaimer ? "bg-emerald-500/10" : "bg-blue-500/10"
-							}`}
-						>
-							<span
-								className={`font-medium tracking-tight text-xs ${
-									isClaimer ? "text-emerald-300" : "text-blue-300"
+					<div className="flex flex-row items-start gap-1">
+						<div className="w-2 h-2 mt-1 rounded-bl-sm border-l border-b border-zinc-300 shrink-0" />
+						<div className="flex-col gap-1 min-w-0">
+							<div
+								className={`flex flex-row min-w-0 items-center self-start gap-2 p-0.5 rounded-xs ${
+									isClaimer ? "bg-emerald-600/50" : "bg-blue-600/50"
 								}`}
 							>
-								{capitalizeWords(job.destinationSectionName ?? "TBD")}
-							</span>
-							<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
-							<span className="font-medium text-[11px] text-zinc-300">
-								{job.claimerRoleTitle}
-							</span>
-							<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
-							<div className="flex flex-row items-center gap-1">
 								<span
-									className={`font-medium text-[11px] italic ${staffNameClass(false, job.claimerMissing)}`}
+									className={`font-bold tracking-tight text-xs uppercase  px-1 ${
+										isClaimer ? "text-emerald-100" : "text-blue-100"
+									}`}
+								>
+									{capitalizeWords(job.destinationSectionName ?? "TBD")}
+								</span>
+							</div>
+							<div className="flex flex-row items-center leading-tight gap-1 pl-1 pt-1 rounded-sm">
+								<span
+									className={`font-medium text-[11px] ${
+										isClaimer ? "text-emerald-200" : "text-blue-200"
+									}`}
+								>
+									{job.claimerRoleTitle}
+								</span>
+								<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
+								<span
+									className={`font-medium text-[11px] italic ${
+										isClaimer ? "text-emerald-200" : "text-blue-200"
+									}`}
 								>
 									{job.claimerName}
 								</span>
+								{isClaimer ? (
+									<div className="flex flex-row items-center gap-1">
+										<div className="self-center bg-zinc-300 h-0.5 w-0.5 rounded-full" />
+										<User
+											size={11}
+											className="text-emerald-200"
+											strokeWidth={2.5}
+										/>
+									</div>
+								) : null}
 							</div>
 						</div>
 					</div>
 				) : (
 					<div className="flex flex-row items-center leading-tight gap-1 px-1.5 py-1">
-						<span className="font-medium tracking-tight text-xs text-zinc-400 italic">
-							pending someone to take it ...
+						<span className="font-medium tracking-tight text-xs text-zinc-400 italic animate-pulse">
+							pending someone to accept it ...
 						</span>
 					</div>
 				)}
