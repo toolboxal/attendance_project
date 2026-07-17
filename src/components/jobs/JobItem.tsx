@@ -200,7 +200,7 @@ export function JobItem({
 									type="button"
 									onClick={handleAcceptJob}
 								>
-									Accept Job
+									Accept
 								</button>
 							)}
 						{job.status === "pending" &&
