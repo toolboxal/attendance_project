@@ -1,7 +1,7 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
 import { CircleAlert } from "lucide-react";
 import { useState } from "react";
@@ -15,7 +15,10 @@ import {
 	DialogTitle,
 } from "#/components/ui/dialog";
 import { useLiveCountdown } from "#/hooks/use-live-countdown";
-import { toastMutationError } from "#/lib/error-utils";
+import {
+	parseStructuredError,
+	toastMutationError,
+} from "#/lib/error-utils";
 
 import {
 	cn,
@@ -59,6 +62,7 @@ export function EventDetailsView({
 	const duplicateEvent = useMutation(api.events.duplicate);
 	const deleteEvent = useMutation(api.events.deleteEvent);
 	const enterLiveFloor = useMutation(api.liveStaff.enterLiveFloorAsAdmin);
+	const billing = useQuery(api.payments.getBillingProfile);
 	const [isConfirmLiveOpen, setIsConfirmLiveOpen] = useState(false);
 	const [isConfirmEndOpen, setIsConfirmEndOpen] = useState(false);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -72,6 +76,27 @@ export function EventDetailsView({
 
 	const { event, sections, slots, liveStaff } = details;
 	const canGoLive = isEventDateOnOrAfterToday(event.eventDate);
+	const totalCredits = billing
+		? (billing.monthlyCredits ?? 0) +
+			(billing.oneTimeCredits ?? 0) +
+			(billing.freeTrialCredits ?? 0)
+		: null;
+	const outOfCredits = totalCredits === 0;
+	// Matches peekGoLiveCreditPool + resolveLimitsForCreditPool on the server.
+	const goLiveSeatCap = billing
+		? (billing.monthlyCredits ?? 0) > 0 || (billing.oneTimeCredits ?? 0) > 0
+			? 50
+			: (billing.freeTrialCredits ?? 0) > 0
+				? 5
+				: null
+		: null;
+	const overStaffForCredit =
+		goLiveSeatCap != null && slots.length > goLiveSeatCap;
+	const goLiveBlocked = !canGoLive || outOfCredits || overStaffForCredit;
+
+	const goToBilling = () => {
+		navigate({ to: "/app/billing" });
+	};
 
 	const handleEnterLiveFloor = async () => {
 		try {
@@ -96,7 +121,15 @@ export function EventDetailsView({
 				eventId: eventId as Id<"events">,
 			});
 		} catch (err) {
-			toastMutationError(err, "Failed to update event status");
+			const { errorType } = parseStructuredError(err);
+			const offerBilling =
+				errorType === "insufficient_credits" ||
+				errorType === "staff_limit_free";
+			toastMutationError(err, "Failed to update event status", {
+				action: offerBilling
+					? { label: "Go to Billing", onClick: goToBilling }
+					: undefined,
+			});
 		}
 	};
 
@@ -147,6 +180,17 @@ export function EventDetailsView({
 	};
 
 	const needsDateUpdate = event.status === "draft" && !canGoLive;
+	const needsCredits = event.status === "draft" && outOfCredits;
+	const needsFewerStaff =
+		event.status === "draft" && overStaffForCredit && !outOfCredits;
+	const goLiveDisabled = event.status === "draft" && goLiveBlocked;
+	const goLiveDescribedBy = needsDateUpdate
+		? "past-date-notice"
+		: needsCredits
+			? "out-of-credits-notice"
+			: needsFewerStaff
+				? "staff-limit-notice"
+				: undefined;
 
 	return (
 		<div className="flex flex-col gap-8 px-2 py-4 md:p-6">
@@ -187,6 +231,97 @@ export function EventDetailsView({
 				</div>
 			)}
 
+			{needsCredits && (
+				<div
+					id="out-of-credits-notice"
+					className="flex flex-col gap-3 rounded-xl shadow shadow-zinc-800 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+				>
+					<div className="flex gap-3">
+						<CircleAlert
+							strokeWidth={1.5}
+							size={18}
+							className="shrink-0 text-red-400"
+							aria-hidden
+						/>
+						<div>
+							<p className="text-sm font-semibold text-red-300">
+								You&apos;re out of event credits
+							</p>
+							<p className="mt-1 text-xs text-zinc-100">
+								Buy a Single Pass or Bundle, or subscribe to Pro Monthly, before
+								you can go live.
+							</p>
+						</div>
+					</div>
+					<Button
+						type="button"
+						variant="link"
+						size="sm"
+						className="shrink-0 text-zinc-100 hover:bg-zinc-950/70"
+						onClick={goToBilling}
+					>
+						Go to Billing
+					</Button>
+				</div>
+			)}
+
+			{needsFewerStaff && (
+				<div
+					id="staff-limit-notice"
+					className="flex flex-col gap-3 rounded-xl shadow shadow-zinc-800 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+				>
+					<div className="flex gap-3">
+						<CircleAlert
+							strokeWidth={1.5}
+							size={18}
+							className="shrink-0 text-red-400"
+							aria-hidden
+						/>
+						<div>
+							<p className="text-sm font-semibold text-red-300">
+								{goLiveSeatCap != null && goLiveSeatCap <= 5
+									? "No paid credits left — you'd use your free trial"
+									: "Too many role slots for your next credit"}
+							</p>
+							<p className="mt-1 text-xs text-zinc-100">
+								{goLiveSeatCap != null && goLiveSeatCap <= 5 ? (
+									<>
+										This draft has {slots.length} slots, but a free trial only
+										covers {goLiveSeatCap}. Remove slots, or buy a pass / Pro
+										for up to 50 seats.
+									</>
+								) : (
+									<>
+										This draft has {slots.length} slots; your next credit covers{" "}
+										{goLiveSeatCap}. Remove slots before going live.
+									</>
+								)}
+							</p>
+						</div>
+					</div>
+					<div className="flex shrink-0 gap-2">
+						<Button
+							type="button"
+							variant="link"
+							size="sm"
+							className="text-zinc-100 hover:bg-zinc-950/70"
+							onClick={goToEditEvent}
+						>
+							Edit Event
+						</Button>
+						<Button
+							type="button"
+							variant="link"
+							size="sm"
+							className="text-zinc-100 hover:bg-zinc-950/70"
+							onClick={goToBilling}
+						>
+							Go to Billing
+						</Button>
+					</div>
+				</div>
+			)}
+
 			{/* header */}
 			<div className="flex flex-row flex-wrap gap-1 justify-end items-center">
 				{event.status === "live" && (
@@ -203,10 +338,10 @@ export function EventDetailsView({
 				{event.status !== "archived" && (
 					<Button
 						onClick={handleStatusButtonClick}
-						disabled={needsDateUpdate}
+						disabled={goLiveDisabled}
 						variant={event.status === "draft" ? "default" : "destructive"}
 						size={"lg"}
-						aria-describedby={needsDateUpdate ? "past-date-notice" : undefined}
+						aria-describedby={goLiveDescribedBy}
 					>
 						{event.status === "draft" ? "Go Live" : "End Event"}
 					</Button>
@@ -395,45 +530,60 @@ export function EventDetailsView({
 				<DialogContent className="max-w-md bg-zinc-900 border border-zinc-800 text-zinc-100">
 					<DialogHeader>
 						<DialogTitle className="text-zinc-50 font-bold text-xl flex items-center gap-2">
-							Confirm Go Live
+							{outOfCredits ? "Can't go live" : "Confirm Go Live"}
 						</DialogTitle>
 						<DialogDescription className="text-zinc-200 text-sm mt-2 space-y-2">
 							<p className="font-semibold text-lg">{event.title}</p>
-							<div className="px-3 py-4 rounded-xl bg-zinc-950 ">
-								<p className="text-zinc-300 font-medium mb-2 text-sm underline underline-offset-4">
-									Important Notes
-								</p>
-								<div className="flex flex-row items-center gap-2 mb-1">
-									<CircleAlert
-										strokeWidth={1.5}
-										size={18}
-										className="text-red-400"
-									/>
-									<p className="text-zinc-300 font-medium text-xs">
-										Going live will consume 1 Event Pass Credit.
+							{outOfCredits ? (
+								<div className="px-3 py-4 rounded-xl bg-zinc-950 space-y-2">
+									<p className="text-zinc-300 font-medium text-sm">
+										You&apos;re out of event credits.
+									</p>
+									<p className="text-zinc-400 text-xs">
+										Buy a Single Pass or Bundle, or subscribe to Pro Monthly,
+										then try again.
 									</p>
 								</div>
-								<div className="flex flex-row items-center gap-2 mb-1">
-									<CircleAlert
-										strokeWidth={1.5}
-										size={18}
-										className="text-red-400"
-									/>
-									<p className="text-zinc-300 font-medium text-xs">
-										Live event cannot be reverted back to a draft.
+							) : (
+								<div className="px-3 py-4 rounded-xl bg-zinc-950 ">
+									<p className="text-zinc-300 font-medium mb-2 text-sm underline underline-offset-4">
+										Important Notes
 									</p>
+									<div className="flex flex-row items-center gap-2 mb-1">
+										<CircleAlert
+											strokeWidth={1.5}
+											size={18}
+											className="text-red-400"
+										/>
+										<p className="text-zinc-300 font-medium text-xs">
+											Going live will consume 1 event credit
+											{totalCredits != null
+												? ` (${totalCredits} remaining).`
+												: "."}
+										</p>
+									</div>
+									<div className="flex flex-row items-center gap-2 mb-1">
+										<CircleAlert
+											strokeWidth={1.5}
+											size={18}
+											className="text-red-400"
+										/>
+										<p className="text-zinc-300 font-medium text-xs">
+											Live event cannot be reverted back to a draft.
+										</p>
+									</div>
+									<div className="flex flex-row items-center gap-2 mb-1">
+										<CircleAlert
+											strokeWidth={1.5}
+											size={18}
+											className="text-red-400"
+										/>
+										<p className="text-zinc-300 font-medium text-xs">
+											24hrs window starts once event goes live.
+										</p>
+									</div>
 								</div>
-								<div className="flex flex-row items-center gap-2 mb-1">
-									<CircleAlert
-										strokeWidth={1.5}
-										size={18}
-										className="text-red-400"
-									/>
-									<p className="text-zinc-300 font-medium text-xs">
-										24hrs window starts once event goes live.
-									</p>
-								</div>
-							</div>
+							)}
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter className="mt-4 flex flex-col sm:flex-row gap-4 justify-end">
@@ -444,16 +594,29 @@ export function EventDetailsView({
 						>
 							Cancel
 						</Button>
-						<Button
-							onClick={async () => {
-								setIsConfirmLiveOpen(false);
-								await handleToggleStatus();
-							}}
-							variant="default"
-							className="bg-green-400 hover:bg-green-300 text-zinc-950 font-bold"
-						>
-							Confirm Go Live
-						</Button>
+						{outOfCredits ? (
+							<Button
+								onClick={() => {
+									setIsConfirmLiveOpen(false);
+									goToBilling();
+								}}
+								variant="default"
+								className="bg-green-400 hover:bg-green-300 text-zinc-950 font-bold"
+							>
+								Go to Billing
+							</Button>
+						) : (
+							<Button
+								onClick={async () => {
+									setIsConfirmLiveOpen(false);
+									await handleToggleStatus();
+								}}
+								variant="default"
+								className="bg-green-400 hover:bg-green-300 text-zinc-950 font-bold"
+							>
+								Confirm Go Live
+							</Button>
+						)}
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>

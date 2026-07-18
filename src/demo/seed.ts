@@ -233,6 +233,12 @@ export function createDemoFloorState(): DemoFloorState {
 						staffStatus: "active",
 						isViewer: false,
 					},
+					{
+						rowKey: "mh-4",
+						title: "Floor Runner",
+						role: "staff",
+						isViewer: false,
+					},
 				],
 			},
 			{

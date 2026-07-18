@@ -51,6 +51,13 @@ export function stripConvexErrorMessage(message: string): string {
 	return message;
 }
 
+type ToastMutationErrorOptions = {
+	action?: {
+		label: string;
+		onClick: () => void;
+	};
+};
+
 /**
  * Show a mutation failure in a toast, using structured ConvexError fields when
  * available and falling back to a cleaned plain error message.
@@ -58,24 +65,40 @@ export function stripConvexErrorMessage(message: string): string {
 export function toastMutationError(
 	error: unknown,
 	fallback = "Something went wrong",
+	options?: ToastMutationErrorOptions,
 ) {
-	// ConvexErrors are intentional user-facing messages; skip reporting those.
-	if (!(error instanceof ConvexError)) {
+	const { title, reason, actionNeeded, errorType } =
+		parseStructuredError(error);
+
+	// ConvexErrors / structured API errors are intentional user-facing messages.
+	if (
+		!(error instanceof ConvexError) &&
+		!title &&
+		!reason &&
+		errorType === undefined
+	) {
 		Sentry.captureException(error);
 	}
 
-	const { title, reason, actionNeeded } = parseStructuredError(error);
+	const toastAction = options?.action;
 
 	if (title || reason) {
 		const description = [reason, actionNeeded].filter(Boolean).join(" ");
-		toast.error(title ?? fallback, description ? { description } : undefined);
+		toast.error(title ?? fallback, {
+			...(description ? { description } : {}),
+			...(toastAction ? { action: toastAction } : {}),
+		});
 		return;
 	}
 
 	if (error instanceof Error) {
-		toast.error(stripConvexErrorMessage(error.message) || fallback);
+		toast.error(stripConvexErrorMessage(error.message) || fallback, {
+			...(toastAction ? { action: toastAction } : {}),
+		});
 		return;
 	}
 
-	toast.error(fallback);
+	toast.error(fallback, {
+		...(toastAction ? { action: toastAction } : {}),
+	});
 }

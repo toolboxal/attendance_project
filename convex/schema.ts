@@ -97,6 +97,10 @@ export default defineSchema({
     
     // CLAIMED STAFF
     assignedStaffId: v.optional(v.id("liveStaff")), // Null if vacant/unclaimed
+
+    // Live-floor assign audit (actor is a liveStaff row)
+    assignedById: v.optional(v.id("liveStaff")),
+    assignedAt: v.optional(v.number()),
   })
   .index("by_event", ["eventId"])
   .index("by_inviteToken", ["inviteToken"])

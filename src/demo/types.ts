@@ -104,4 +104,4 @@ export type DemoFloorState = {
 	sections: DemoRosterSection[];
 };
 
-export type DemoTab = "jobs" | "alert" | "roster";
+export type DemoTab = "jobs" | "alert" | "roster" | "assign";

@@ -12,19 +12,22 @@ const navBarItem = tv({
 	},
 });
 
-const TABS: { id: DemoTab; label: string }[] = [
-	{ id: "jobs", label: "Traffic" },
-	{ id: "alert", label: "Alert" },
-	{ id: "roster", label: "Roster" },
-];
-
 export function DemoBottomNav() {
-	const { activeTab, setActiveTab } = useDemoFloor();
+	const { activeTab, setActiveTab, state } = useDemoFloor();
 	const { navBar, tab, activeTab: activeTabClass } = navBarItem();
+
+	const tabs: { id: DemoTab; label: string }[] = [
+		...(state.profile.isSupervisor
+			? [{ id: "assign" as const, label: "Assign" }]
+			: []),
+		{ id: "jobs", label: "Traffic" },
+		{ id: "alert", label: "Alert" },
+		{ id: "roster", label: "Roster" },
+	];
 
 	return (
 		<nav className={navBar()}>
-			{TABS.map((item) => (
+			{tabs.map((item) => (
 				<button
 					key={item.id}
 					type="button"

@@ -21,6 +21,7 @@ import { Route as LiveDashboardIndexRouteImport } from './routes/live/_dashboard
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
 import { Route as LiveDashboardRosterRouteImport } from './routes/live/_dashboard/roster'
 import { Route as LiveDashboardJobsRouteImport } from './routes/live/_dashboard/jobs'
+import { Route as LiveDashboardAssignRouteImport } from './routes/live/_dashboard/assign'
 import { Route as LiveDashboardAlertRouteImport } from './routes/live/_dashboard/alert'
 import { Route as LiveDashboardAdminRouteImport } from './routes/live/_dashboard/admin'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -92,6 +93,11 @@ const LiveDashboardRosterRoute = LiveDashboardRosterRouteImport.update({
 const LiveDashboardJobsRoute = LiveDashboardJobsRouteImport.update({
   id: '/jobs',
   path: '/jobs',
+  getParentRoute: () => LiveDashboardRouteRoute,
+} as any)
+const LiveDashboardAssignRoute = LiveDashboardAssignRouteImport.update({
+  id: '/assign',
+  path: '/assign',
   getParentRoute: () => LiveDashboardRouteRoute,
 } as any)
 const LiveDashboardAlertRoute = LiveDashboardAlertRouteImport.update({
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/live/admin': typeof LiveDashboardAdminRoute
   '/live/alert': typeof LiveDashboardAlertRoute
+  '/live/assign': typeof LiveDashboardAssignRoute
   '/live/jobs': typeof LiveDashboardJobsRoute
   '/live/roster': typeof LiveDashboardRosterRoute
   '/app/': typeof AuthenticatedAppIndexRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/live/admin': typeof LiveDashboardAdminRoute
   '/live/alert': typeof LiveDashboardAlertRoute
+  '/live/assign': typeof LiveDashboardAssignRoute
   '/live/jobs': typeof LiveDashboardJobsRoute
   '/live/roster': typeof LiveDashboardRosterRoute
   '/app': typeof AuthenticatedAppIndexRoute
@@ -241,6 +249,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/live/_dashboard/admin': typeof LiveDashboardAdminRoute
   '/live/_dashboard/alert': typeof LiveDashboardAlertRoute
+  '/live/_dashboard/assign': typeof LiveDashboardAssignRoute
   '/live/_dashboard/jobs': typeof LiveDashboardJobsRoute
   '/live/_dashboard/roster': typeof LiveDashboardRosterRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/live/admin'
     | '/live/alert'
+    | '/live/assign'
     | '/live/jobs'
     | '/live/roster'
     | '/app/'
@@ -294,6 +304,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/live/admin'
     | '/live/alert'
+    | '/live/assign'
     | '/live/jobs'
     | '/live/roster'
     | '/app'
@@ -321,6 +332,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/live/_dashboard/admin'
     | '/live/_dashboard/alert'
+    | '/live/_dashboard/assign'
     | '/live/_dashboard/jobs'
     | '/live/_dashboard/roster'
     | '/_authenticated/app/'
@@ -424,6 +436,13 @@ declare module '@tanstack/react-router' {
       path: '/jobs'
       fullPath: '/live/jobs'
       preLoaderRoute: typeof LiveDashboardJobsRouteImport
+      parentRoute: typeof LiveDashboardRouteRoute
+    }
+    '/live/_dashboard/assign': {
+      id: '/live/_dashboard/assign'
+      path: '/assign'
+      fullPath: '/live/assign'
+      preLoaderRoute: typeof LiveDashboardAssignRouteImport
       parentRoute: typeof LiveDashboardRouteRoute
     }
     '/live/_dashboard/alert': {
@@ -546,6 +565,7 @@ const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
 interface LiveDashboardRouteRouteChildren {
   LiveDashboardAdminRoute: typeof LiveDashboardAdminRoute
   LiveDashboardAlertRoute: typeof LiveDashboardAlertRoute
+  LiveDashboardAssignRoute: typeof LiveDashboardAssignRoute
   LiveDashboardJobsRoute: typeof LiveDashboardJobsRoute
   LiveDashboardRosterRoute: typeof LiveDashboardRosterRoute
   LiveDashboardIndexRoute: typeof LiveDashboardIndexRoute
@@ -554,6 +574,7 @@ interface LiveDashboardRouteRouteChildren {
 const LiveDashboardRouteRouteChildren: LiveDashboardRouteRouteChildren = {
   LiveDashboardAdminRoute: LiveDashboardAdminRoute,
   LiveDashboardAlertRoute: LiveDashboardAlertRoute,
+  LiveDashboardAssignRoute: LiveDashboardAssignRoute,
   LiveDashboardJobsRoute: LiveDashboardJobsRoute,
   LiveDashboardRosterRoute: LiveDashboardRosterRoute,
   LiveDashboardIndexRoute: LiveDashboardIndexRoute,

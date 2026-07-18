@@ -35,6 +35,12 @@ type DemoFloorContextValue = {
 		report: SectionReportFormState,
 	) => void;
 	toggleIncludeInTotal: (sectionKey: string, includeInTotal: boolean) => void;
+	assignStaffSlot: (
+		sectionKey: string,
+		rowKey: string,
+		staffName: string,
+	) => void;
+	revokeStaffSlot: (sectionKey: string, rowKey: string) => void;
 };
 
 const DemoFloorContext = createContext<DemoFloorContextValue | null>(null);
@@ -294,6 +300,60 @@ export function DemoFloorProvider({ children }: { children: ReactNode }) {
 		[],
 	);
 
+	const assignStaffSlot = useCallback(
+		(sectionKey: string, rowKey: string, staffName: string) => {
+			const trimmed = staffName.trim();
+			if (!trimmed) return;
+
+			setState((prev) => ({
+				...prev,
+				sections: prev.sections.map((section) => {
+					if (section.sectionKey !== sectionKey) return section;
+					return {
+						...section,
+						slots: section.slots.map((slot) => {
+							if (slot.rowKey !== rowKey) return slot;
+							if (slot.role !== "staff") return slot;
+							if (slot.assignedStaffId) return slot;
+							return {
+								...slot,
+								assignedStaffId: nextId("demo_staff") as never,
+								staffName: trimmed,
+								staffStatus: "unclaimed" as const,
+								isViewer: false,
+							};
+						}),
+					};
+				}),
+			}));
+		},
+		[],
+	);
+
+	const revokeStaffSlot = useCallback((sectionKey: string, rowKey: string) => {
+		setState((prev) => ({
+			...prev,
+			sections: prev.sections.map((section) => {
+				if (section.sectionKey !== sectionKey) return section;
+				return {
+					...section,
+					slots: section.slots.map((slot) => {
+						if (slot.rowKey !== rowKey) return slot;
+						if (slot.role !== "staff") return slot;
+						if (slot.isViewer) return slot;
+						return {
+							...slot,
+							assignedStaffId: undefined,
+							staffName: undefined,
+							staffStatus: undefined,
+							isViewer: false,
+						};
+					}),
+				};
+			}),
+		}));
+	}, []);
+
 	const value = useMemo(
 		() => ({
 			state,
@@ -313,6 +373,8 @@ export function DemoFloorProvider({ children }: { children: ReactNode }) {
 			addWatchlistUpdate,
 			reportSection,
 			toggleIncludeInTotal,
+			assignStaffSlot,
+			revokeStaffSlot,
 		}),
 		[
 			state,
@@ -331,6 +393,8 @@ export function DemoFloorProvider({ children }: { children: ReactNode }) {
 			addWatchlistUpdate,
 			reportSection,
 			toggleIncludeInTotal,
+			assignStaffSlot,
+			revokeStaffSlot,
 		],
 	);
 

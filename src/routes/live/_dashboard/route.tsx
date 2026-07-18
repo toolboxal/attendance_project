@@ -184,11 +184,15 @@ function DashboardAuthLayout() {
 			<JobAcceptanceToasts accessToken={token} />
 
 			<nav className={navBar()}>
-				{profile?.isAdmin && (
+				{profile?.isAdmin ? (
 					<Link to="/live/admin" className={tab()}>
 						<span>Admin</span>
 					</Link>
-				)}
+				) : profile?.isSupervisor ? (
+					<Link to="/live/assign" className={tab()}>
+						<span>Assign</span>
+					</Link>
+				) : null}
 
 				<Link to="/live/jobs" className={tab()}>
 					<span>Traffic</span>

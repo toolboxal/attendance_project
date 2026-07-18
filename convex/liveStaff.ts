@@ -7,7 +7,12 @@ import {
 	isEventAccessClosed,
 	pruneArchivedEvents,
 } from "./events";
-import { getLiveContext, requireAdmin } from "./liveAuth";
+import {
+	getLiveContext,
+	requireAdmin,
+	requireSupervisor,
+	type LiveContext,
+} from "./liveAuth";
 import { ConvexError } from "convex/values";
 
 function generateAccessToken() {
@@ -21,19 +26,57 @@ function generateInviteToken() {
 	return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+type AssignMode = "assign" | "rename";
+
+function assertCanManageSlot(
+	live: LiveContext,
+	slot: { role: "supervisor" | "staff"; assignedStaffId?: Id<"liveStaff"> },
+	action: "assign" | "rename" | "revoke",
+) {
+	requireSupervisor(live);
+
+	if (!live.isAdmin && slot.role === "supervisor") {
+		throw new Error("Supervisors can only manage staff roles.");
+	}
+
+	if (
+		action === "revoke" &&
+		!live.isAdmin &&
+		slot.assignedStaffId != null &&
+		slot.assignedStaffId === live.staff._id
+	) {
+		throw new Error("You cannot revoke your own assignment.");
+	}
+}
+
 async function assignStaffToSlotInternal(
 	ctx: MutationCtx,
 	slotId: Id<"roleSlots">,
 	staffName: string,
+	options?: {
+		actorId?: Id<"liveStaff">;
+		mode?: AssignMode;
+	},
 ) {
 	const trimmedName = staffName.trim();
 	if (!trimmedName) throw new Error("Staff name cannot be empty.");
 
+	const mode = options?.mode ?? "assign";
 	const slot = await ctx.db.get(slotId);
 	if (!slot) throw new Error("Role slot not found.");
 
 	let liveStaffId = slot.assignedStaffId;
 	const existingStaff = liveStaffId ? await ctx.db.get(liveStaffId) : null;
+
+	if (mode === "assign") {
+		if (existingStaff) {
+			throw new Error(
+				`This role is already assigned to ${existingStaff.staffName}. Revoke first to reassign.`,
+			);
+		}
+	} else if (!existingStaff) {
+		throw new Error("This role is vacant. Assign someone first.");
+	}
 
 	if (!existingStaff) {
 		const secureAccessToken = generateAccessToken();
@@ -67,9 +110,16 @@ async function assignStaffToSlotInternal(
 		token = generateInviteToken();
 	}
 
+	const now = Date.now();
 	await ctx.db.patch(slotId, {
 		assignedStaffId: liveStaffId,
 		inviteToken: token,
+		...(options?.actorId && mode === "assign"
+			? {
+					assignedById: options.actorId,
+					assignedAt: now,
+				}
+			: {}),
 	});
 
 	return {
@@ -109,11 +159,12 @@ async function revokeStaffFromSlotInternal(
 	await ctx.db.patch(slotId, {
 		assignedStaffId: undefined,
 		inviteToken: undefined,
+		assignedById: undefined,
+		assignedAt: undefined,
 	});
 
 	return { success: true as const };
 }
-
 /**
  * Create or update a staff assignment and generate a secure invite token.
  * Called by Admin from the dashboard to pre-fill a name and get a shareable link.
@@ -138,7 +189,8 @@ export const createStaffInvitation = mutation({
 			throw new Error("Unauthorized to manage staffing for this event.");
 		}
 
-		return assignStaffToSlotInternal(ctx, args.slotId, trimmedName);
+		const mode: AssignMode = slot.assignedStaffId ? "rename" : "assign";
+		return assignStaffToSlotInternal(ctx, args.slotId, trimmedName, { mode });
 	},
 });
 
@@ -584,14 +636,14 @@ export const endEventFromLiveFloor = mutation({
 	},
 });
 
-/** Staff management data for the live-floor Admin tab (admin only). */
+/** Staff management data for Admin / Team tabs (supervisor+; staff roles only for non-admins). */
 export const getLiveFloorStaffManagement = query({
 	args: { accessToken: v.string() },
 	handler: async (ctx, args) => {
 		const live = await getLiveContext(ctx, args.accessToken);
 		if (!live) return null;
 
-		requireAdmin(live);
+		requireSupervisor(live);
 
 		const { event } = live;
 		const eventId = event._id;
@@ -616,6 +668,7 @@ export const getLiveFloorStaffManagement = query({
 				.filter((s) => s.adminUserId == null)
 				.map((s) => [s._id, s] as const),
 		);
+		const actorById = new Map(allStaff.map((s) => [s._id, s] as const));
 
 		type SlotAssignmentStatus = "vacant" | "pending" | "active";
 
@@ -630,6 +683,10 @@ export const getLiveFloorStaffManagement = query({
 			return "pending";
 		};
 
+		const visibleSlots = live.isAdmin
+			? slots
+			: slots.filter((slot) => slot.role === "staff");
+
 		const slotsBySectionKey = new Map<
 			string,
 			Array<{
@@ -641,6 +698,9 @@ export const getLiveFloorStaffManagement = query({
 				staffName?: string;
 				lastActive?: number;
 				inviteToken?: string;
+				assignedByName?: string;
+				assignedAt?: number;
+				canManage: boolean;
 			}>
 		>();
 
@@ -653,11 +713,19 @@ export const getLiveFloorStaffManagement = query({
 			slotsBySectionKey.set(sectionKey, list);
 		};
 
-		for (const slot of slots) {
+		for (const slot of visibleSlots) {
 			const staff = slot.assignedStaffId
 				? staffById.get(slot.assignedStaffId)
 				: undefined;
+			const assignedBy = slot.assignedById
+				? actorById.get(slot.assignedById)
+				: undefined;
 			const sectionKey = slot.sectionId ?? "__floating__";
+			const canManage =
+				live.isAdmin ||
+				(slot.role === "staff" &&
+					(slot.assignedStaffId == null ||
+						slot.assignedStaffId !== live.staff._id));
 			addSlot(sectionKey, {
 				slotId: slot._id,
 				title: slot.title,
@@ -670,6 +738,9 @@ export const getLiveFloorStaffManagement = query({
 				staffName: staff?.staffName,
 				lastActive: staff?.lastActive,
 				inviteToken: slot.inviteToken,
+				assignedByName: assignedBy?.staffName,
+				assignedAt: slot.assignedAt,
+				canManage,
 			});
 		}
 
@@ -708,33 +779,38 @@ export const getLiveFloorStaffManagement = query({
 			eventTitle: event.title,
 			eventDate: event.eventDate,
 			sections: groupedSections,
+			isAdmin: live.isAdmin,
 		};
 	},
 });
 
-/** Assign or rename staff on a slot from the live floor (admin only). */
+/** Assign or rename staff on a slot from the live floor (admin or supervisor). */
 export const createStaffInvitationFromLiveFloor = mutation({
 	args: {
 		accessToken: v.string(),
 		slotId: v.id("roleSlots"),
 		staffName: v.string(),
+		mode: v.union(v.literal("assign"), v.literal("rename")),
 	},
 	handler: async (ctx, args) => {
 		const live = await getLiveContext(ctx, args.accessToken);
 		if (!live) throw new Error("Invalid session");
-
-		requireAdmin(live);
 
 		const slot = await ctx.db.get(args.slotId);
 		if (!slot || slot.eventId !== live.event._id) {
 			throw new Error("Slot not found for this event");
 		}
 
-		return assignStaffToSlotInternal(ctx, args.slotId, args.staffName);
+		assertCanManageSlot(live, slot, args.mode);
+
+		return assignStaffToSlotInternal(ctx, args.slotId, args.staffName, {
+			actorId: live.staff._id,
+			mode: args.mode,
+		});
 	},
 });
 
-/** Revoke staff access from the live floor (admin only). */
+/** Revoke staff access from the live floor (admin or supervisor). */
 export const revokeStaffFromLiveFloor = mutation({
 	args: {
 		accessToken: v.string(),
@@ -744,12 +820,12 @@ export const revokeStaffFromLiveFloor = mutation({
 		const live = await getLiveContext(ctx, args.accessToken);
 		if (!live) throw new Error("Invalid session");
 
-		requireAdmin(live);
-
 		const slot = await ctx.db.get(args.slotId);
 		if (!slot || slot.eventId !== live.event._id) {
 			throw new Error("Slot not found for this event");
 		}
+
+		assertCanManageSlot(live, slot, "revoke");
 
 		return revokeStaffFromSlotInternal(ctx, args.slotId);
 	},

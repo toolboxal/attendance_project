@@ -81,15 +81,24 @@ export function peekGoLiveCreditPool(
   return null;
 }
 
+/** User-facing error when go-live is blocked by an empty credit balance. */
+export function insufficientGoLiveCreditsError() {
+  return new ConvexError({
+    title: "Can't go live",
+    reason: "You're out of event credits.",
+    actionNeeded:
+      "Open Billing to buy a pass or start Pro Monthly.",
+    errorType: "insufficient_credits",
+  });
+}
+
 export async function consumeGoLiveCredit(
   ctx: MutationCtx,
   user: Doc<"users">,
 ): Promise<CreditPool> {
   const pool = peekGoLiveCreditPool(user);
   if (!pool) {
-    throw new Error(
-      "Insufficient pass credits. Please top up or upgrade to go live.",
-    );
+    throw insufficientGoLiveCreditsError();
   }
 
   const patch: Partial<Doc<"users">> = {};
@@ -134,9 +143,31 @@ export function assertSlotCountWithinLimit(
         maxStaff <= FREE_MAX_STAFF
           ? "Remove role slots or buy an event pass for up to 50 staff."
           : "Remove role slots before saving.",
-      errorType: 403,
+      errorType:
+        maxStaff <= FREE_MAX_STAFF ? "staff_limit_free" : "staff_limit",
     });
   }
+}
+
+/** Staff-cap check at go-live, with credit-pool-aware copy. */
+export function assertGoLiveStaffCapacity(
+  slotCount: number,
+  pool: CreditPool,
+) {
+  const { maxStaff } = resolveLimitsForCreditPool(pool);
+  if (slotCount <= maxStaff) return;
+
+  const isFreeTrial = pool === "free_trial";
+  throw new ConvexError({
+    title: "Can't go live",
+    reason: isFreeTrial
+      ? `No paid credits left — going live would use your free trial, which only covers ${maxStaff} staff seats. This event has ${slotCount}.`
+      : `This event has ${slotCount} role slots, but the limit is ${maxStaff} staff seats.`,
+    actionNeeded: isFreeTrial
+      ? "Remove extra slots, or buy a pass / Pro Monthly for up to 50 seats."
+      : "Remove role slots before going live.",
+    errorType: isFreeTrial ? "staff_limit_free" : "staff_limit",
+  });
 }
 
 export async function assertStaffCapacity(

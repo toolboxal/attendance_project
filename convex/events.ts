@@ -8,11 +8,13 @@ import { ConvexError } from "convex/values";
 import { DEFAULT_SECTION_LIVE_FIELDS } from "./sectionDefaults";
 import {
   assertDraftLimit,
+  assertGoLiveStaffCapacity,
   assertSlotCountWithinLimit,
   assertStaffCapacity,
   consumeGoLiveCredit,
   countRoleSlots,
   getDraftLimit,
+  insufficientGoLiveCreditsError,
   MAX_ARCHIVED_EVENTS,
   peekGoLiveCreditPool,
   resolveDraftLimits,
@@ -800,15 +802,13 @@ export const updateStatus = mutation({
       if (event.status === "draft") {
         const creditPool = peekGoLiveCreditPool(user);
         if (!creditPool) {
-          throw new Error("Insufficient pass credits. Please top up or upgrade to go live.");
+          throw insufficientGoLiveCreditsError();
         }
 
         const goLiveLimits = resolveLimitsForCreditPool(creditPool);
-        await assertStaffCapacity(
-          ctx,
-          event._id,
+        assertGoLiveStaffCapacity(
           await countRoleSlots(ctx, event._id),
-          goLiveLimits.maxStaff,
+          creditPool,
         );
 
         await consumeGoLiveCredit(ctx, user);

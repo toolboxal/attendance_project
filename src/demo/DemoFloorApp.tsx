@@ -4,6 +4,7 @@ import { DemoFloorProvider, useDemoFloor } from "#/demo/DemoFloorContext";
 import { DemoAlertsTab } from "#/demo/tabs/DemoAlertsTab";
 import { DemoJobsTab } from "#/demo/tabs/DemoJobsTab";
 import { DemoRosterTab } from "#/demo/tabs/DemoRosterTab";
+import { DemoAssignTab } from "#/demo/tabs/DemoAssignTab";
 
 function DemoFloorContent() {
 	const { activeTab, resetDemo } = useDemoFloor();
@@ -32,6 +33,7 @@ function DemoFloorContent() {
 			</div>
 
 			<main className="w-full max-w-md mx-auto px-1 pt-2 bg-zinc-950">
+				{activeTab === "assign" && <DemoAssignTab />}
 				{activeTab === "jobs" && <DemoJobsTab />}
 				{activeTab === "alert" && <DemoAlertsTab />}
 				{activeTab === "roster" && <DemoRosterTab />}
